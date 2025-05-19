@@ -27,6 +27,7 @@ docs/_site/
 .env.*
 !.env.*.sample
 .vscode/PythonImportHelper-v2-Completion.json
+.vscode/sessions.json
 
 #Local lint config
 .eslintrc.local.json
