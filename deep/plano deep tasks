@@ -1,0 +1,241 @@
+# Plano de Implementação Passo a Passo: Pesquisa Profunda Nativa no Roo Code
+
+**Baseado no Plano de Arquitetura:** [deep/deep_research_native_implementation_plan.md]
+
+**Data:** 20 de Maio de 2025
+
+**Versão:** 1.1 (Revisado para priorizar schemas Roo existentes)
+
+## Introdução
+
+Este documento detalha os passos para implementar a funcionalidade de pesquisa profunda nativa no Roo Code, conforme o plano de arquitetura aprovado. O objetivo é permitir que o Roo, operando em um modo especializado (`deep-research`), execute pesquisas complexas e iterativas utilizando um conjunto de novas ferramentas granulares.
+
+## Fase 1: Configuração do Projeto e Definições Base
+
+### Subtarefa 1.1: Atualizar Schemas e Tipos Compartilhados (Priorizando Reutilização)
+
+*   **Descrição:** Adicionar as definições para as novas ferramentas nos arquivos centrais de schemas, **priorizando o uso de tipos Zod e estruturas de dados já existentes no Roo Code**. Novos tipos específicos só devem ser criados se não houver um equivalente adequado.
+*   **Arquivos a Modificar:**
+    *   `src/schemas/index.ts`
+*   **Ações:**
+    1.  Em `src/schemas/index.ts`:
+        *   Adicionar os nomes das novas ferramentas (`web_search`, `extract_page_content`, `extract_document_content`, `search_structured_data`, `search_code_repositories`, `get_repository_file_content`, e opcionalmente `process_text_content`) ao array `toolNames` e, consequentemente, ao schema `toolNamesSchema`.
+        *   Para cada nova ferramenta, definir um schema Zod para seus parâmetros (ex: `webSearchParamsSchema`). **Analisar os tipos existentes em `src/schemas/index.ts` e `src/shared` para reutilização máxima.** Por exemplo, para caminhos de arquivo, usar `z.string()`. Para objetos de filtro genéricos, `z.record(z.string(), z.any())` ou `z.string()` (para JSON stringificado) pode ser considerado, mas com documentação clara no prompt da ferramenta.
+*   **Prompt de Delegação para Modo Code (Exemplo para `web_search`, com foco na reutilização de schema):**
+    ```
+    Tarefa: Atualizar schemas para nova ferramenta 'web_search', priorizando tipos Roo existentes.
+
+    Contexto: Estamos adicionando uma nova ferramenta chamada 'web_search' ao Roo Code. É crucial que seus parâmetros utilizem, sempre que possível, os tipos de schema Zod já definidos no projeto para manter a consistência e evitar a proliferação de novos tipos.
+
+    Instruções:
+    1.  Abra o arquivo `src/schemas/index.ts`.
+    2.  Adicione "web_search" ao array `toolNames` e ao schema `toolNamesSchema`.
+    3.  Defina um novo schema Zod chamado `webSearchParamsSchema` para os parâmetros da ferramenta `web_search`. Os parâmetros são:
+        *   `query: string` (obrigatório) - Usar `z.string()`.
+        *   `engine?: string` (opcional) - Usar `z.string().optional()`.
+        *   `num_results?: number` (opcional) - Usar `z.number().optional()`.
+    4.  Exporte o `webSearchParamsSchema`.
+    5.  Verifique se outros tipos existentes no Roo (ex: de `ProviderSettings` para configurações de API, ou tipos de `ToolArgs` de `src/core/prompts/tools/types.ts`) podem ser referenciados ou adaptados para os parâmetros, em vez de criar estruturas completamente novas, especialmente se as ferramentas precisarem acessar configurações globais.
+    6.  Garanta que todas as modificações sigam os padrões de codificação e linting do projeto.
+    ```
+    *(Repetir um prompt similar para cada nova ferramenta, enfatizando a análise e reutilização de schemas existentes para seus parâmetros)*
+
+### Subtarefa 1.2: Definir Novo Grupo de Ferramentas `deepSearchTools`
+
+*   **Descrição:** Criar um novo grupo de ferramentas para agrupar logicamente as novas ferramentas de pesquisa profunda.
+*   **Arquivo a Modificar:** `src/shared/tools.ts` (ou onde `TOOL_GROUPS` é definido).
+*   **Ações:**
+    1.  Adicionar uma nova entrada ao objeto `TOOL_GROUPS`:
+        ```typescript
+        deepSearchTools: {
+            name: "Deep Search Tools",
+            tools: [
+                "web_search",
+                "extract_page_content",
+                "extract_document_content",
+                "search_structured_data",
+                "search_code_repositories",
+                "get_repository_file_content",
+                // "process_text_content", // Se implementado
+            ],
+        },
+        ```
+*   **Prompt de Delegação para Modo Code:**
+    ```
+    Tarefa: Definir novo grupo de ferramentas 'deepSearchTools'.
+
+    Contexto: Estamos implementando uma funcionalidade de pesquisa profunda que inclui várias novas ferramentas. Estas ferramentas precisam ser agrupadas.
+
+    Instruções:
+    1.  Abra o arquivo `src/shared/tools.ts` (ou onde a constante `TOOL_GROUPS` é definida).
+    2.  Adicione uma nova entrada ao objeto `TOOL_GROUPS` com a chave `deepSearchTools`.
+    3.  O valor deve ser um objeto com:
+        *   `name: "Deep Search Tools"`.
+        *   `tools`: um array de strings contendo os nomes das seguintes novas ferramentas: "web_search", "extract_page_content", "extract_document_content", "search_structured_data", "search_code_repositories", "get_repository_file_content". Adicione "process_text_content" se esta ferramenta for implementada.
+    4.  Garanta que a formatação e a estrutura existentes do arquivo sejam mantidas.
+    ```
+
+## Fase 2: Implementação das Novas Ferramentas Granulares
+
+Para cada ferramenta listada abaixo, as seguintes etapas gerais serão necessárias:
+*   **Criação do Arquivo da Ferramenta:** Em `/Users/williamduarte/NCMproduto/elaiRoo/src/core/tools/` (ex: `webSearchTool.ts`).
+*   **Implementação da Lógica da Ferramenta:** Seguindo o padrão de ferramentas existentes (ex: [`searchFilesTool.ts`](src/core/tools/searchFilesTool.ts:1)), incluindo extração de parâmetros (usando os schemas definidos na Fase 1.1), lógica principal, tratamento de erros, e uso de `askApproval` e `pushToolResult`. A lógica interna deve utilizar utilities de `src/utils` ou serviços de `src/services` sempre que possível.
+*   **Criação do Arquivo de Prompt da Ferramenta:** Em `/Users/williamduarte/NCMproduto/elaiRoo/src/core/prompts/tools/` (ex: `web-search.ts`).
+*   **Implementação da Função de Descrição do Prompt:** Exportar uma função `getXDescription(args: ToolArgs): string` que retorna a descrição Markdown da ferramenta, detalhando os parâmetros e seu uso.
+*   **Registro da Ferramenta:** Adicionar a ferramenta ao `toolDescriptionMap` em `src/core/prompts/tools/index.ts`.
+
+### Subtarefa 2.1: Implementar Ferramenta `web_search`
+*   **Lógica Principal:**
+    *   Verificar se há configurações de API para motores de busca específicos (Jina, Serper, Brave) nas `ProviderSettings` do Roo. Se sim, e a chave estiver presente, usar a API correspondente.
+    *   Como fallback, ou se nenhum motor específico for solicitado/configurado, construir uma URL de busca para um motor padrão (ex: Google, DuckDuckGo).
+    *   Utilizar a lógica existente em [`browser_action`](src/core/tools/browserActionTool.ts:1) (ou seu serviço subjacente, como `BrowserSession` ou `UrlContentFetcher` de `src/services/browser/`) para abrir a URL e extrair os resultados da página (títulos, links, snippets).
+    *   A extração de resultados da página HTML pode requerer novas utilities em `src/utils` para parsing de HTML de resultados de busca.
+*   **Prompt de Delegação para Modo Code (Implementação da Ferramenta `webSearchTool.ts`):**
+    ```
+    Tarefa: Implementar a nova ferramenta Roo 'web_search'.
+
+    Contexto: Esta ferramenta permitirá ao LLM realizar buscas na web e obter uma lista de resultados.
+
+    Instruções:
+    1.  Crie o arquivo `src/core/tools/webSearchTool.ts`.
+    2.  Implemente a função principal da ferramenta (ex: `webSearchTool`) que recebe `cline: Task`, `block: ToolUse`, `askApproval`, etc.
+    3.  Extraia os parâmetros `query`, `engine` (opcional), `num_results` (opcional) do `block.params` usando o `webSearchParamsSchema` definido anteriormente.
+    4.  Lógica de Execução:
+        a.  Acesse as configurações da API do Roo (`cline.apiConfiguration`) para verificar se há chaves/configurações para os motores de busca (`engine`) especificados (ex: Jina, Serper, Brave).
+        b.  Se um motor com API configurada for utilizável, faça a chamada à API correspondente e formate os resultados (título, link, snippet).
+        c.  Como fallback, ou se nenhum motor específico for solicitado/configurado, construa uma URL de busca para um motor padrão (ex: Google).
+        d.  Utilize/adapte a lógica de `src/services/browser/UrlContentFetcher.ts` ou `BrowserSession.ts` para buscar a página de resultados.
+        e.  Implemente ou utilize utilities em `src/utils` para fazer o parsing do HTML da página de resultados e extrair os `num_results` principais (títulos, links, snippets).
+        f.  Formate os resultados como uma string ou um array de objetos.
+    5.  Use `askApproval` para apresentar um resumo dos resultados encontrados antes de retorná-los completamente.
+    6.  Use `pushToolResult` para enviar os resultados formatados.
+    7.  Implemente tratamento de erros robusto.
+    ```
+*   **Prompt de Delegação para Modo Code (Prompt da Ferramenta `web-search.ts`):**
+    ```
+    Tarefa: Criar o arquivo de prompt para a ferramenta 'web_search'.
+
+    Contexto: A ferramenta 'web_search' foi implementada e precisa de sua descrição para o LLM.
+
+    Instruções:
+    1.  Crie o arquivo `src/core/prompts/tools/web-search.ts`.
+    2.  Exporte uma função `getWebSearchDescription(args: ToolArgs): string`.
+    3.  Dentro desta função, retorne uma string Markdown descrevendo a ferramenta 'web_search':
+        *   Nome da ferramenta: `## web_search`
+        *   Descrição: "Realiza uma busca na web usando um motor de busca. Retorna uma lista de resultados, cada um contendo título, link e um breve snippet. Pode usar APIs de busca específicas (como Jina, Serper, Brave) se configuradas pelo usuário, ou recorrer a uma busca genérica em motores como Google/DuckDuckGo."
+        *   Parâmetros:
+            *   `query: string` (obrigatório): O termo ou pergunta da busca.
+            *   `engine?: string` (opcional): O motor de busca preferido (ex: "google", "brave", "jina", "serper"). Se omitido ou não configurado, um fallback será usado.
+            *   `num_results?: number` (opcional, default: 5): O número máximo de resultados a serem retornados.
+        *   Exemplo de Uso XML.
+    ```
+
+### Subtarefa 2.2: Implementar Ferramenta `extract_page_content`
+*   **Lógica Principal:** Usar `UrlContentFetcher` ou `BrowserSession` para obter o HTML da URL. Utilizar bibliotecas de parsing HTML (como `jsdom` ou `cheerio`, se já usadas no projeto, ou adicioná-las) e algoritmos de extração de conteúdo principal (ex: readability.js, ou heurísticas) para limpar boilerplate.
+*   *(Prompts de delegação similares ao 2.1, adaptados para `extract_page_content`)*
+
+### Subtarefa 2.3: Implementar Ferramenta `extract_document_content`
+*   **Lógica Principal:** Para URLs, baixar o arquivo. Para arquivos locais, ler diretamente. Usar bibliotecas como `pdf-parse` para PDF, `mammoth` para DOCX. TXT é leitura direta.
+*   *(Prompts de delegação similares ao 2.1, adaptados para `extract_document_content`)*
+
+### Subtarefa 2.4: Implementar Ferramenta `search_structured_data`
+*   **Lógica Principal:** Ler o arquivo (JSON, CSV). Para JSON/JSONL, aplicar filtros baseados em `query` e `criteria` (pode usar JSONPath ou filtragem programática). Para CSV, parsear e filtrar linhas/colunas.
+*   *(Prompts de delegação similares ao 2.1, adaptados para `search_structured_data`)*
+
+### Subtarefa 2.5: Implementar Ferramenta `search_code_repositories`
+*   **Lógica Principal:** Interagir com a API da plataforma especificada (inicialmente GitHub). Requer gerenciamento de chaves de API (ver Fase 5).
+*   *(Prompts de delegação similares ao 2.1, adaptados para `search_code_repositories`)*
+
+### Subtarefa 2.6: Implementar Ferramenta `get_repository_file_content`
+*   **Lógica Principal:** Interagir com a API da plataforma para buscar o conteúdo do arquivo. Requer gerenciamento de chaves de API.
+*   *(Prompts de delegação similares ao 2.1, adaptados para `get_repository_file_content`)*
+
+### Subtarefa 2.7: (Opcional) Implementar Ferramenta `process_text_content`
+*   **Lógica Principal:** Implementar funções para cada `operation` (ex: `fixMarkdown`, `removeDuplicateLines`) em `src/utils/text_processing_utils.ts` e chamá-las com base no parâmetro.
+*   *(Prompts de delegação similares ao 2.1, adaptados para `process_text_content`)*
+
+## Fase 3: Implementação do Novo Modo `deep-research`
+
+### Subtarefa 3.1: Configurar o Modo `deep-research`
+*   **Descrição:** Adicionar a definição formal do modo ao sistema Roo.
+*   **Arquivo a Modificar:** `src/shared/modes.ts`.
+*   **Ações:**
+    1.  Adicionar um novo objeto à lista de modos:
+        ```typescript
+        {
+            slug: "deep-research",
+            name: "🔬 Deep Research",
+            roleDefinition: "Você é Roo, um especialista em conduzir pesquisas profundas e exaustivas...", // Completo conforme plano de arquitetura
+            whenToUse: "Quando o usuário solicitar uma pesquisa complexa que envolva coleta, análise e síntese de informações de múltiplas fontes de forma iterativa (ex: pesquisa de NCM, análise de repositórios, investigação técnica).",
+            groups: [
+                "deepSearchTools", // O novo grupo
+                "read",
+                "browser",
+                "ask",
+                "completion",
+                // "edit", // Se for salvar relatórios
+            ],
+            customInstructions: "Você seguirá um processo metodológico de pesquisa...", // Placeholder, o prompt principal virá abaixo
+        }
+        ```
+*   **Prompt de Delegação para Modo Code:**
+    ```
+    Tarefa: Configurar o novo modo 'deep-research'.
+
+    Contexto: Estamos adicionando um modo especializado para pesquisa profunda.
+
+    Instruções:
+    1.  Abra o arquivo `src/shared/modes.ts`.
+    2.  Adicione um novo objeto de configuração de modo à lista de modos com os seguintes campos:
+        *   `slug: "deep-research"`
+        *   `name: "🔬 Deep Research"`
+        *   `roleDefinition: "Você é Roo, um especialista em conduzir pesquisas profundas e exaustivas. Sua missão é seguir um processo metodológico para encontrar, analisar e sintetizar informações de diversas fontes para responder à solicitação do usuário."`
+        *   `whenToUse: "Quando o usuário solicitar uma pesquisa complexa que envolva coleta, análise e síntese de informações de múltiplas fontes de forma iterativa (ex: pesquisa de NCM, análise de repositórios, investigação técnica)."`
+        *   `groups: ["deepSearchTools", "read", "browser", "ask", "completion"]` (adicione "edit" se a escrita de arquivos for permitida neste modo).
+        *   `customInstructions: "O prompt detalhado para este modo será fornecido separadamente e gerenciado pelo sistema de prompts. Este campo pode conter instruções de alto nível ou ser deixado para o prompt principal."`
+    ```
+
+### Subtarefa 3.2: Desenvolver o Prompt de Sistema Detalhado para o Modo `deep-research`
+*   **Descrição:** Criar o conteúdo do prompt de sistema que guiará o LLM. Este é o "agente".
+*   **Local:** Este prompt pode ser um arquivo `.md` dedicado em `src/core/prompts/modes/deep-research.md` e carregado dinamicamente, ou uma string longa em `src/shared/modes.ts` (na propriedade `customInstructions` do modo, ou referenciado por ela). A abordagem de arquivo `.md` é mais manutenível.
+*   **Conteúdo:** Conforme detalhado na Seção 2.3 do plano de arquitetura (`deep_research_native_implementation_plan.md`), cobrindo as fases de Análise, Planejamento, Coleta Iterativa, Análise/Síntese, Refinamento/Iteração, Relatório e Apresentação, com ênfase no uso das ferramentas Roo e na documentação do "thinking".
+*   **Prompt de Delegação para Modo Code (para criar o arquivo de prompt):**
+    ```
+    Tarefa: Criar o arquivo de prompt de sistema para o modo 'deep-research'.
+
+    Contexto: O modo 'deep-research' precisa de um prompt de sistema detalhado que atue como o "agente" de pesquisa, guiando o LLM.
+
+    Instruções:
+    1.  Crie um novo arquivo: `src/core/prompts/modes/deep-research.md`.
+    2.  Preencha este arquivo com o seguinte conteúdo Markdown, que define o workflow de pesquisa profunda para o LLM (adaptar e expandir conforme necessário):
+
+        ```markdown
+        Você é Roo, operando no modo "Pesquisa Profunda". Sua missão é executar pesquisas complexas e exaustivas para responder à solicitação do usuário. Siga rigorosamente o processo abaixo:
+
+        **PROCESSO DE PESQUISA PROFUNDA ITERATIVA:**
+
+        **Fase 1: Análise e Decomposição da Solicitação**
+        1.  **Entenda o Objetivo:** Qual é a pergunta principal que o usuário quer responder? Quais são os entregáveis esperados?
+        2.  **Identifique Entidades Chave:** Quais são os principais termos, conceitos, produtos, tecnologias, etc., mencionados?
+        3.  **Determine o Escopo:** A pesquisa é ampla ou focada? Existem restrições (ex: período de tempo, fontes específicas)?
+        4.  **Formule Sub-Perguntas:** Se a solicitação for complexa, divida-a em perguntas menores e mais gerenciáveis.
+
+        **Fase 2: Planejamento Inicial da Pesquisa**
+        1.  **Identifique Tipos de Fontes:** Onde a informação provavelmente reside? (Ex: Documentação oficial, artigos técnicos, repositórios de código, bases de dados internas, fóruns, notícias).
+        2.  **Selecione Ferramentas Iniciais:** Com base nos tipos de fontes, quais ferramentas Roo são mais apropriadas para começar? (Ex: `web_search` para uma visão geral, `search_code_repositories` se for sobre código, `search_structured_data` para dados internos).
+        3.  **Formule Consultas Iniciais:** Crie as primeiras consultas para as ferramentas selecionadas.
+
+        **Fase 3: Coleta Iterativa e Análise de Dados**
+        *   **PARA CADA ETAPA DE COLETA:**
+            1.  **Execute a Ferramenta:** Chame a ferramenta Roo selecionada com a consulta apropriada. Exemplo: `<web_search><query>...</query></web_search>`.
+            2.  **Analise o Resultado:**
+                *   O resultado é relevante para a pergunta/sub-pergunta atual?
+                *   A informação é suficiente? É de uma fonte confiável?
+                *   O resultado abre novas linhas de investigação ou sugere outras fontes/ferramentas?
+            3.  **Extraia Informação Chave:** Copie e guarde os trechos mais importantes do resultado.
+            4.  **Refine ou Expanda:**
+                *   Se o resultado for muito amplo, refine sua consulta e tente novamente com a mesma ferramenta ou uma mais específica.
+                *   Se o resultado for muito limitado, amplie sua consulta ou tente uma ferramenta diferente.
+                *   Se encontrar URLs para documentos ou páginas relevantes, use `extract_page_content` ou `extract_document_content`.
+                *   Se encontrar repositórios, use `get_repository_file_content` para explorar arquivos específicos.
+            5.  **Necessidade de Esclarecimento:** Se você encontrar ambiguidades, ou se precisar de mais contexto do usuário para prosseguir ou refinar o escopo, use a ferramenta `

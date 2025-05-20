@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorador de Árvore NCM</title>
+    <style>
+        :root {
+            --background-color: #ffffff;
+            --text-color: #333333;
+            --folder-color: #dcb67a;
+            --folder-icon-color: var(--text-color); /* Cor unificada para ícones flat */
+            --file-icon-color: #888888;   /* Cor unificada para ícones flat */
+            --hover-background: #e8e8e8;
+            --selected-background: #cce5ff;
+            --line-color: #d8d8d8;
+            --indent-size: 20px;
+            --node-height: 24px;
+            --icon-size: 16px; /* Tamanho base para SVGs */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-size: 14px;
+        }
+
+        .file-explorer {
+            width: 400px; /* Ajustado para acomodar descrições mais longas */
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            overflow: auto;
+            max-height: 600px;
+        }
+
+        .tree-container {
+            padding: 8px 0;
+        }
+
+        .tree-node {
+            display: flex;
+            align-items: center;
+            height: var(--node-height);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .tree-node:hover {
+            background-color: var(--hover-background);
+        }
+
+        .tree-node.selected {
+            background-color: var(--selected-background);
+        }
+
+        .tree-node-content {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            padding-left: 4px;
+        }
+
+        .tree-indent {
+            width: var(--indent-size);
+            height: 100%;
+            position: relative;
+        }
+
+        /* Linhas verticais para cada nível de indentação */
+        .tree-indent::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            height: 100%;
+            width: 1px;
+            background-color: var(--line-color);
+        }
+
+        /* Linhas horizontais para conectar ao item */
+        .tree-indent.has-connector::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50%;
+            height: 1px;
+            background-color: var(--line-color);
+        }
+
+        /* Ajuste para o último item de um grupo */
+        .tree-indent.last-child::before {
+            height: 50%;
+        }
+
+        .tree-toggle {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 4px;
+            color: var(--folder-icon-color); /* Usar a cor do ícone */
+            cursor: pointer;
+        }
+
+        .tree-icon {
+            width: var(--icon-size);
+            height: var(--icon-size);
+            margin-right: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--folder-icon-color); /* Cor base para ícones de nó */
+        }
+
+        .tree-icon.file-icon-type { /* Classe específica para ícone de arquivo */
+            color: var(--file-icon-color);
+        }
+
+        .tree-toggle svg {
+            width: 100%;
+            height: 100%;
+            transition: transform 0.15s ease;
+        }
+
+        .tree-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .tree-toggle.expanded svg {
+            transform: rotate(90deg);
+        }
+
+        /* Remove a rotação para ícones de nó folha (quadrado) */
+        .tree-toggle-leaf svg {
+            transform: none !important; /* Garante que não haverá rotação */
+        }
+
+        /* Estilo para o último item de cada nível */
+        .tree-node.last-in-level .tree-indent:last-of-type::before {
+            height: 50%;
+        }
+
+        .tree-children {
+            display: none; /* Ocultar por padrão */
+        }
+
+        .tree-children.expanded {
+            display: block; /* Mostrar quando expandido */
+        }
+    </style>
+</head>
+<body>
+    <div class="file-explorer">
+        <div class="tree-container">
+            <!-- Seção I: Animais vivos e produtos do reino animal -->
+            <div class="tree-node">
+                <div class="tree-node-content">
+                    <div class="tree-toggle expanded">
+                        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 4l4 4-4 4V4z"/></svg>
+                    </div>
+                    <div class="tree-icon">
+                        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 2.5A1.5 1.5 0 0 1 3 1h2.586a1.5 1.5 0 0 1 1.06.44l.915.914A1.5 1.5 0 0 0 8.62 3H13a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 13 13H3a1.5 1.5 0 0 1-1.5-1.5v-9zM3 2a.5.5 0 0 0-.5.5V12a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V4.5a.5.5 0 0 0-.5-.5H8.62a.5.5 0 0 1-.354-.146L7.147 3.236A.5.5 0 0 0 6.793 3H3z"/></svg>
+                    </div>
+                    <div class="tree-label">Seção I</div>
+                </div>
+            </div>
+
+            <!-- Filhos da Seção I -->
+            <div class="tree-children expanded">
+                <!-- Capítulo 01 -->
+                <div class="tree-node">
+                    <div class="tree-indent has-connector"></div>
+                    <div class="tree-node-content">
+                        <div class="tree-toggle expanded">
+                            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 4l4 4-4 4V4z"/></svg>
+                        </div>
+                        <div class="tree-icon">
+                             <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 2.5A1.5 1.5 0 0 1 3 1h2.586a1.5 1.5 0 0 1 1.06.44l.915.914A1.5 1.5 0 0 0 8.62 3H13a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 13 13H3a1.5 1.5 0 0 1-1.5-1.5v-9zM3 2a.5.5 0 0 0-.5.5V12a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V4.5a.5.5 0 0 0-.5-.5H8.62a.5.5 0 0 1-.354-.146L7.147 3.236A.5.5 0 0 0 6.793 3H3z"/></svg>
+                        </div>
+                        <div class="tree-label">Capítulo 01</div>
+                    </div>
+                </div>
+
+                <!-- Filhos do Capítulo 01 -->
+                <div class="tree-children expanded">
+                    <!-- Posição 0101 -->
+                    <div class="tree-node">
+                        <div class="tree-indent"></div>
+                        <div class="tree-indent has-connector"></div>
+                        <div class="tree-node-content">
+                            <div class="tree-toggle expanded">
+                                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 4l4 4-4 4V4z"/></svg>
+                            </div>
+                            <div class="tree-icon">
+                               <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 2.5A1.5 1.5 0 0 1 3 1h2.586a1.5 1.5 0 0 1 1.06.44l.915.914A1.5 1.5 0 0 0 8.62 3H13a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 13 13H3a1.5 1.5 0 0 1-1.5-1.5v-9zM3 2a.5.5 0 0 0-.5.5V12a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V4.5a.5.5 0 0 0-.5-.5H8.62a.5.5 0 0 1-.354-.146L7.147 3.236A.5.5 0 0 0 6.793 3H3z"/></svg>
+                            </div>
+                            <div class="tree-label">Posição 0101</div>
+                        </div>
+                    </div>
+
+                    <!-- Filhos da Posição 0101 -->
+                    <div class="tree-children expanded">
+                        <!-- Subposição 0101.21.00 -->
+                        <div class="tree-node">
+                            <div class="tree-indent"></div>
+                            <div class="tree-indent"></div>
+                            <div class="tree-indent has-connector"></div>
+                            <div class="tree-node-content">
+                                <div class="tree-toggle tree-toggle-leaf">
+                                    <svg viewBox="0 0 16 16" fill="currentColor"><rect x="5" y="5" width="6" height="6"/></svg>
+                                </div>
+                                <div class="tree-icon file-icon-type">
+                                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3.5 1A1.5 1.5 0 0 0 2 2.5v11A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5v-9L10 .5H3.5A1.5 1.5 0 0 0 2 2.5zM10 1.5L13.5 5H10V1.5zM3 2.5a.5.5 0 0 1 .5-.5H9v4h4v7.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-11z"/></svg>
+                                </div>
+                                <div class="tree-label">Subposição 0101.21.00</div>
+                            </div>
+                        </div>
+
+                        <!-- Subposição 0101.29.00 -->
+                        <div class="tree-node last-in-level">
+                            <div class="tree-indent"></div>
+                            <div class="tree-indent"></div>
+                            <div class="tree-indent has-connector"></div>
+                            <div class="tree-node-content">
+                                <div class="tree-toggle tree-toggle-leaf">
+                                    <svg viewBox="0 0 16 16" fill="currentColor"><rect x="5" y="5" width="6" height="6"/></svg>
+                                </div>
+                                <div class="tree-icon file-icon-type">
+                                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3.5 1A1.5 1.5 0 0 0 2 2.5v11A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5v-9L10 .5H3.5A1.5 1.5 0 0 0 2 2.5zM10 1.5L13.5 5H10V1.5zM3 2.5a.5.5 0 0 1 .5-.5H9v4h4v7.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-11z"/></svg>
+                                </div>
+                                <div class="tree-label">Subposição 0101.29.00</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Posição 0102 -->
+                    <div class="tree-node last-in-level">
+                        <div class="tree-indent"></div>
+                        <div class="tree-indent has-connector"></div>
+                        <div class="tree-node-content">
+                            <div class="tree-toggle">
+                                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 4l4 4-4 4V4z"/></svg>
+                            </div>
+                            <div class="tree-icon">
+                                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 2.5A1.5 1.5 0 0 1 3 1h2.586a1.5 1.5 0 0 1 1.06.44l.915.914A1.5 1.5 0 0 0 8.62 3H13a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 13 13H3a1.5 1.5 0 0 1-1.5-1.5v-9zM3 2a.5.5 0 0 0-.5.5V12a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V4.5a.5.5 0 0 0-.5-.5H8.62a.5.5 0 0 1-.354-.146L7.147 3.236A.5.5 0 0 0 6.793 3H3z"/></svg>
+                            </div>
+                            <div class="tree-label">Posição 0102</div>
+                        </div>
+                    </div>
+                    <!-- Filhos da Posição 0102 (inicialmente ocultos) -->
+                    <div class="tree-children">
+                        <!-- Exemplo de subposição para 0102, se houver -->
+                        <!--
+                        <div class="tree-node">
+                            <div class="tree-indent"></div>
+                            <div class="tree-indent"></div>
+                            <div class="tree-indent has-connector"></div>
+                            <div class="tree-node-content">
+                                <div class="tree-toggle" style="visibility: hidden;">
+                                    <svg class="icon-plus" viewBox="0 0 16 16" fill="currentColor"><path d="M12.5 8h-9M8 3.5v9"/></svg>
+                                </div>
+                                <div class="tree-icon file-icon-type">
+                                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3.5 1A1.5 1.5 0 0 0 2 2.5v11A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5v-9L10 .5H3.5A1.5 1.5 0 0 0 2 2.5zM10 1.5L13.5 5H10V1.5zM3 2.5a.5.5 0 0 1 .5-.5H9v4h4v7.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-11z"/></svg>
+                                </div>
+                                <div class="tree-label">Subposição 0102.XX.XX</div>
+                            </div>
+                        </div>
+                        -->
+                    </div>
+                </div>
+
+                <!-- Capítulo 02 -->
+                <div class="tree-node last-in-level">
+                    <div class="tree-indent has-connector"></div>
+                    <div class="tree-node-content">
+                        <div class="tree-toggle">
+                            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 4l4 4-4 4V4z"/></svg>
+                        </div>
+                        <div class="tree-icon">
+                            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 2.5A1.5 1.5 0 0 1 3 1h2.586a1.5 1.5 0 0 1 1.06.44l.915.914A1.5 1.5 0 0 0 8.62 3H13a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 13 13H3a1.5 1.5 0 0 1-1.5-1.5v-9zM3 2a.5.5 0 0 0-.5.5V12a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V4.5a.5.5 0 0 0-.5-.5H8.62a.5.5 0 0 1-.354-.146L7.147 3.236A.5.5 0 0 0 6.793 3H3z"/></svg>
+                        </div>
+                        <div class="tree-label">Capítulo 02</div>
+                    </div>
+                </div>
+                <!-- Filhos do Capítulo 02 (inicialmente ocultos) -->
+                <div class="tree-children">
+                    <!-- Exemplo de posição para 02, se houver -->
+                    <!--
+                    <div class="tree-node">
+                        <div class="tree-indent"></div>
+                        <div class="tree-indent has-connector"></div>
+                        <div class="tree-node-content">
+                            <div class="tree-toggle">+</div>
+                            <div class="tree-icon folder-icon"></div>
+                            <div class="tree-label">Posição 02XX: Exemplo</div>
+                        </div>
+                    </div>
+                    -->
+                </div>
+            </div>
+
+            <!-- Seção II: Produtos do reino vegetal (Exemplo mais complexo) -->
+            <div class="tree-node">
+                <div class="tree-node-content">
+                    <div class="tree-toggle">
+                        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 4l4 4-4 4V4z"/></svg>
+                    </div>
+                    <div class="tree-icon">
+                        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 2.5A1.5 1.5 0 0 1 3 1h2.586a1.5 1.5 0 0 1 1.06.44l.915.914A1.5 1.5 0 0 0 8.62 3H13a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 13 13H3a1.5 1.5 0 0 1-1.5-1.5v-9zM3 2a.5.5 0 0 0-.5.5V12a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V4.5a.5.5 0 0 0-.5-.5H8.62a.5.5 0 0 1-.354-.146L7.147 3.236A.5.5 0 0 0 6.793 3H3z"/></svg>
+                    </div>
+                    <div class="tree-label">Seção II</div>
+                </div>
+            </div>
+            <div class="tree-children">
+                <!-- Capítulo 06 -->
+                <div class="tree-node">
+                    <div class="tree-indent has-connector"></div>
+                    <div class="tree-node-content">
+                        <div class="tree-toggle">
+                            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 4l4 4-4 4V4z"/></svg>
+                        </div>
+                        <div class="tree-icon">
+                             <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 2.5A1.5 1.5 0 0 1 3 1h2.586a1.5 1.5 0 0 1 1.06.44l.915.914A1.5 1.5 0 0 0 8.62 3H13a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 13 13H3a1.5 1.5 0 0 1-1.5-1.5v-9zM3 2a.5.5 0 0 0-.5.5V12a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V4.5a.5.5 0 0 0-.5-.5H8.62a.5.5 0 0 1-.354-.146L7.147 3.236A.5.5 0 0 0 6.793 3H3z"/></svg>
+                        </div>
+                        <div class="tree-label">Capítulo 06 - Plantas vivas e produtos de floricultura</div>
+                    </div>
+                </div>
+                <div class="tree-children">
+                    <!-- Posição 0601 -->
+                    <div class="tree-node">
+                        <div class="tree-indent"></div>
+                        <div class="tree-indent has-connector"></div>
+                        <div class="tree-node-content">
+                            <div class="tree-toggle">
+                                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 4l4 4-4 4V4z"/></svg>
+                            </div>
+                            <div class="tree-icon">
+                               <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 2.5A1.5 1.5 0 0 1 3 1h2.586a1.5 1.5 0 0 1 1.06.44l.915.914A1.5 1.5 0 0 0 8.62 3H13a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 13 13H3a1.5 1.5 0 0 1-1.5-1.5v-9zM3 2a.5.5 0 0 0-.5.5V12a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V4.5a.5.5 0 0 0-.5-.5H8.62a.5.5 0 0 1-.354-.146L7.147 3.236A.5.5 0 0 0 6.793 3H3z"/></svg>
+                            </div>
+                            <div class="tree-label">Posição 0601 - Bulbos, tubérculos, etc.</div>
+                        </div>
+                    </div>
+                    <div class="tree-children">
+                        <!-- Subposição 0601.10.00 -->
+                        <div class="tree-node">
+                            <div class="tree-indent"></div>
+                            <div class="tree-indent"></div>
+                            <div class="tree-indent has-connector"></div>
+                            <div class="tree-node-content">
+                                <div class="tree-toggle tree-toggle-leaf">
+                                    <svg viewBox="0 0 16 16" fill="currentColor"><rect x="5" y="5" width="6" height="6"/></svg>
+                                </div>
+                                <div class="tree-icon file-icon-type">
+                                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3.5 1A1.5 1.5 0 0 0 2 2.5v11A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5v-9L10 .5H3.5A1.5 1.5 0 0 0 2 2.5zM10 1.5L13.5 5H10V1.5zM3 2.5a.5.5 0 0 1 .5-.5H9v4h4v7.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-11z"/></svg>
+                                </div>
+                                <div class="tree-label">Subposição 0601.10.00 - Em estado de dormência</div>
+                            </div>
+                        </div>
+                        <!-- Subposição 0601.20.00 -->
+                        <div class="tree-node last-in-level">
+                            <div class="tree-indent"></div>
+                            <div class="tree-indent"></div>
+                            <div class="tree-indent has-connector"></div>
+                            <div class="tree-node-content">
+                                <div class="tree-toggle tree-toggle-leaf">
+                                    <svg viewBox="0 0 16 16" fill="currentColor"><rect x="5" y="5" width="6" height="6"/></svg>
+                                </div>
+                                <div class="tree-icon file-icon-type">
+                                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3.5 1A1.5 1.5 0 0 0 2 2.5v11A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5v-9L10 .5H3.5A1.5 1.5 0 0 0 2 2.5zM10 1.5L13.5 5H10V1.5zM3 2.5a.5.5 0 0 1 .5-.5H9v4h4v7.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-11z"/></svg>
+                                </div>
+                                <div class="tree-label">Subposição 0601.20.00 - Em vegetação ou em flor</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Posição 0602 -->
+                    <div class="tree-node last-in-level">
+                        <div class="tree-indent"></div>
+                        <div class="tree-indent has-connector"></div>
+                        <div class="tree-node-content">
+                            <div class="tree-toggle">
+                                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 4l4 4-4 4V4z"/></svg>
+                            </div>
+                            <div class="tree-icon">
+                               <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 2.5A1.5 1.5 0 0 1 3 1h2.586a1.5 1.5 0 0 1 1.06.44l.915.914A1.5 1.5 0 0 0 8.62 3H13a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 13 13H3a1.5 1.5 0 0 1-1.5-1.5v-9zM3 2a.5.5 0 0 0-.5.5V12a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V4.5a.5.5 0 0 0-.5-.5H8.62a.5.5 0 0 1-.354-.146L7.147 3.236A.5.5 0 0 0 6.793 3H3z"/></svg>
+                            </div>
+                            <div class="tree-label">Posição 0602 - Outras plantas vivas</div>
+                        </div>
+                    </div>
+                    <div class="tree-children">
+                        <!-- Subposição 0602.10.00 -->
+                        <div class="tree-node">
+                            <div class="tree-indent"></div>
+                            <div class="tree-indent"></div>
+                            <div class="tree-indent has-connector"></div>
+                            <div class="tree-node-content">
+                                <div class="tree-toggle tree-toggle-leaf">
+                                    <svg viewBox="0 0 16 16" fill="currentColor"><rect x="5" y="5" width="6" height="6"/></svg>
+                                </div>
+                                <div class="tree-icon file-icon-type">
+                                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3.5 1A1.5 1.5 0 0 0 2 2.5v11A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5v-9L10 .5H3.5A1.5 1.5 0 0 0 2 2.5zM10 1.5L13.5 5H10V1.5zM3 2.5a.5.5 0 0 1 .5-.5H9v4h4v7.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-11z"/></svg>
+                                </div>
+                                <div class="tree-label">Subposição 0602.10.00 - Estacas não enraizadas e enxertos</div>
+                            </div>
+                        </div>
+                        <!-- Subposição 0602.90 -->
+                        <div class="tree-node last-in-level">
+                            <div class="tree-indent"></div>
+                            <div class="tree-indent"></div>
+                            <div class="tree-indent has-connector"></div>
+                            <div class="tree-node-content">
+                                <div class="tree-toggle"> <!-- Este pode ter filhos (Itens) -->
+                                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 4l4 4-4 4V4z"/></svg>
+                                </div>
+                                <div class="tree-icon">
+                                   <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 2.5A1.5 1.5 0 0 1 3 1h2.586a1.5 1.5 0 0 1 1.06.44l.915.914A1.5 1.5 0 0 0 8.62 3H13a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 13 13H3a1.5 1.5 0 0 1-1.5-1.5v-9zM3 2a.5.5 0 0 0-.5.5V12a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V4.5a.5.5 0 0 0-.5-.5H8.62a.5.5 0 0 1-.354-.146L7.147 3.236A.5.5 0 0 0 6.793 3H3z"/></svg>
+                                </div>
+                                <div class="tree-label">Subposição 0602.90 - Outras</div>
+                            </div>
+                        </div>
+                        <div class="tree-children">
+                            <!-- Item 0602.90.1 -->
+                            <div class="tree-node">
+                                <div class="tree-indent"></div>
+                                <div class="tree-indent"></div>
+                                <div class="tree-indent"></div>
+                                <div class="tree-indent has-connector"></div>
+                                <div class="tree-node-content">
+                                    <div class="tree-toggle"> <!-- Este pode ter filhos (Subitens) -->
+                                        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 4l4 4-4 4V4z"/></svg>
+                                    </div>
+                                    <div class="tree-icon">
+                                       <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 2.5A1.5 1.5 0 0 1 3 1h2.586a1.5 1.5 0 0 1 1.06.44l.915.914A1.5 1.5 0 0 0 8.62 3H13a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 13 13H3a1.5 1.5 0 0 1-1.5-1.5v-9zM3 2a.5.5 0 0 0-.5.5V12a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V4.5a.5.5 0 0 0-.5-.5H8.62a.5.5 0 0 1-.354-.146L7.147 3.236A.5.5 0 0 0 6.793 3H3z"/></svg>
+                                    </div>
+                                    <div class="tree-label">Item 0602.90.1 - Mudas de orquídea</div>
+                                </div>
+                            </div>
+                            <div class="tree-children">
+                                <!-- Subitem 0602.90.11 -->
+                                <div class="tree-node last-in-level">
+                                    <div class="tree-indent"></div>
+                                    <div class="tree-indent"></div>
+                                    <div class="tree-indent"></div>
+                                    <div class="tree-indent"></div>
+                                    <div class="tree-indent has-connector"></div>
+                                    <div class="tree-node-content">
+                                        <div class="tree-toggle tree-toggle-leaf">
+                                            <svg viewBox="0 0 16 16" fill="currentColor"><rect x="5" y="5" width="6" height="6"/></svg>
+                                        </div>
+                                        <div class="tree-icon file-icon-type">
+                                            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3.5 1A1.5 1.5 0 0 0 2 2.5v11A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5v-9L10 .5H3.5A1.5 1.5 0 0 0 2 2.5zM10 1.5L13.5 5H10V1.5zM3 2.5a.5.5 0 0 1 .5-.5H9v4h4v7.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-11z"/></svg>
+                                        </div>
+                                        <div class="tree-label">Subitem 0602.90.11 - Em recipientes com meio de cultura</div>
+                                    </div>
+                                </div>
+                            </div>
+                             <!-- Item 0602.90.2 -->
+                            <div class="tree-node last-in-level"> <!-- Marcando como último no nível dos Itens -->
+                                <div class="tree-indent"></div>
+                                <div class="tree-indent"></div>
+                                <div class="tree-indent"></div>
+                                <div class="tree-indent has-connector"></div>
+                                <div class="tree-node-content">
+                                    <div class="tree-toggle tree-toggle-leaf">
+                                        <svg viewBox="0 0 16 16" fill="currentColor"><rect x="5" y="5" width="6" height="6"/></svg>
+                                    </div>
+                                    <div class="tree-icon file-icon-type">
+                                        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3.5 1A1.5 1.5 0 0 0 2 2.5v11A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5v-9L10 .5H3.5A1.5 1.5 0 0 0 2 2.5zM10 1.5L13.5 5H10V1.5zM3 2.5a.5.5 0 0 1 .5-.5H9v4h4v7.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-11z"/></svg>
+                                    </div>
+                                    <div class="tree-label">Item 0602.90.2 - Mudas de videira</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Capítulo 07 -->
+                <div class="tree-node last-in-level">
+                    <div class="tree-indent has-connector"></div>
+                    <div class="tree-node-content">
+                        <div class="tree-toggle tree-toggle-leaf"> <!-- Capítulo sem filhos neste exemplo -->
+                             <svg viewBox="0 0 16 16" fill="currentColor"><rect x="5" y="5" width="6" height="6"/></svg>
+                        </div>
+                        <div class="tree-icon">
+                             <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 2.5A1.5 1.5 0 0 1 3 1h2.586a1.5 1.5 0 0 1 1.06.44l.915.914A1.5 1.5 0 0 0 8.62 3H13a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 13 13H3a1.5 1.5 0 0 1-1.5-1.5v-9zM3 2a.5.5 0 0 0-.5.5V12a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V4.5a.5.5 0 0 0-.5-.5H8.62a.5.5 0 0 1-.354-.146L7.147 3.236A.5.5 0 0 0 6.793 3H3z"/></svg>
+                        </div>
+                        <div class="tree-label">Capítulo 07 - Produtos hortícolas, plantas, raízes e tubérculos, comestíveis</div>
+                    </div>
+                </div>
+                <!-- Filhos do Capítulo 07 (vazio neste exemplo) -->
+                <div class="tree-children"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Script para expandir/recolher pastas ao clicar
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggles = document.querySelectorAll('.tree-toggle');
+
+            toggles.forEach(toggle => {
+                toggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+
+                    // Encontra o nó pai e o próximo elemento irmão (que deve ser o container de filhos)
+                    const parentNode = this.closest('.tree-node');
+                    const childrenContainer = parentNode.nextElementSibling;
+
+                    if (childrenContainer && childrenContainer.classList.contains('tree-children')) {
+                        // Alterna a classe expanded
+                        this.classList.toggle('expanded');
+                        childrenContainer.classList.toggle('expanded');
+
+                        // A troca de ícones de toggle (+/-) agora é feita por CSS
+                        // com base na classe 'expanded' no '.tree-toggle'
+                    }
+                });
+
+                // Também adiciona o evento de clique ao nó inteiro para expandir/recolher
+                // e para seleção
+                const parentNode = toggle.closest('.tree-node');
+                if (parentNode) { // Adiciona verificação para garantir que parentNode não é null
+                    parentNode.addEventListener('click', function(e) {
+                        // Se o clique foi diretamente no toggle, o evento do toggle já cuidou disso.
+                        if (e.target.closest('.tree-toggle')) {
+                            // Adiciona a classe selected e remove de outros nós
+                            document.querySelectorAll('.tree-node.selected').forEach(node => {
+                                node.classList.remove('selected');
+                            });
+                            this.classList.add('selected');
+                            return;
+                        }
+
+                        // Simula um clique no toggle, se existir e for visível
+                        const treeToggle = this.querySelector('.tree-toggle');
+                        if (treeToggle && treeToggle.style.visibility !== 'hidden') {
+                            // Apenas alterna as classes, o CSS cuida da visibilidade do SVG
+                            treeToggle.classList.toggle('expanded');
+                            const childrenContainer = this.nextElementSibling;
+                            if (childrenContainer && childrenContainer.classList.contains('tree-children')) {
+                                childrenContainer.classList.toggle('expanded');
+                            }
+                        }
+
+                        // Adiciona a classe selected e remove de outros nós
+                        document.querySelectorAll('.tree-node.selected').forEach(node => {
+                            node.classList.remove('selected');
+                        });
+                        this.classList.add('selected');
+                    });
+                }
+            });
+
+            // Selecionar o primeiro nó por padrão, se houver
+            const firstNode = document.querySelector('.tree-node');
+            if (firstNode) {
+                firstNode.classList.add('selected');
+            }
+        });
+    </script>
+</body>
+</html>
