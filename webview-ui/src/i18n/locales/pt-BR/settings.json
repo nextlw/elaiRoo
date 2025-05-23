@@ -23,6 +23,7 @@
 	"sections": {
 		"providers": "Provedores",
 		"autoApprove": "Aprovação",
+		"search-api": "API de Busca",
 		"browser": "Navegador",
 		"checkpoints": "Checkpoints",
 		"notifications": "Notificações",
@@ -251,6 +252,37 @@
 			"low": "Baixo"
 		},
 		"setReasoningLevel": "Habilitar esforço de raciocínio"
+	},
+	"searchApiOptions": {
+		"apiProviderLabel": "Provedor de API"
+	},
+	"searchProviders": {
+		"jina": {
+			"name": "Jina",
+			"apiKeyLabel": "Chave de API",
+			"apiKeyDescription": "Insira sua Chave de API Jina."
+		},
+		"google": {
+			"name": "Google Custom Search",
+			"apiKeyLabel": "Chave de API",
+			"apiKeyDescription": "Insira sua Chave de API do Google Custom Search.",
+			"customSearchEngineIdLabel": "ID do Mecanismo de Busca Personalizado",
+			"customSearchEngineIdDescription": "Insira seu ID do Mecanismo de Busca Personalizado do Google."
+		},
+		"serper": {
+			"name": "Serper",
+			"apiKeyLabel": "Chave de API",
+			"apiKeyDescription": "Insira sua Chave de API Serper."
+		},
+		"brave": {
+			"name": "Brave Search",
+			"apiKeyLabel": "Chave de API",
+			"apiKeyDescription": "Insira sua Chave de API Brave Search."
+		},
+		"duckDuckGo": {
+			"name": "DuckDuckGo Fallback",
+			"description": "DuckDuckGo é usado como fallback quando outros provedores de busca não estão configurados ou falham."
+		}
 	},
 	"browser": {
 		"enable": {

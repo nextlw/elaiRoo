@@ -8,7 +8,7 @@ import { ClineProvider } from "../ClineProvider"
 import { ProviderSettingsEntry, ClineMessage, ExtensionMessage, ExtensionState } from "../../../shared/ExtensionMessage"
 import { setSoundEnabled } from "../../../utils/sound"
 import { setTtsEnabled } from "../../../utils/tts"
-import { defaultModeSlug } from "../../../shared/modes"
+// import { defaultModeSlug } from "../../../shared/modes"; // Removido pois não é usado e causa erro no mockState ajustado
 import { experimentDefault } from "../../../shared/experiments"
 import { ContextProxy } from "../../config/ContextProxy"
 import { Task, TaskOptions } from "../../task/Task"
@@ -246,9 +246,62 @@ describe("ClineProvider", () => {
 		jest.clearAllMocks()
 
 		// Mock context
-		const globalState: Record<string, string | undefined> = {
-			mode: "architect",
-			currentApiConfigName: "current-config",
+		const globalState: Record<string, any> = {
+			mode: "deepresearch",
+			currentApiConfigName: "current-config", // LLM config
+			currentSearchApiConfigName: "default-jina-config",
+			searchApiConfigurations: JSON.stringify([
+				// Array de SearchApiSettings (Meta + campos específicos)
+				{
+					id: "jina1",
+					name: "default-jina-config",
+					provider: "jina",
+					searchApiProviderName: "jina", // Discriminador
+					apiKey: "jina_cf9ea209bc9c4304acdb46536a8de134inoM3wimxNP77Cu0CegxfHUeC0Dp",
+					isEnabled: true,
+					searchEndpoint: "https://s.jina.ai/",
+					enableReranking: false,
+					rerankModel: "jina-reranker-v2-base-multilingual",
+					rerankEndpoint: "https://api.jina.ai/v1/rerank",
+					enableResultEmbeddings: false,
+					embeddingModel: "jina-embeddings-v3",
+					embeddingEndpoint: "https://api.jina.ai/v1/embeddings",
+					embeddingTaskForResult: "retrieval.passage",
+					embeddingDimensions: 1024,
+				},
+				{
+					id: "brave1",
+					name: "another-search-config",
+					provider: "brave_search",
+					searchApiProviderName: "brave_search", // Discriminador
+					apiKey: "test-brave-key",
+					isEnabled: true,
+				},
+				{
+					id: "google1",
+					name: "google-config",
+					provider: "google_custom_search",
+					searchApiProviderName: "google_custom_search", // Discriminador
+					apiKey: "test-google-key",
+					cxId: "test-cx", // Específico do Google
+					isEnabled: true,
+				},
+			]),
+			activeSearchApiSettings: JSON.stringify({
+				// Objeto SearchApiSettings (um dos tipos da união discriminada)
+				searchApiProviderName: "jina", // Campo discriminador
+				isEnabled: true,
+				apiKey: "jina_cf9ea209bc9c4304acdb46536a8de134inoM3wimxNP77Cu0CegxfHUeC0Dp",
+				searchEndpoint: "https://s.jina.ai/",
+				enableReranking: false,
+				rerankModel: "jina-reranker-v2-base-multilingual",
+				rerankEndpoint: "https://api.jina.ai/v1/rerank",
+				enableResultEmbeddings: false,
+				embeddingModel: "jina-embeddings-v3",
+				embeddingEndpoint: "https://api.jina.ai/v1/embeddings",
+				embeddingTaskForResult: "retrieval.passage",
+				embeddingDimensions: 1024,
+			}),
 		}
 
 		const secrets: Record<string, string | undefined> = {}
@@ -407,7 +460,7 @@ describe("ClineProvider", () => {
 			mcpEnabled: true,
 			enableMcpServerCreation: false,
 			requestDelaySeconds: 5,
-			mode: defaultModeSlug,
+			mode: { slug: "deepresearch", name: "Deep Research" } as any, // Ajustado para objeto Mode simplificado
 			customModes: [],
 			experiments: experimentDefault,
 			maxOpenTabsContext: 20,
@@ -417,6 +470,60 @@ describe("ClineProvider", () => {
 			showRooIgnoredFiles: true,
 			renderContext: "sidebar",
 			maxReadFileLine: 500,
+			currentSearchApiConfigName: "default-jina-config",
+			searchApiConfigurations: [
+				// Deve corresponder à estrutura de ProviderSettingsEntry[] mas para Search APIs
+				// Ou seja, SearchApiSettingsMeta & Campos específicos do provedor
+				{
+					id: "jina1",
+					name: "default-jina-config",
+					provider: "jina", // Este é o SearchApiProviderName
+					searchApiProviderName: "jina", // Discriminador
+					apiKey: "jina_cf9ea209bc9c4304acdb46536a8de134inoM3wimxNP77Cu0CegxfHUeC0Dp",
+					isEnabled: true,
+					searchEndpoint: "https://s.jina.ai/",
+					enableReranking: false,
+					rerankModel: "jina-reranker-v2-base-multilingual",
+					rerankEndpoint: "https://api.jina.ai/v1/rerank",
+					enableResultEmbeddings: false,
+					embeddingModel: "jina-embeddings-v3",
+					embeddingEndpoint: "https://api.jina.ai/v1/embeddings",
+					embeddingTaskForResult: "retrieval.passage",
+					embeddingDimensions: 1024,
+				},
+				{
+					id: "brave1",
+					name: "another-search-config",
+					provider: "brave_search",
+					searchApiProviderName: "brave_search", // Discriminador
+					apiKey: "test-brave-key",
+					isEnabled: true,
+				},
+				{
+					id: "google1",
+					name: "google-config",
+					provider: "google_custom_search",
+					searchApiProviderName: "google_custom_search",
+					apiKey: "test-google-key",
+					cxId: "test-cx",
+					isEnabled: true,
+				},
+			],
+			activeSearchApiSettings: {
+				// Deve corresponder a um dos tipos em searchApiSettingsSchemaDiscriminated
+				searchApiProviderName: "jina", // Campo discriminador
+				isEnabled: true,
+				apiKey: "jina_cf9ea209bc9c4304acdb46536a8de134inoM3wimxNP77Cu0CegxfHUeC0Dp",
+				searchEndpoint: "https://s.jina.ai/",
+				enableReranking: false,
+				rerankModel: "jina-reranker-v2-base-multilingual",
+				rerankEndpoint: "https://api.jina.ai/v1/rerank",
+				enableResultEmbeddings: false,
+				embeddingModel: "jina-embeddings-v3",
+				embeddingEndpoint: "https://api.jina.ai/v1/embeddings",
+				embeddingTaskForResult: "retrieval.passage",
+				embeddingDimensions: 1024,
+			},
 		}
 
 		const message: ExtensionMessage = {

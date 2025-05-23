@@ -30,7 +30,8 @@
 		"terminal": "Terminal",
 		"experimental": "Experimental",
 		"language": "Idioma",
-		"about": "Sobre Roo Code"
+		"about": "Sobre Roo Code",
+		"search-api": "API de Cerca"
 	},
 	"autoApprove": {
 		"description": "Permet que Roo realitzi operacions automàticament sense requerir aprovació. Activeu aquesta configuració només si confieu plenament en la IA i enteneu els riscos de seguretat associats.",
@@ -251,6 +252,37 @@
 			"low": "Baix"
 		},
 		"setReasoningLevel": "Activa l'esforç de raonament"
+	},
+	"searchApiOptions": {
+		"apiProviderLabel": "Proveïdor d'API"
+	},
+	"searchProviders": {
+		"jina": {
+			"name": "Jina",
+			"apiKeyLabel": "Clau API",
+			"apiKeyDescription": "Introduïu la vostra clau API de Jina."
+		},
+		"google": {
+			"name": "Google Custom Search",
+			"apiKeyLabel": "Clau API",
+			"apiKeyDescription": "Introduïu la vostra clau API de Google Custom Search.",
+			"customSearchEngineIdLabel": "ID del motor de cerca personalitzat",
+			"customSearchEngineIdDescription": "Introduïu el vostre ID del motor de cerca personalitzat de Google."
+		},
+		"serper": {
+			"name": "Serper",
+			"apiKeyLabel": "Clau API",
+			"apiKeyDescription": "Introduïu la vostra clau API de Serper."
+		},
+		"brave": {
+			"name": "Brave Search",
+			"apiKeyLabel": "Clau API",
+			"apiKeyDescription": "Introduïu la vostra clau API de Brave Search."
+		},
+		"duckDuckGo": {
+			"name": "DuckDuckGo Fallback",
+			"description": "DuckDuckGo s'utilitza com a alternativa quan altres proveïdors de cerca no estan configurats o fallen."
+		}
 	},
 	"browser": {
 		"enable": {

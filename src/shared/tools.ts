@@ -63,6 +63,7 @@ export const toolParamNames = [
 	"ignore_case",
 	"start_line",
 	"end_line",
+	"query",
 ] as const
 
 export type ToolParamName = (typeof toolParamNames)[number]
@@ -159,6 +160,7 @@ export interface SearchAndReplaceToolUse extends ToolUse {
 
 // Define tool group configuration
 export type ToolGroupConfig = {
+	name?: string // Added for display purposes
 	tools: readonly string[]
 	alwaysAvailable?: boolean // Whether this group is always available and shouldn't show in prompts view
 }
@@ -181,9 +183,16 @@ export const TOOL_DISPLAY_NAMES: Record<ToolName, string> = {
 	new_task: "create new task",
 	insert_content: "insert content",
 	search_and_replace: "search and replace",
+	web_search: "web search",
+	extract_page_content: "extract page content",
+	extract_document_content: "extract document content",
+	search_structured_data: "search structured data",
+	search_code_repositories: "search code repositories",
+	get_repository_file_content: "get repository file content",
+	process_text_content: "Process Text Content",
 } as const
 
-export type { ToolGroup }
+export type { ToolGroup, ClineAsk }
 
 // Define available tool groups.
 export const TOOL_GROUPS: Record<ToolGroup, ToolGroupConfig> = {
@@ -205,6 +214,26 @@ export const TOOL_GROUPS: Record<ToolGroup, ToolGroupConfig> = {
 	modes: {
 		tools: ["switch_mode", "new_task"],
 		alwaysAvailable: true,
+	},
+	ask: {
+		tools: ["ask_followup_question"],
+		alwaysAvailable: true, // Based on ALWAYS_AVAILABLE_TOOLS
+	},
+	completion: {
+		tools: ["attempt_completion"],
+		alwaysAvailable: true, // Based on ALWAYS_AVAILABLE_TOOLS
+	},
+	deepSearchTools: {
+		name: "Deep Search Tools",
+		tools: [
+			"web_search",
+			"extract_page_content",
+			"extract_document_content",
+			"search_structured_data",
+			"search_code_repositories",
+			"get_repository_file_content",
+			"process_text_content",
+		],
 	},
 }
 

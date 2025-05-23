@@ -444,9 +444,20 @@ export class McpHub {
 			let transport: StdioClientTransport | SSEClientTransport
 
 			if (config.type === "stdio") {
+				let commandToExecute = config.command
+				let argsToExecute = config.args
+				const toolVersionsPath = path.join(config.cwd, ".tool-versions")
+				if (config.command === "npx" && (await fileExistsAtPath(toolVersionsPath))) {
+					// Se for npx e .tool-versions existir, prefixa com asdf exec
+					// Isso garante que a versão correta do node seja usada pelo npx
+					argsToExecute = [config.command, ...(config.args || [])]
+					commandToExecute = "asdf"
+					argsToExecute.unshift("exec")
+				}
+
 				transport = new StdioClientTransport({
-					command: config.command,
-					args: config.args,
+					command: commandToExecute,
+					args: argsToExecute,
 					cwd: config.cwd,
 					env: {
 						...(config.env ? await injectEnv(config.env) : {}),

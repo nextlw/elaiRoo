@@ -23,11 +23,21 @@ import {
 	Globe,
 	Info,
 	LucideIcon,
+	Search, // Adicionado ícone de busca
 } from "lucide-react"
 
 import { ExperimentId } from "@roo/shared/experiments"
 import { TelemetrySetting } from "@roo/shared/TelemetrySetting"
 import { ProviderSettings } from "@roo/shared/api"
+import type {
+	SearchApiSettings,
+	SearchApiSettingsMeta,
+	// jinaSearchApiSchema,
+	// googleCustomSearchApiSchema,
+	// serperApiSchema,
+	// braveSearchApiSchema,
+	// duckduckgoFallbackSearchApiSchema,
+} from "@roo/schemas" // Importação correta e tipos específicos
 
 import { vscode } from "@/utils/vscode"
 import { ExtensionStateContextType, useExtensionState } from "@/context/ExtensionStateContext"
@@ -48,7 +58,7 @@ import {
 } from "@/components/ui"
 
 import { Tab, TabContent, TabHeader, TabList, TabTrigger } from "../common/Tab"
-import { SetCachedStateField, SetExperimentEnabled } from "./types"
+import { SetExperimentEnabled } from "./types"
 import { SectionHeader } from "./SectionHeader"
 import ApiConfigManager from "./ApiConfigManager"
 import ApiOptions from "./ApiOptions"
@@ -63,6 +73,7 @@ import { LanguageSettings } from "./LanguageSettings"
 import { About } from "./About"
 import { Section } from "./Section"
 import { cn } from "@/lib/utils"
+import SearchApiOptions from "./SearchApiOptions"
 
 export const settingsTabsContainer = "flex flex-1 overflow-hidden [&.narrow_.tab-label]:hidden"
 export const settingsTabList =
@@ -77,6 +88,7 @@ export interface SettingsViewRef {
 
 const sectionNames = [
 	"providers",
+	"search-api", // Adicionada nova seção
 	"autoApprove",
 	"browser",
 	"checkpoints",
@@ -98,8 +110,21 @@ type SettingsViewProps = {
 const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, targetSection }, ref) => {
 	const { t } = useAppTranslation()
 
-	const extensionState = useExtensionState()
-	const { currentApiConfigName, listApiConfigMeta, uriScheme, version, settingsImportedAt } = extensionState
+	const extensionState = useExtensionState() as ExtensionStateContextType & {
+		listSearchApiConfigMeta?: SearchApiSettingsMeta[]
+		currentSearchApiConfigName?: string
+		searchApiConfiguration?: SearchApiSettings
+	}
+	const {
+		currentApiConfigName,
+		listApiConfigMeta,
+		uriScheme,
+		version,
+		settingsImportedAt,
+		listSearchApiConfigMeta: initialListSearchApiConfigMeta,
+		currentSearchApiConfigName: initialCurrentSearchApiConfigName,
+		searchApiConfiguration: initialSearchApiConfiguration,
+	} = extensionState
 
 	const [isDiscardDialogShow, setDiscardDialogShow] = useState(false)
 	const [isChangeDetected, setChangeDetected] = useState(false)
@@ -113,7 +138,21 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 	const prevApiConfigName = useRef(currentApiConfigName)
 	const confirmDialogHandler = useRef<() => void>()
 
-	const [cachedState, setCachedState] = useState(extensionState)
+	// SearchApiSettings e SearchApiSettingsMeta são importados de @roo/schemas
+	// A interface local SearchApiConfigMeta foi removida nas etapas anteriores ou será implicitamente sobrescrita.
+
+	const [cachedState, setCachedState] = useState(() => {
+		const initialSearchConfig = initialSearchApiConfiguration // Pode ser SearchApiSettings | undefined
+		const initialSearchList = initialListSearchApiConfigMeta ?? [] // Garante que seja um array
+		const initialSearchName = initialCurrentSearchApiConfigName ?? "default"
+
+		return {
+			...extensionState,
+			searchApiConfiguration: initialSearchConfig, // Tipo já é SearchApiSettings | undefined
+			listSearchApiConfigMeta: initialSearchList, // Tipo já é SearchApiSettingsMeta[]
+			currentSearchApiConfigName: initialSearchName,
+		}
+	})
 
 	const {
 		alwaysAllowReadOnly,
@@ -159,9 +198,16 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 		remoteBrowserEnabled,
 		maxReadFileLine,
 		terminalCompressProgressBar,
+		// Campos da API de Busca
+		listSearchApiConfigMeta,
+		currentSearchApiConfigName,
 	} = cachedState
 
 	const apiConfiguration = useMemo(() => cachedState.apiConfiguration ?? {}, [cachedState.apiConfiguration])
+	const searchApiConfiguration = useMemo(
+		() => cachedState.searchApiConfiguration, // Permitir que seja undefined
+		[cachedState.searchApiConfiguration],
+	)
 
 	useEffect(() => {
 		// Update only when currentApiConfigName is changed.
@@ -170,7 +216,15 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 			return
 		}
 
-		setCachedState((prevCachedState) => ({ ...prevCachedState, ...extensionState }))
+		setCachedState((prevCachedState) => ({
+			...prevCachedState,
+			...extensionState,
+			// Garantir que os campos da API de busca sejam mantidos ou atualizados se presentes no extensionState
+			searchApiConfiguration: extensionState.searchApiConfiguration ?? prevCachedState.searchApiConfiguration,
+			listSearchApiConfigMeta: extensionState.listSearchApiConfigMeta ?? prevCachedState.listSearchApiConfigMeta,
+			currentSearchApiConfigName:
+				extensionState.currentSearchApiConfigName ?? prevCachedState.currentSearchApiConfigName,
+		}))
 		prevApiConfigName.current = currentApiConfigName
 		setChangeDetected(false)
 	}, [currentApiConfigName, extensionState, isChangeDetected])
@@ -178,21 +232,54 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 	// Bust the cache when settings are imported.
 	useEffect(() => {
 		if (settingsImportedAt) {
-			setCachedState((prevCachedState) => ({ ...prevCachedState, ...extensionState }))
+			setCachedState((prevCachedState) => ({
+				...prevCachedState,
+				...extensionState,
+				// Garantir que os campos da API de busca sejam mantidos ou atualizados se presentes no extensionState
+				searchApiConfiguration: extensionState.searchApiConfiguration ?? prevCachedState.searchApiConfiguration,
+				listSearchApiConfigMeta:
+					extensionState.listSearchApiConfigMeta ?? prevCachedState.listSearchApiConfigMeta,
+				currentSearchApiConfigName:
+					extensionState.currentSearchApiConfigName ?? prevCachedState.currentSearchApiConfigName,
+			}))
 			setChangeDetected(false)
 		}
 	}, [settingsImportedAt, extensionState])
 
-	const setCachedStateField: SetCachedStateField<keyof ExtensionStateContextType> = useCallback((field, value) => {
-		setCachedState((prevState) => {
-			if (prevState[field] === value) {
-				return prevState
-			}
+	// Efeito para sincronizar currentSearchApiConfigName e searchApiConfiguration do extensionState para o cachedState
+	useEffect(() => {
+		if (
+			extensionState.currentSearchApiConfigName &&
+			extensionState.currentSearchApiConfigName !== cachedState.currentSearchApiConfigName
+		) {
+			setCachedState((prevState) => ({
+				...prevState,
+				currentSearchApiConfigName: extensionState.currentSearchApiConfigName ?? "default",
+				searchApiConfiguration: extensionState.searchApiConfiguration, // Atualiza também a configuração ativa
+				listSearchApiConfigMeta: extensionState.listSearchApiConfigMeta ?? prevState.listSearchApiConfigMeta,
+			}))
+			setChangeDetected(false) // Resetar flag de alteração pois isso é uma sincronização
+		}
+	}, [
+		extensionState.currentSearchApiConfigName,
+		extensionState.searchApiConfiguration,
+		extensionState.listSearchApiConfigMeta,
+		cachedState.currentSearchApiConfigName,
+	])
 
-			setChangeDetected(true)
-			return { ...prevState, [field]: value }
-		})
-	}, [])
+	const setCachedStateField = useCallback(
+		<K extends keyof typeof cachedState>(field: K, value: (typeof cachedState)[K]) => {
+			setCachedState((prevState) => {
+				if (prevState[field] === value) {
+					return prevState
+				}
+
+				setChangeDetected(true)
+				return { ...prevState, [field]: value }
+			})
+		},
+		[],
+	)
 
 	const setApiConfigurationField = useCallback(
 		<K extends keyof ProviderSettings>(field: K, value: ProviderSettings[K]) => {
@@ -207,6 +294,37 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 		},
 		[],
 	)
+
+	const setSearchApiConfigurationField = useCallback((field: string, value: any) => {
+		console.log(`[SettingsView] setSearchApiConfigurationField - field: ${field}, value:`, value)
+		// Assinatura alterada para corresponder ao esperado por SearchApiOptions
+		setCachedState((prevState) => {
+			console.log(
+				"[SettingsView] setSearchApiConfigurationField - prevState.searchApiConfiguration:",
+				prevState.searchApiConfiguration,
+			)
+			const baseConfig = prevState.searchApiConfiguration ?? ({} as SearchApiSettings)
+
+			// Verifica se o valor realmente mudou para evitar re-renderizações desnecessárias
+			// e para garantir que setChangeDetected só seja chamado quando houver uma mudança real.
+			// Usamos 'field as keyof SearchApiSettings' para acessar o campo,
+			// assumindo que 'field' será uma chave válida de SearchApiSettings.
+			if (prevState.searchApiConfiguration && baseConfig[field as keyof SearchApiSettings] === value) {
+				console.log("[SettingsView] setSearchApiConfigurationField - valor não mudou, retornando prevState")
+				return prevState
+			}
+
+			console.log("[SettingsView] setSearchApiConfigurationField - valor mudou, atualizando estado.")
+			setChangeDetected(true)
+			const newSearchConfig = { ...baseConfig, [field]: value }
+			console.log("[SettingsView] setSearchApiConfigurationField - newSearchConfig:", newSearchConfig)
+			return {
+				...prevState,
+				// Fazemos um cast para SearchApiSettings para manter a consistência do tipo no estado.
+				searchApiConfiguration: newSearchConfig as SearchApiSettings,
+			}
+		})
+	}, [])
 
 	const setExperimentEnabled: SetExperimentEnabled = useCallback((id: ExperimentId, enabled: boolean) => {
 		setCachedState((prevState) => {
@@ -281,6 +399,17 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 			vscode.postMessage({ type: "alwaysAllowModeSwitch", bool: alwaysAllowModeSwitch })
 			vscode.postMessage({ type: "alwaysAllowSubtasks", bool: alwaysAllowSubtasks })
 			vscode.postMessage({ type: "upsertApiConfiguration", text: currentApiConfigName, apiConfiguration })
+			// Salvar configurações da API de Busca
+			// Removida a condição if (activeTab === "search-api") para garantir que sempre salve
+			console.log("Salvando configurações da API de Busca:")
+			console.log("currentSearchApiConfigName:", currentSearchApiConfigName)
+			console.log("searchApiConfiguration:", searchApiConfiguration)
+			vscode.postMessage({
+				type: "upsertSearchApiConfiguration",
+				name: currentSearchApiConfigName, // Usar 'name' conforme WebviewMessage
+				searchApiConfiguration: searchApiConfiguration, // searchApiConfiguration é SearchApiSettings | undefined
+				activate: true, // Assumindo que salvar o perfil ativo deve mantê-lo ativo ou reativá-lo
+			})
 			vscode.postMessage({ type: "telemetrySetting", text: telemetrySetting })
 			setChangeDetected(false)
 		}
@@ -304,7 +433,15 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 		(confirm: boolean) => {
 			if (confirm) {
 				// Discard changes: Reset state and flag
-				setCachedState(extensionState) // Revert to original state
+				const initialSearchConfig = extensionState.searchApiConfiguration
+				const initialSearchList = extensionState.listSearchApiConfigMeta ?? []
+				const initialSearchName = extensionState.currentSearchApiConfigName ?? "default"
+				setCachedState({
+					...extensionState,
+					searchApiConfiguration: initialSearchConfig as SearchApiSettings | undefined, // Cast para garantir o tipo esperado pelo estado
+					listSearchApiConfigMeta: initialSearchList as SearchApiSettingsMeta[], // Cast para garantir o tipo
+					currentSearchApiConfigName: initialSearchName,
+				})
 				setChangeDetected(false) // Reset change flag
 				confirmDialogHandler.current?.() // Execute the pending action (e.g., tab switch)
 			}
@@ -352,6 +489,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 	const sections: { id: SectionName; icon: LucideIcon }[] = useMemo(
 		() => [
 			{ id: "providers", icon: Webhook },
+			{ id: "search-api", icon: Search }, // Nova aba API Search
 			{ id: "autoApprove", icon: CheckCheck },
 			{ id: "browser", icon: SquareMousePointer },
 			{ id: "checkpoints", icon: GitBranch },
@@ -533,6 +671,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 											apiConfiguration,
 										})
 									}
+									// As props de tradução para o ApiConfigManager de LLMs serão adicionadas em outra tarefa, se necessário.
 								/>
 								<ApiOptions
 									uriScheme={uriScheme}
@@ -541,6 +680,83 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 									errorMessage={errorMessage}
 									setErrorMessage={setErrorMessage}
 								/>
+							</Section>
+						</div>
+					)}
+					{/* Search API Section */}
+					{activeTab === "search-api" && (
+						<div>
+							<SectionHeader>
+								<div className="flex items-center gap-2">
+									<Search className="w-4" />
+									<div>{t("settings:sections.search-api")}</div>
+								</div>
+							</SectionHeader>
+							<Section>
+								<ApiConfigManager
+									// Renomeando para listApiConfigMeta para corresponder à prop esperada pelo componente
+									listApiConfigMeta={listSearchApiConfigMeta} // Removido 'as any'
+									currentApiConfigName={currentSearchApiConfigName}
+									onSelectConfig={(configName: string) => {
+										// Quando um perfil é selecionado, ativamos ele
+										vscode.postMessage({ type: "activateSearchApiConfiguration", name: configName })
+										// O estado local será atualizado via postStateToWebview do backend
+									}}
+									onDeleteConfig={(configName: string) => {
+										vscode.postMessage({ type: "deleteSearchApiConfiguration", name: configName })
+										// O estado local será atualizado via postStateToWebview
+									}}
+									onRenameConfig={(oldName: string, newName: string) => {
+										// Renomear: Upsert com novo nome + configurações atuais, depois deletar o antigo
+										// Ou idealmente, o backend lida com a renomeação atômica.
+										// Por agora, vamos fazer um upsert. O usuário precisaria deletar o antigo manualmente.
+										if (searchApiConfiguration) {
+											// Só faz sentido se houver uma config ativa para copiar
+											// Para renomear: criar o novo perfil com as configurações do antigo e depois deletar o antigo.
+											vscode.postMessage({
+												type: "upsertSearchApiConfiguration",
+												name: newName,
+												searchApiConfiguration: searchApiConfiguration, // Passa a configuração existente
+												activate: currentSearchApiConfigName === oldName,
+											})
+											vscode.postMessage({
+												type: "deleteSearchApiConfiguration",
+												name: oldName,
+											})
+											// Se o perfil ativo foi renomeado, atualiza o nome no estado local para o novo nome.
+											if (currentSearchApiConfigName === oldName) {
+												setCachedStateField("currentSearchApiConfigName", newName)
+											}
+										}
+									}}
+									onUpsertConfig={(configName: string) => {
+										// Ao criar/salvar (upsert), envia a configuração atual do cache
+										// e ativa o perfil.
+										vscode.postMessage({
+											type: "upsertSearchApiConfiguration",
+											name: configName,
+											searchApiConfiguration: searchApiConfiguration, // Envia a config atual (pode ser undefined se for um perfil totalmente novo)
+											activate: true,
+										})
+									}}
+									// As props de tradução (configManagerTitle, etc.) foram removidas temporariamente
+									// pois não existem na definição de ApiConfigManagerProps.
+								/>
+								{/* Placeholder para o futuro componente SearchApiOptions */}
+								{
+									<SearchApiOptions
+										searchApiConfiguration={searchApiConfiguration}
+										setSearchApiConfigurationField={setSearchApiConfigurationField}
+									/>
+								}
+								<div className="p-2 border border-vscode-input-border rounded-md bg-vscode-input-background">
+									<h5 className="font-semibold mb-1">
+										{t("settings:searchApi.currentSettingsTitle")}
+									</h5>
+									<pre className="text-xs bg-vscode-editorWidget-background p-2 rounded">
+										{JSON.stringify(searchApiConfiguration, null, 2)}
+									</pre>
+								</div>
 							</Section>
 						</div>
 					)}

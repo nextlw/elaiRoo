@@ -168,6 +168,10 @@ export type ExtensionState = Pick<
 	| "customModePrompts"
 	| "customSupportPrompts"
 	| "enhancementApiConfigId"
+	// Search API settings
+	| "currentSearchApiConfigName"
+	| "searchApiConfigurations"
+	| "activeSearchApiSettings"
 > & {
 	version: string
 	clineMessages: ClineMessage[]
@@ -204,6 +208,11 @@ export type ExtensionState = Pick<
 	renderContext: "sidebar" | "editor"
 	settingsImportedAt?: number
 	historyPreviewCollapsed?: boolean
+
+	// Search API settings
+	currentSearchApiConfigName?: string
+	searchApiConfigurations?: ProviderSettingsEntry[]
+	activeSearchApiSettings?: ProviderSettings
 }
 
 export type { ClineMessage, ClineAsk, ClineSay }

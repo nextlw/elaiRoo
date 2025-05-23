@@ -313,6 +313,12 @@
 					"type": "string",
 					"default": "",
 					"description": "%settings.customStoragePath.description%"
+				},
+				"roo-cline.searchApiProfiles": {
+					"type": "object",
+					"description": "Stores the search API profiles for Roo Cline.",
+					"default": {},
+					"scope": "application"
 				}
 			}
 		}
@@ -381,6 +387,7 @@
 		"cheerio": "^1.0.0",
 		"chokidar": "^4.0.1",
 		"clone-deep": "^4.0.1",
+		"csv-parse": "^5.6.0",
 		"default-shell": "^2.2.0",
 		"delay": "^6.0.0",
 		"diff": "^5.2.0",
@@ -392,6 +399,7 @@
 		"get-folder-size": "^5.0.0",
 		"i18next": "^24.2.2",
 		"isbinaryfile": "^5.0.2",
+		"jsonpath-plus": "^10.3.0",
 		"mammoth": "^1.8.0",
 		"monaco-vscode-textmate-theme-converter": "^0.1.7",
 		"node-cache": "^5.1.2",

@@ -36,6 +36,50 @@ jest.mock("../ApiConfigManager", () => ({
 	),
 }))
 
+// Mock SearchApiOptions component
+jest.mock("../SearchApiOptions", () => ({
+	__esModule: true,
+	default: jest.fn(({ config, onConfigChange, availableProviders }) => (
+		<div data-testid="search-api-options">
+			<span>Provider: {config?.provider}</span>
+			<input
+				type="text"
+				aria-label="API Key"
+				value={config?.settings?.apiKey || ""}
+				onChange={(e) =>
+					onConfigChange({
+						...config,
+						settings: { ...config?.settings, apiKey: e.target.value },
+					})
+				}
+			/>
+			{availableProviders && availableProviders.length > 0 && (
+				<select
+					aria-label="Provider select"
+					value={config?.provider}
+					onChange={(e) => {
+						const newProvider = e.target.value
+						const defaultConfig =
+							availableProviders.find(
+								(p: { provider: string; defaultConfig?: any }) => p.provider === newProvider,
+							)?.defaultConfig || {}
+						onConfigChange({
+							name: config?.name || "new-config",
+							provider: newProvider,
+							settings: defaultConfig, // No mock, settings ainda é usado, mas o componente real usaria campos no nível raiz
+						})
+					}}>
+					{availableProviders.map((p: { provider: string; name: string }) => (
+						<option key={p.provider} value={p.provider}>
+							{p.name}
+						</option>
+					))}
+				</select>
+			)}
+		</div>
+	)),
+}))
+
 // Mock VSCode components
 jest.mock("@vscode/webview-ui-toolkit/react", () => ({
 	VSCodeButton: ({ children, onClick, appearance, "data-testid": dataTestId }: any) =>
@@ -150,6 +194,49 @@ const mockPostMessage = (state: any) => {
 				ttsSpeed: 1,
 				soundEnabled: false,
 				soundVolume: 0.5,
+				currentSearchApiConfigName: "default-jina",
+				searchApiConfigurations: [
+					{
+						id: "jina-1",
+						name: "default-jina",
+						provider: "jina",
+						searchApiProviderName: "jina",
+						apiKey: "jina_cf9ea209bc9c4304acdb46536a8de134inoM3wimxNP77Cu0CegxfHUeC0Dp",
+						isEnabled: true,
+						searchEndpoint: "https://s.jina.ai/",
+						enableReranking: false,
+						rerankModel: "jina-reranker-v2-base-multilingual",
+						rerankEndpoint: "https://api.jina.ai/v1/rerank",
+						enableResultEmbeddings: false,
+						embeddingModel: "jina-embeddings-v3",
+						embeddingEndpoint: "https://api.jina.ai/v1/embeddings",
+						embeddingTaskForResult: "retrieval.passage",
+						embeddingDimensions: 1024,
+					},
+					{
+						id: "google-1",
+						name: "google-config",
+						provider: "google_custom_search",
+						searchApiProviderName: "google_custom_search",
+						apiKey: "test-google-key",
+						cxId: "test-cx",
+						isEnabled: true,
+					},
+				],
+				activeSearchApiSettings: {
+					searchApiProviderName: "jina",
+					isEnabled: true,
+					apiKey: "jina_cf9ea209bc9c4304acdb46536a8de134inoM3wimxNP77Cu0CegxfHUeC0Dp",
+					searchEndpoint: "https://s.jina.ai/",
+					enableReranking: false,
+					rerankModel: "jina-reranker-v2-base-multilingual",
+					rerankEndpoint: "https://api.jina.ai/v1/rerank",
+					enableResultEmbeddings: false,
+					embeddingModel: "jina-embeddings-v3",
+					embeddingEndpoint: "https://api.jina.ai/v1/embeddings",
+					embeddingTaskForResult: "retrieval.passage",
+					embeddingDimensions: 1024,
+				},
 				...state,
 			},
 		},
@@ -570,6 +657,92 @@ describe("SettingsView - Duplicate Commands", () => {
 			expect.objectContaining({
 				type: "allowedCommands",
 				commands: ["npm test"],
+			}),
+		)
+	})
+})
+
+describe("SettingsView - Search API Configuration", () => {
+	beforeEach(() => {
+		jest.clearAllMocks()
+		// Limpar o mock de SearchApiOptions para cada teste, se necessário, ou reconfigurá-lo.
+		const SearchApiOptionsMock = require("../SearchApiOptions").default
+		SearchApiOptionsMock.mockClear()
+	})
+
+	it("renders ApiConfigManager and SearchApiOptions for search-api tab", () => {
+		const { activateTab } = renderSettingsView()
+		activateTab("search-api")
+
+		expect(screen.getByTestId("api-config-management")).toBeInTheDocument()
+		// O mock de ApiConfigManager já exibe o currentApiConfigName, que para Search API será currentSearchApiConfigName
+		// O estado inicial mockado tem "default-jina"
+		expect(screen.getByText("Current config: default-jina")).toBeInTheDocument()
+		expect(screen.getByTestId("search-api-options")).toBeInTheDocument()
+	})
+
+	it("updates SearchApiOptions when a different search API profile is selected via ApiConfigManager", async () => {
+		const { activateTab } = renderSettingsView()
+		activateTab("search-api")
+
+		// Simular a seleção de um novo perfil através do ApiConfigManager
+		// Isso é um pouco abstrato porque ApiConfigManager é mockado.
+		// Vamos simular o efeito: o estado da extensão é atualizado com o novo perfil ativo.
+		mockPostMessage({
+			currentSearchApiConfigName: "google-config",
+			activeSearchApiSettings: {
+				searchApiProviderName: "google_custom_search",
+				isEnabled: true,
+				apiKey: "test-google-key",
+				cxId: "test-cx",
+			},
+		})
+
+		// Re-render ou esperar que o contexto atualize o componente SearchApiOptions
+		// No nosso mock de SearchApiOptions, ele recebe 'config' que reflete activeSearchApiSettings
+		// A ativação da aba já causa um re-render que deve pegar o novo estado.
+		// Se SearchApiOptions fosse mais complexo, poderíamos precisar de waitFor.
+
+		// Verificar se SearchApiOptions reflete a nova configuração
+		// O mock de SearchApiOptions mostra o provedor e um input para apiKey
+		expect(await screen.findByText("Provider: google_custom_search")).toBeInTheDocument()
+		const apiKeyInput = screen.getByLabelText("API Key") as HTMLInputElement
+		expect(apiKeyInput.value).toBe("test-google-key")
+	})
+
+	it("sends upsertSearchApiConfiguration message when saving changes in SearchApiOptions", () => {
+		const { activateTab } = renderSettingsView()
+		activateTab("search-api")
+
+		// Simular mudança no SearchApiOptions (ex: mudar apiKey)
+		const apiKeyInput = screen.getByLabelText("API Key")
+		fireEvent.change(apiKeyInput, { target: { value: "new_jina_key" } })
+
+		// Clicar em Salvar (o botão de salvar é global para as configurações)
+		const saveButton = screen.getByTestId("save-button")
+		fireEvent.click(saveButton)
+
+		// Verificar se a mensagem correta foi enviada para o VSCode
+		// O payload deve ser a configuração completa, incluindo campos não alterados e os padrões do provedor.
+		expect(vscode.postMessage).toHaveBeenCalledWith(
+			expect.objectContaining({
+				type: "upsertSearchApiConfiguration",
+				payload: expect.objectContaining({
+					name: "default-jina", // Nome da configuração ativa
+					provider: "jina",
+					searchApiProviderName: "jina",
+					apiKey: "new_jina_key", // Valor alterado
+					isEnabled: true,
+					searchEndpoint: "https://s.jina.ai/",
+					enableReranking: false,
+					rerankModel: "jina-reranker-v2-base-multilingual",
+					rerankEndpoint: "https://api.jina.ai/v1/rerank",
+					enableResultEmbeddings: false,
+					embeddingModel: "jina-embeddings-v3",
+					embeddingEndpoint: "https://api.jina.ai/v1/embeddings",
+					embeddingTaskForResult: "retrieval.passage",
+					embeddingDimensions: 1024,
+				}),
 			}),
 		)
 	})

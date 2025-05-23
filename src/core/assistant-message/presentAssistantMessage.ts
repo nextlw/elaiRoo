@@ -191,6 +191,24 @@ export async function presentAssistantMessage(cline: Task) {
 						const modeName = getModeBySlug(mode, customModes)?.name ?? mode
 						return `[${block.name} in ${modeName} mode: '${message}']`
 					}
+					case "web_search":
+						return `[${block.name} for query '${block.params.query ?? "N/A"}']`
+					case "extract_page_content":
+						return `[${block.name} for URL '${block.params.url ?? "N/A"}']`
+					case "extract_document_content":
+						return `[${block.name} for '${block.params.path ?? block.params.url ?? "N/A"}']`
+					case "search_structured_data":
+						return `[${block.name} in '${block.params.path ?? "N/A"}']`
+					case "search_code_repositories":
+						return `[${block.name} for query '${block.params.query ?? "N/A"}']`
+					case "get_repository_file_content":
+						return `[${block.name} for path '${block.params.path ?? "N/A"}']`
+					case "process_text_content":
+						return `[${block.name} for operation '${block.params.operations ?? "N/A"}']`
+					default:
+						// eslint-disable-next-line @typescript-eslint/no-unused-vars
+						const _exhaustiveCheck: never = block.name
+						return `[${block.name}]`
 				}
 			}
 

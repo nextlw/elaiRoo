@@ -17,14 +17,60 @@ class TelemetryService {
 	 */
 	public initialize(): void {
 		if (this.initialized) {
+			logger.debug("TelemetryService: Already initialized.")
 			return
 		}
 
+		const isTestEnvironment = process.env.NODE_ENV === "test" || process.env.VSCODE_E2E_TESTS === "true"
+		this.initialized = true // Mark that initialization attempt is being made. Client will be set if successful.
+
 		try {
+			// Attempt to get the client instance.
+			// PostHogClient.getInstance() internally handles new PostHog(process.env.POSTHOG_API_KEY || "", ...)
+			// If POSTHOG_API_KEY is undefined or "", new PostHog("") will be called,
+			// which is expected to throw "Error: You must pass your PostHog project's api key."
 			this.client = PostHogClient.getInstance()
-			this.initialized = true
-		} catch (error) {
-			console.warn("Failed to initialize telemetry service:", error)
+			logger.info("TelemetryService: Telemetry client initialized successfully.")
+		} catch (error: any) {
+			this.client = null // Ensure client is null on any failure during initialization.
+
+			const errorMessage = error instanceof Error ? error.message : String(error)
+			// Check for the specific error message related to the API key.
+			// It's important to match the exact error message thrown by the PostHog library or our wrapper.
+			const isApiKeyMissingError = errorMessage.includes("You must pass your PostHog project's api key")
+
+			if (isTestEnvironment) {
+				if (isApiKeyMissingError) {
+					logger.info(
+						"TelemetryService: PostHog client initialization failed due to missing/invalid API key (expected in test environment). Telemetry will be disabled.",
+					)
+				} else {
+					// Log unexpected errors in test environment as info as well, but distinguish them.
+					logger.info(
+						`TelemetryService: PostHog client initialization failed in test environment (Error: ${errorMessage}). Telemetry will be disabled.`,
+					)
+					console.warn(
+						"Full unexpected error during PostHogClient initialization in test environment:",
+						error,
+					)
+				}
+			} else {
+				// Not a test environment
+				if (isApiKeyMissingError) {
+					logger.warn(
+						"TelemetryService: PostHog client initialization failed due to missing/invalid API key. Telemetry will be disabled. Please ensure POSTHOG_API_KEY is correctly set if telemetry is desired.",
+					)
+				} else {
+					logger.warn(
+						`TelemetryService: PostHog client initialization failed (Error: ${errorMessage}). Telemetry will be disabled.`,
+					)
+				}
+				// Always log the full error details outside of test environments for better diagnostics.
+				if (!isApiKeyMissingError) {
+					// Avoid double logging if already covered by the logger.warn above with errorMessage
+					console.warn("Full error during PostHogClient initialization:", error)
+				}
+			}
 		}
 	}
 

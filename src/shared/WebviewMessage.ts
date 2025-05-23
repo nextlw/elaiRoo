@@ -1,7 +1,8 @@
 import { z } from "zod"
 
-import { ProviderSettings } from "./api"
+import { ProviderSettings } from "./api" // Presumo que SearchApiSettings não está aqui
 import { Mode, PromptComponent, ModeConfig } from "./modes"
+import type { SearchApiSettings } from "../schemas" // Adicionando importação
 
 export type ClineAskResponse = "yesButtonClicked" | "noButtonClicked" | "messageResponse"
 
@@ -130,12 +131,16 @@ export interface WebviewMessage {
 		| "searchFiles"
 		| "toggleApiConfigPin"
 		| "setHistoryPreviewCollapsed"
+		// Novos tipos para Search API Configuration
+		| "upsertSearchApiConfiguration"
+		| "deleteSearchApiConfiguration"
+		| "activateSearchApiConfiguration"
 	text?: string
 	disabled?: boolean
 	askResponse?: ClineAskResponse
 	apiConfiguration?: ProviderSettings
 	images?: string[]
-	bool?: boolean
+	bool?: boolean // Usado por message.activate se não definirmos activate separadamente
 	value?: number
 	commands?: string[]
 	audioType?: AudioType
@@ -149,7 +154,10 @@ export interface WebviewMessage {
 	values?: Record<string, any>
 	query?: string
 	setting?: string
-	slug?: string
+	slug?: string // Usado por deleteCustomMode
+	name?: string // Usado por upsert/delete/activate SearchApiConfiguration e outros
+	searchApiConfiguration?: SearchApiSettings // Para upsertSearchApiConfiguration
+	activate?: boolean // Para upsertSearchApiConfiguration
 	modeConfig?: ModeConfig
 	timeout?: number
 	payload?: WebViewMessagePayload

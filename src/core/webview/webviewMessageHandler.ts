@@ -926,11 +926,11 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 		case "enhancePrompt":
 			if (message.text) {
 				try {
-					const { apiConfiguration, customSupportPrompts, listApiConfigMeta, enhancementApiConfigId } =
-						await provider.getState()
+					const { apiConfiguration, customSupportPrompts, enhancementApiConfigId } = await provider.getState()
 
 					// Try to get enhancement config first, fall back to current config.
 					let configToUse: ProviderSettings = apiConfiguration
+					const listApiConfigMeta = getGlobalState("listApiConfigMeta") ?? []
 
 					if (enhancementApiConfigId && !!listApiConfigMeta.find(({ id }) => id === enhancementApiConfigId)) {
 						const { name: _, ...providerSettings } = await provider.providerSettingsManager.getProfile({
@@ -1169,6 +1169,24 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				vscode.window.showErrorMessage(t("common:errors.list_api_config"))
 			}
 			break
+
+		// Search API Configuration messages
+		case "upsertSearchApiConfiguration":
+			if (message.name && message.searchApiConfiguration) {
+				await provider.upsertSearchApiProfile(message.name, message.searchApiConfiguration, message.activate)
+			}
+			break
+		case "deleteSearchApiConfiguration":
+			if (message.name) {
+				await provider.deleteSearchApiProfile(message.name)
+			}
+			break
+		case "activateSearchApiConfiguration":
+			if (message.name) {
+				await provider.activateSearchApiProfile(message.name)
+			}
+			break
+
 		case "updateExperimental": {
 			if (!message.values) {
 				break

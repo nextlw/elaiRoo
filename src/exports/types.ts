@@ -30,6 +30,8 @@ type GlobalSettings = {
 							| "groq"
 							| "chutes"
 							| "litellm"
+							| "extract_page_content"
+							| "get_repository_file_content"
 					  )
 					| undefined
 		  }[]
@@ -38,6 +40,52 @@ type GlobalSettings = {
 		| {
 				[x: string]: boolean
 		  }
+		| undefined
+	currentSearchApiConfigName?: string | undefined
+	searchApiConfigurations?:
+		| {
+				id: string
+				name: string
+				provider: "jina" | "google_custom_search" | "serper" | "brave_search" | "duckduckgo_fallback"
+		  }[]
+		| undefined
+	activeSearchApiSettings?:
+		| (
+				| {
+						isEnabled?: boolean
+						searchApiProviderName: "jina"
+						apiKey?: string | undefined
+						searchEndpoint?: string
+						enableReranking?: boolean
+						rerankModel?: string
+						rerankEndpoint?: string
+						enableResultEmbeddings?: boolean
+						embeddingModel?: string
+						embeddingEndpoint?: string
+						embeddingTaskForResult?: string
+						embeddingDimensions?: number
+				  }
+				| {
+						isEnabled?: boolean
+						searchApiProviderName: "google_custom_search"
+						apiKey?: string | undefined
+						cxId?: string | undefined
+				  }
+				| {
+						isEnabled?: boolean
+						searchApiProviderName: "serper"
+						apiKey?: string | undefined
+				  }
+				| {
+						isEnabled?: boolean
+						searchApiProviderName: "brave_search"
+						apiKey?: string | undefined
+				  }
+				| {
+						isEnabled?: boolean
+						searchApiProviderName: "duckduckgo_fallback"
+				  }
+		  )
 		| undefined
 	lastShownAnnouncementId?: string | undefined
 	customInstructions?: string | undefined
@@ -142,9 +190,29 @@ type GlobalSettings = {
 				whenToUse?: string | undefined
 				customInstructions?: string | undefined
 				groups: (
-					| ("read" | "edit" | "browser" | "command" | "mcp" | "modes")
+					| (
+							| "read"
+							| "edit"
+							| "browser"
+							| "command"
+							| "mcp"
+							| "modes"
+							| "deepSearchTools"
+							| "ask"
+							| "completion"
+					  )
 					| [
-							"read" | "edit" | "browser" | "command" | "mcp" | "modes",
+							(
+								| "read"
+								| "edit"
+								| "browser"
+								| "command"
+								| "mcp"
+								| "modes"
+								| "deepSearchTools"
+								| "ask"
+								| "completion"
+							),
 							{
 								fileRegex?: string | undefined
 								description?: string | undefined
@@ -198,6 +266,8 @@ type ProviderName =
 	| "groq"
 	| "chutes"
 	| "litellm"
+	| "extract_page_content"
+	| "get_repository_file_content"
 
 export type { ProviderName }
 
@@ -225,6 +295,8 @@ type ProviderSettings = {
 				| "groq"
 				| "chutes"
 				| "litellm"
+				| "extract_page_content"
+				| "get_repository_file_content"
 		  )
 		| undefined
 	includeMaxTokens?: boolean | undefined
@@ -366,6 +438,8 @@ type ProviderSettingsEntry = {
 				| "groq"
 				| "chutes"
 				| "litellm"
+				| "extract_page_content"
+				| "get_repository_file_content"
 		  )
 		| undefined
 }
@@ -569,6 +643,13 @@ type RooCodeEvents = {
 			| "switch_mode"
 			| "new_task"
 			| "fetch_instructions"
+			| "web_search"
+			| "extract_page_content"
+			| "extract_document_content"
+			| "search_structured_data"
+			| "search_code_repositories"
+			| "get_repository_file_content"
+			| "process_text_content"
 		),
 		string,
 	]
@@ -618,6 +699,8 @@ type IpcMessage =
 											| "groq"
 											| "chutes"
 											| "litellm"
+											| "extract_page_content"
+											| "get_repository_file_content"
 									  )
 									| undefined
 								includeMaxTokens?: boolean | undefined
@@ -757,6 +840,8 @@ type IpcMessage =
 														| "groq"
 														| "chutes"
 														| "litellm"
+														| "extract_page_content"
+														| "get_repository_file_content"
 												  )
 												| undefined
 									  }[]
@@ -765,6 +850,57 @@ type IpcMessage =
 									| {
 											[x: string]: boolean
 									  }
+									| undefined
+								currentSearchApiConfigName?: string | undefined
+								searchApiConfigurations?:
+									| {
+											id: string
+											name: string
+											provider:
+												| "jina"
+												| "google_custom_search"
+												| "serper"
+												| "brave_search"
+												| "duckduckgo_fallback"
+									  }[]
+									| undefined
+								activeSearchApiSettings?:
+									| (
+											| {
+													isEnabled?: boolean
+													searchApiProviderName: "jina"
+													apiKey?: string | undefined
+													searchEndpoint?: string
+													enableReranking?: boolean
+													rerankModel?: string
+													rerankEndpoint?: string
+													enableResultEmbeddings?: boolean
+													embeddingModel?: string
+													embeddingEndpoint?: string
+													embeddingTaskForResult?: string
+													embeddingDimensions?: number
+											  }
+											| {
+													isEnabled?: boolean
+													searchApiProviderName: "google_custom_search"
+													apiKey?: string | undefined
+													cxId?: string | undefined
+											  }
+											| {
+													isEnabled?: boolean
+													searchApiProviderName: "serper"
+													apiKey?: string | undefined
+											  }
+											| {
+													isEnabled?: boolean
+													searchApiProviderName: "brave_search"
+													apiKey?: string | undefined
+											  }
+											| {
+													isEnabled?: boolean
+													searchApiProviderName: "duckduckgo_fallback"
+											  }
+									  )
 									| undefined
 								lastShownAnnouncementId?: string | undefined
 								customInstructions?: string | undefined
@@ -866,9 +1002,29 @@ type IpcMessage =
 											whenToUse?: string | undefined
 											customInstructions?: string | undefined
 											groups: (
-												| ("read" | "edit" | "browser" | "command" | "mcp" | "modes")
+												| (
+														| "read"
+														| "edit"
+														| "browser"
+														| "command"
+														| "mcp"
+														| "modes"
+														| "deepSearchTools"
+														| "ask"
+														| "completion"
+												  )
 												| [
-														"read" | "edit" | "browser" | "command" | "mcp" | "modes",
+														(
+															| "read"
+															| "edit"
+															| "browser"
+															| "command"
+															| "mcp"
+															| "modes"
+															| "deepSearchTools"
+															| "ask"
+															| "completion"
+														),
 														{
 															fileRegex?: string | undefined
 															description?: string | undefined
@@ -1083,6 +1239,8 @@ type TaskCommand =
 								| "groq"
 								| "chutes"
 								| "litellm"
+								| "extract_page_content"
+								| "get_repository_file_content"
 						  )
 						| undefined
 					includeMaxTokens?: boolean | undefined
@@ -1222,6 +1380,8 @@ type TaskCommand =
 											| "groq"
 											| "chutes"
 											| "litellm"
+											| "extract_page_content"
+											| "get_repository_file_content"
 									  )
 									| undefined
 						  }[]
@@ -1230,6 +1390,57 @@ type TaskCommand =
 						| {
 								[x: string]: boolean
 						  }
+						| undefined
+					currentSearchApiConfigName?: string | undefined
+					searchApiConfigurations?:
+						| {
+								id: string
+								name: string
+								provider:
+									| "jina"
+									| "google_custom_search"
+									| "serper"
+									| "brave_search"
+									| "duckduckgo_fallback"
+						  }[]
+						| undefined
+					activeSearchApiSettings?:
+						| (
+								| {
+										isEnabled?: boolean
+										searchApiProviderName: "jina"
+										apiKey?: string | undefined
+										searchEndpoint?: string
+										enableReranking?: boolean
+										rerankModel?: string
+										rerankEndpoint?: string
+										enableResultEmbeddings?: boolean
+										embeddingModel?: string
+										embeddingEndpoint?: string
+										embeddingTaskForResult?: string
+										embeddingDimensions?: number
+								  }
+								| {
+										isEnabled?: boolean
+										searchApiProviderName: "google_custom_search"
+										apiKey?: string | undefined
+										cxId?: string | undefined
+								  }
+								| {
+										isEnabled?: boolean
+										searchApiProviderName: "serper"
+										apiKey?: string | undefined
+								  }
+								| {
+										isEnabled?: boolean
+										searchApiProviderName: "brave_search"
+										apiKey?: string | undefined
+								  }
+								| {
+										isEnabled?: boolean
+										searchApiProviderName: "duckduckgo_fallback"
+								  }
+						  )
 						| undefined
 					lastShownAnnouncementId?: string | undefined
 					customInstructions?: string | undefined
@@ -1331,9 +1542,29 @@ type TaskCommand =
 								whenToUse?: string | undefined
 								customInstructions?: string | undefined
 								groups: (
-									| ("read" | "edit" | "browser" | "command" | "mcp" | "modes")
+									| (
+											| "read"
+											| "edit"
+											| "browser"
+											| "command"
+											| "mcp"
+											| "modes"
+											| "deepSearchTools"
+											| "ask"
+											| "completion"
+									  )
 									| [
-											"read" | "edit" | "browser" | "command" | "mcp" | "modes",
+											(
+												| "read"
+												| "edit"
+												| "browser"
+												| "command"
+												| "mcp"
+												| "modes"
+												| "deepSearchTools"
+												| "ask"
+												| "completion"
+											),
 											{
 												fileRegex?: string | undefined
 												description?: string | undefined
@@ -1516,3 +1747,108 @@ type TaskEvent =
 	  }
 
 export type { TaskEvent }
+
+type ProcessTextContentParams = {
+	text_content: string
+	operation: string
+	options?: string | undefined
+}
+
+export type { ProcessTextContentParams }
+
+type SearchApiProviderName = "jina" | "google_custom_search" | "serper" | "brave_search" | "duckduckgo_fallback"
+
+export type { SearchApiProviderName }
+
+type BaseSearchApiSettings = {
+	isEnabled?: boolean
+}
+
+export type { BaseSearchApiSettings }
+
+type JinaSearchApiSettings = {
+	isEnabled?: boolean
+	searchApiProviderName: "jina"
+	apiKey?: string | undefined
+	searchEndpoint?: string
+	enableReranking?: boolean
+	rerankModel?: string
+	rerankEndpoint?: string
+	enableResultEmbeddings?: boolean
+	embeddingModel?: string
+	embeddingEndpoint?: string
+	embeddingTaskForResult?: string
+	embeddingDimensions?: number
+}
+
+export type { JinaSearchApiSettings }
+
+type GoogleCustomSearchApiSettings = {
+	isEnabled?: boolean
+	searchApiProviderName: "google_custom_search"
+	apiKey?: string | undefined
+	cxId?: string | undefined
+}
+
+export type { GoogleCustomSearchApiSettings }
+
+type SerperApiSettings = {
+	isEnabled?: boolean
+	searchApiProviderName: "serper"
+	apiKey?: string | undefined
+}
+
+export type { SerperApiSettings }
+
+type BraveSearchApiSettings = {
+	isEnabled?: boolean
+	searchApiProviderName: "brave_search"
+	apiKey?: string | undefined
+}
+
+export type { BraveSearchApiSettings }
+
+type DuckDuckGoFallbackSearchApiSettings = {
+	isEnabled?: boolean
+	searchApiProviderName: "duckduckgo_fallback"
+}
+
+export type { DuckDuckGoFallbackSearchApiSettings }
+
+type SearchApiSettingsDiscriminated =
+	| {
+			isEnabled?: boolean
+			searchApiProviderName: "jina"
+			apiKey?: string | undefined
+			searchEndpoint?: string
+			enableReranking?: boolean
+			rerankModel?: string
+			rerankEndpoint?: string
+			enableResultEmbeddings?: boolean
+			embeddingModel?: string
+			embeddingEndpoint?: string
+			embeddingTaskForResult?: string
+			embeddingDimensions?: number
+	  }
+	| {
+			isEnabled?: boolean
+			searchApiProviderName: "google_custom_search"
+			apiKey?: string | undefined
+			cxId?: string | undefined
+	  }
+	| {
+			isEnabled?: boolean
+			searchApiProviderName: "serper"
+			apiKey?: string | undefined
+	  }
+	| {
+			isEnabled?: boolean
+			searchApiProviderName: "brave_search"
+			apiKey?: string | undefined
+	  }
+	| {
+			isEnabled?: boolean
+			searchApiProviderName: "duckduckgo_fallback"
+	  }
+
+export type { SearchApiSettingsDiscriminated }

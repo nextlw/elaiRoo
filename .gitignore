@@ -41,3 +41,4 @@ logs
 # IntelliJ and Qodo plugin folders
 .idea/
 .qodo/
+docs/roo-code-settings.json

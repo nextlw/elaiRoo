@@ -273,6 +273,173 @@ Example: Requesting to execute ls in a specific directory if directed
 <cwd>/home/user/projects</cwd>
 </execute_command>
 
+## web_search
+Realiza uma busca na web usando um motor de busca. Retorna uma lista de resultados, cada um contendo título, link e um breve snippet. Pode usar APIs de busca específicas (como Jina, Serper, Brave) se configuradas pelo usuário e se a lógica da ferramenta suportar, ou recorrer a uma busca genérica em motores como DuckDuckGo/Google.
+
+Parameters:
+- query: (required): The search term or question to be used in the search engine API (ex: "Qual a capital da França?") /test/path.
+- engine?: (optional): The preferred search engine (ex: "google", "duckduckgo", "brave", "jina", "serper"). If omitted or not configured/supported by the tool, a fallback (DuckDuckGo) will be used.
+- num_results?: (optional, default: 5, according to the tool's logic): The maximum number of results to be returned.
+
+Usage:
+<web_search>
+  <query>Qual a capital da França?</query>
+  <engine>jina</engine>
+  <num_results>3</num_results>
+</web_search>
+
+Guidelines for the model's behavior mode when using web_search:
+- Depth and Exhaustiveness: Conduct deep searches, exploring all nuances.
+- Logical Reasoning: In case of doubt, seek references for similar problems and use logical reasoning to solve them.
+- Do Not Give Up: NEVER say you don't know the answer or can't respond. In case of an impasse, review accumulated knowledge, reformulate the search strategy, and try new approaches.
+- Practical Examples: ALWAYS provide practical examples of how the information can be used.
+- If prevented from visiting a page by some method, try again with another strategy. In case of failures, research how to solve the specific access problem without compromising the quality of the main response /test/path.
+- Whenever possible, try to seek updated information by validating the publication date against the current date.
+- When appropriate, i.e., when information is available via an API that does not require credentials, search for the API documentation, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- In cases where credentials are required, ask the user for the credentials, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- Whenever a user login is required, ask if they can log in so you can continue your search, obtain the authorization token by opening the address in a browser, wait for them to confirm they have logged in, obtain the authorization token, and use it to make the HTTP request or access the content via browser_action.
+- In cases where attempts to obtain content have been frustrated up to the limit of attempts, try again with another strategy. One of them is to download the content via browser_action and then analyze it as a file with the extract_page_content or read_file tool.
+
+
+## extract_page_content
+Extrai o conteúdo textual principal de uma página da web a partir de uma URL. Por padrão, tenta limpar o HTML de boilerplate (menus, anúncios, etc.) e converter o conteúdo principal para Markdown. Pode opcionalmente retornar o HTML bruto.
+
+**Parâmetros:**
+*   \`url: string\` (obrigatório): A URL da página da qual extrair o conteúdo.
+*   \`clean_html?: boolean\` (opcional, default: true): Se \`true\`, tenta limpar o HTML e extrair o conteúdo principal como Markdown. Se \`false\`, retorna o HTML bruto da página (funcionalidade de \`false\` é TODO).
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/article</url>
+  <clean_html>true</clean_html>
+</extract_page_content>
+\`\`\`
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/another-article</url>
+</extract_page_content>
+\`\`\`
+
+
+## extract_document_content
+Descrição: Extrai o conteúdo textual de um documento (PDF, DOCX, TXT) fornecido através de uma URL ou um caminho de arquivo local. Tenta inferir o tipo de documento se não for especificado.
+Parâmetros:
+    *   \`source: string\` (obrigatório): A URL para o documento ou o caminho do arquivo local.
+    *   \`document_type?: string\` (opcional): O tipo do documento (ex: "pdf", "docx", "txt"). Se omitido, a ferramenta tentará inferir pela extensão do arquivo ou URL.
+Exemplo de Uso XML:
+        \`\`\`xml
+        <extract_document_content>
+        <source>https://example.com/document.pdf</source>
+        </extract_document_content>
+        \`\`\`
+        \`\`\`xml
+        <extract_document_content>
+        <source>./local_files/report.docx</source>
+        <document_type>docx</document_type>
+        </extract_document_content>
+        \`\`\`
+
+
+## search_structured_data
+Description: Search for data within structured data files (JSON, JSONL, CSV) located in the project. Allows filtering data using a specific query for the file type and additional criteria.
+
+Parameters:
+- path: (required): The path to the file containing structured data (e.g., 'data/my_data.json', 'reports/report.csv'). Can be an absolute path or a relative path to the workspace root directory /test/path.
+- query: (required): The search query.
+    * For JSON/JSONL: Can be a JSONPath expression (e.g., \`$.store.book[?(@.price < 10)]\`) or a JSON string representing a simple filter object (to be applied programmatically by the tool, ex: \`{"category": "fiction"}\`).
+    * For CSV: A text search term to be searched in any cell, or if \`criteria\` is used to specify columns, the \`query\` can be more targeted.
+- criteria: (optional): Additional filtering criteria.
+    * For JSON/JSONL: Can be used if the \`query\` JSONPath is complex, or can be a JSON stringified object for additional filters.
+    * For CSV: A JSON stringified object mapping column names to values to be filtered (ex: \`{"ID": "123", "Status": "Pending"}\`).
+- type: (optional): The file type (ex: "json", "csv", "jsonl"). If omitted, the tool will attempt to infer the file type from the extension.
+Usage:
+<search_structured_data>
+<path>data/products.json</path>
+<query>$.products[?(@.category == "electronics" && @.price < 500)]</query>
+<criteria>{"category": "fiction"}</criteria>
+<type>json</type>
+</search_structured_data>
+
+<search_structured_data>
+<path>data/user_logs.csv</path>
+<query>error</query>
+<criteria>{"level": "critical", "user_id": "user456"}</criteria>
+<type>csv</type>
+</search_structured_data>
+
+
+## search_code_repositories
+Pesquisa em repositórios de código em plataformas suportadas (atualmente apenas GitHub). Permite buscar por código, arquivos ou repositórios com base em uma query e filtros como repositório, organização ou usuário.
+
+Parâmetros:
+- query: (required): A string de pesquisa a ser usada na API da plataforma (ex: "função foo linguagem:python", "nome_arquivo.txt")/test/path.
+- platform?: (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+- repository?: (opcional): O nome completo do repositório para focar a busca (ex: "owner/repo_name").
+- organization?: (opcional): O nome da organização para focar a busca.
+- user?: (opcional): O nome de usuário para focar a busca.
+- per_page?: (opcional, default: 30): O número de resultados por página.
+- page?: (opcional, default: 1): O número da página de resultados.
+Usage:
+<search_code_repositories>
+<query>implementar autenticação</query>
+<platform>github</platform>
+<organization>my-company</organization>
+<per_page>10</per_page>
+</search_code_repositories>
+
+<search_code_repositories>
+<query>README.md</query>
+<repository>user/project</repository>
+</search_code_repositories>
+
+
+## get_repository_file_content
+Busca o conteúdo de um arquivo específico de um repositório em uma plataforma suportada (atualmente apenas GitHub). Requer a URL completa do repositório e o caminho para o arquivo dentro do repositório.
+
+**Parâmetros:**
+*   \`repository_url: string\` (obrigatório): A URL completa para o repositório (ex: "https://github.com/owner/repo_name").
+*   \`file_path: string\` (obrigatório): O caminho para o arquivo dentro do repositório (ex: "src/main.js", "README.md").
+*   \`ref?: string\` (opcional): O nome do branch, tag ou commit SHA do qual buscar o arquivo. Se omitido, usará o branch padrão do repositório.
+*   \`platform?: string\` (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/my-org/my-project</repository_url>
+  <file_path>src/utils/helpers.ts</file_path>
+  <ref>develop</ref>
+</get_repository_file_content>
+\`\`\`
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/another-user/another-repo</repository_url>
+  <file_path>docs/API.md</file_path>
+</get_repository_file_content>
+\`\`\`
+
+
+## process_text_content
+**Descrição:** Realiza várias operações de processamento em um bloco de texto fornecido. As operações suportadas incluem correção de Markdown, remoção de linhas duplicadas, sumarização (placeholder) e extração de palavras-chave (placeholder).
+**Parâmetros:**
+*   \`text_content: string\` (obrigatório): O texto a ser processado.
+*   \`operation: string\` (obrigatório): A operação a ser realizada. Valores suportados atualmente: "fix_markdown", "remove_duplicate_lines", "summarize", "extract_keywords".
+*   \`options?: string\` (opcional): Opções adicionais para a operação, fornecidas como um objeto JSON stringificado (atualmente não utilizado pelas implementações placeholder de summarize/extractKeywords).
+**Exemplo de Uso XML:**
+\`\`\`xml
+<process_text_content>
+<text_content># Título com erro\\n\\nTexto com linhas\\nTexto com linhas\\n   - item 1 mal formatado</text_content>
+<operation>fix_markdown</operation>
+</process_text_content>
+\`\`\`
+\`\`\`xml
+<process_text_content>
+<text_content>Linha 1\\nLinha 2\\nLinha 1\\nLinha 3</text_content>
+<operation>remove_duplicate_lines</operation>
+</process_text_content>
+\`\`\`
+
+
 ## ask_followup_question
 Description: Ask the user a question to gather additional information needed to complete the task. This tool should be used when you encounter ambiguities, need clarification, or require more details to proceed effectively. It allows for interactive problem-solving by enabling direct communication with the user. Use this tool judiciously to maintain a balance between gathering necessary information and avoiding excessive back-and-forth.
 Parameters:
@@ -746,6 +913,173 @@ Example: Requesting to execute ls in a specific directory if directed
 <cwd>/home/user/projects</cwd>
 </execute_command>
 
+## web_search
+Realiza uma busca na web usando um motor de busca. Retorna uma lista de resultados, cada um contendo título, link e um breve snippet. Pode usar APIs de busca específicas (como Jina, Serper, Brave) se configuradas pelo usuário e se a lógica da ferramenta suportar, ou recorrer a uma busca genérica em motores como DuckDuckGo/Google.
+
+Parameters:
+- query: (required): The search term or question to be used in the search engine API (ex: "Qual a capital da França?") /test/path.
+- engine?: (optional): The preferred search engine (ex: "google", "duckduckgo", "brave", "jina", "serper"). If omitted or not configured/supported by the tool, a fallback (DuckDuckGo) will be used.
+- num_results?: (optional, default: 5, according to the tool's logic): The maximum number of results to be returned.
+
+Usage:
+<web_search>
+  <query>Qual a capital da França?</query>
+  <engine>jina</engine>
+  <num_results>3</num_results>
+</web_search>
+
+Guidelines for the model's behavior mode when using web_search:
+- Depth and Exhaustiveness: Conduct deep searches, exploring all nuances.
+- Logical Reasoning: In case of doubt, seek references for similar problems and use logical reasoning to solve them.
+- Do Not Give Up: NEVER say you don't know the answer or can't respond. In case of an impasse, review accumulated knowledge, reformulate the search strategy, and try new approaches.
+- Practical Examples: ALWAYS provide practical examples of how the information can be used.
+- If prevented from visiting a page by some method, try again with another strategy. In case of failures, research how to solve the specific access problem without compromising the quality of the main response /test/path.
+- Whenever possible, try to seek updated information by validating the publication date against the current date.
+- When appropriate, i.e., when information is available via an API that does not require credentials, search for the API documentation, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- In cases where credentials are required, ask the user for the credentials, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- Whenever a user login is required, ask if they can log in so you can continue your search, obtain the authorization token by opening the address in a browser, wait for them to confirm they have logged in, obtain the authorization token, and use it to make the HTTP request or access the content via browser_action.
+- In cases where attempts to obtain content have been frustrated up to the limit of attempts, try again with another strategy. One of them is to download the content via browser_action and then analyze it as a file with the extract_page_content or read_file tool.
+
+
+## extract_page_content
+Extrai o conteúdo textual principal de uma página da web a partir de uma URL. Por padrão, tenta limpar o HTML de boilerplate (menus, anúncios, etc.) e converter o conteúdo principal para Markdown. Pode opcionalmente retornar o HTML bruto.
+
+**Parâmetros:**
+*   \`url: string\` (obrigatório): A URL da página da qual extrair o conteúdo.
+*   \`clean_html?: boolean\` (opcional, default: true): Se \`true\`, tenta limpar o HTML e extrair o conteúdo principal como Markdown. Se \`false\`, retorna o HTML bruto da página (funcionalidade de \`false\` é TODO).
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/article</url>
+  <clean_html>true</clean_html>
+</extract_page_content>
+\`\`\`
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/another-article</url>
+</extract_page_content>
+\`\`\`
+
+
+## extract_document_content
+Descrição: Extrai o conteúdo textual de um documento (PDF, DOCX, TXT) fornecido através de uma URL ou um caminho de arquivo local. Tenta inferir o tipo de documento se não for especificado.
+Parâmetros:
+    *   \`source: string\` (obrigatório): A URL para o documento ou o caminho do arquivo local.
+    *   \`document_type?: string\` (opcional): O tipo do documento (ex: "pdf", "docx", "txt"). Se omitido, a ferramenta tentará inferir pela extensão do arquivo ou URL.
+Exemplo de Uso XML:
+        \`\`\`xml
+        <extract_document_content>
+        <source>https://example.com/document.pdf</source>
+        </extract_document_content>
+        \`\`\`
+        \`\`\`xml
+        <extract_document_content>
+        <source>./local_files/report.docx</source>
+        <document_type>docx</document_type>
+        </extract_document_content>
+        \`\`\`
+
+
+## search_structured_data
+Description: Search for data within structured data files (JSON, JSONL, CSV) located in the project. Allows filtering data using a specific query for the file type and additional criteria.
+
+Parameters:
+- path: (required): The path to the file containing structured data (e.g., 'data/my_data.json', 'reports/report.csv'). Can be an absolute path or a relative path to the workspace root directory /test/path.
+- query: (required): The search query.
+    * For JSON/JSONL: Can be a JSONPath expression (e.g., \`$.store.book[?(@.price < 10)]\`) or a JSON string representing a simple filter object (to be applied programmatically by the tool, ex: \`{"category": "fiction"}\`).
+    * For CSV: A text search term to be searched in any cell, or if \`criteria\` is used to specify columns, the \`query\` can be more targeted.
+- criteria: (optional): Additional filtering criteria.
+    * For JSON/JSONL: Can be used if the \`query\` JSONPath is complex, or can be a JSON stringified object for additional filters.
+    * For CSV: A JSON stringified object mapping column names to values to be filtered (ex: \`{"ID": "123", "Status": "Pending"}\`).
+- type: (optional): The file type (ex: "json", "csv", "jsonl"). If omitted, the tool will attempt to infer the file type from the extension.
+Usage:
+<search_structured_data>
+<path>data/products.json</path>
+<query>$.products[?(@.category == "electronics" && @.price < 500)]</query>
+<criteria>{"category": "fiction"}</criteria>
+<type>json</type>
+</search_structured_data>
+
+<search_structured_data>
+<path>data/user_logs.csv</path>
+<query>error</query>
+<criteria>{"level": "critical", "user_id": "user456"}</criteria>
+<type>csv</type>
+</search_structured_data>
+
+
+## search_code_repositories
+Pesquisa em repositórios de código em plataformas suportadas (atualmente apenas GitHub). Permite buscar por código, arquivos ou repositórios com base em uma query e filtros como repositório, organização ou usuário.
+
+Parâmetros:
+- query: (required): A string de pesquisa a ser usada na API da plataforma (ex: "função foo linguagem:python", "nome_arquivo.txt")/test/path.
+- platform?: (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+- repository?: (opcional): O nome completo do repositório para focar a busca (ex: "owner/repo_name").
+- organization?: (opcional): O nome da organização para focar a busca.
+- user?: (opcional): O nome de usuário para focar a busca.
+- per_page?: (opcional, default: 30): O número de resultados por página.
+- page?: (opcional, default: 1): O número da página de resultados.
+Usage:
+<search_code_repositories>
+<query>implementar autenticação</query>
+<platform>github</platform>
+<organization>my-company</organization>
+<per_page>10</per_page>
+</search_code_repositories>
+
+<search_code_repositories>
+<query>README.md</query>
+<repository>user/project</repository>
+</search_code_repositories>
+
+
+## get_repository_file_content
+Busca o conteúdo de um arquivo específico de um repositório em uma plataforma suportada (atualmente apenas GitHub). Requer a URL completa do repositório e o caminho para o arquivo dentro do repositório.
+
+**Parâmetros:**
+*   \`repository_url: string\` (obrigatório): A URL completa para o repositório (ex: "https://github.com/owner/repo_name").
+*   \`file_path: string\` (obrigatório): O caminho para o arquivo dentro do repositório (ex: "src/main.js", "README.md").
+*   \`ref?: string\` (opcional): O nome do branch, tag ou commit SHA do qual buscar o arquivo. Se omitido, usará o branch padrão do repositório.
+*   \`platform?: string\` (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/my-org/my-project</repository_url>
+  <file_path>src/utils/helpers.ts</file_path>
+  <ref>develop</ref>
+</get_repository_file_content>
+\`\`\`
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/another-user/another-repo</repository_url>
+  <file_path>docs/API.md</file_path>
+</get_repository_file_content>
+\`\`\`
+
+
+## process_text_content
+**Descrição:** Realiza várias operações de processamento em um bloco de texto fornecido. As operações suportadas incluem correção de Markdown, remoção de linhas duplicadas, sumarização (placeholder) e extração de palavras-chave (placeholder).
+**Parâmetros:**
+*   \`text_content: string\` (obrigatório): O texto a ser processado.
+*   \`operation: string\` (obrigatório): A operação a ser realizada. Valores suportados atualmente: "fix_markdown", "remove_duplicate_lines", "summarize", "extract_keywords".
+*   \`options?: string\` (opcional): Opções adicionais para a operação, fornecidas como um objeto JSON stringificado (atualmente não utilizado pelas implementações placeholder de summarize/extractKeywords).
+**Exemplo de Uso XML:**
+\`\`\`xml
+<process_text_content>
+<text_content># Título com erro\\n\\nTexto com linhas\\nTexto com linhas\\n   - item 1 mal formatado</text_content>
+<operation>fix_markdown</operation>
+</process_text_content>
+\`\`\`
+\`\`\`xml
+<process_text_content>
+<text_content>Linha 1\\nLinha 2\\nLinha 1\\nLinha 3</text_content>
+<operation>remove_duplicate_lines</operation>
+</process_text_content>
+\`\`\`
+
+
 ## ask_followup_question
 Description: Ask the user a question to gather additional information needed to complete the task. This tool should be used when you encounter ambiguities, need clarification, or require more details to proceed effectively. It allows for interactive problem-solving by enabling direct communication with the user. Use this tool judiciously to maintain a balance between gathering necessary information and avoiding excessive back-and-forth.
 Parameters:
@@ -1218,6 +1552,173 @@ Example: Requesting to execute ls in a specific directory if directed
 <command>ls -la</command>
 <cwd>/home/user/projects</cwd>
 </execute_command>
+
+## web_search
+Realiza uma busca na web usando um motor de busca. Retorna uma lista de resultados, cada um contendo título, link e um breve snippet. Pode usar APIs de busca específicas (como Jina, Serper, Brave) se configuradas pelo usuário e se a lógica da ferramenta suportar, ou recorrer a uma busca genérica em motores como DuckDuckGo/Google.
+
+Parameters:
+- query: (required): The search term or question to be used in the search engine API (ex: "Qual a capital da França?") /test/path.
+- engine?: (optional): The preferred search engine (ex: "google", "duckduckgo", "brave", "jina", "serper"). If omitted or not configured/supported by the tool, a fallback (DuckDuckGo) will be used.
+- num_results?: (optional, default: 5, according to the tool's logic): The maximum number of results to be returned.
+
+Usage:
+<web_search>
+  <query>Qual a capital da França?</query>
+  <engine>jina</engine>
+  <num_results>3</num_results>
+</web_search>
+
+Guidelines for the model's behavior mode when using web_search:
+- Depth and Exhaustiveness: Conduct deep searches, exploring all nuances.
+- Logical Reasoning: In case of doubt, seek references for similar problems and use logical reasoning to solve them.
+- Do Not Give Up: NEVER say you don't know the answer or can't respond. In case of an impasse, review accumulated knowledge, reformulate the search strategy, and try new approaches.
+- Practical Examples: ALWAYS provide practical examples of how the information can be used.
+- If prevented from visiting a page by some method, try again with another strategy. In case of failures, research how to solve the specific access problem without compromising the quality of the main response /test/path.
+- Whenever possible, try to seek updated information by validating the publication date against the current date.
+- When appropriate, i.e., when information is available via an API that does not require credentials, search for the API documentation, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- In cases where credentials are required, ask the user for the credentials, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- Whenever a user login is required, ask if they can log in so you can continue your search, obtain the authorization token by opening the address in a browser, wait for them to confirm they have logged in, obtain the authorization token, and use it to make the HTTP request or access the content via browser_action.
+- In cases where attempts to obtain content have been frustrated up to the limit of attempts, try again with another strategy. One of them is to download the content via browser_action and then analyze it as a file with the extract_page_content or read_file tool.
+
+
+## extract_page_content
+Extrai o conteúdo textual principal de uma página da web a partir de uma URL. Por padrão, tenta limpar o HTML de boilerplate (menus, anúncios, etc.) e converter o conteúdo principal para Markdown. Pode opcionalmente retornar o HTML bruto.
+
+**Parâmetros:**
+*   \`url: string\` (obrigatório): A URL da página da qual extrair o conteúdo.
+*   \`clean_html?: boolean\` (opcional, default: true): Se \`true\`, tenta limpar o HTML e extrair o conteúdo principal como Markdown. Se \`false\`, retorna o HTML bruto da página (funcionalidade de \`false\` é TODO).
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/article</url>
+  <clean_html>true</clean_html>
+</extract_page_content>
+\`\`\`
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/another-article</url>
+</extract_page_content>
+\`\`\`
+
+
+## extract_document_content
+Descrição: Extrai o conteúdo textual de um documento (PDF, DOCX, TXT) fornecido através de uma URL ou um caminho de arquivo local. Tenta inferir o tipo de documento se não for especificado.
+Parâmetros:
+    *   \`source: string\` (obrigatório): A URL para o documento ou o caminho do arquivo local.
+    *   \`document_type?: string\` (opcional): O tipo do documento (ex: "pdf", "docx", "txt"). Se omitido, a ferramenta tentará inferir pela extensão do arquivo ou URL.
+Exemplo de Uso XML:
+        \`\`\`xml
+        <extract_document_content>
+        <source>https://example.com/document.pdf</source>
+        </extract_document_content>
+        \`\`\`
+        \`\`\`xml
+        <extract_document_content>
+        <source>./local_files/report.docx</source>
+        <document_type>docx</document_type>
+        </extract_document_content>
+        \`\`\`
+
+
+## search_structured_data
+Description: Search for data within structured data files (JSON, JSONL, CSV) located in the project. Allows filtering data using a specific query for the file type and additional criteria.
+
+Parameters:
+- path: (required): The path to the file containing structured data (e.g., 'data/my_data.json', 'reports/report.csv'). Can be an absolute path or a relative path to the workspace root directory /test/path.
+- query: (required): The search query.
+    * For JSON/JSONL: Can be a JSONPath expression (e.g., \`$.store.book[?(@.price < 10)]\`) or a JSON string representing a simple filter object (to be applied programmatically by the tool, ex: \`{"category": "fiction"}\`).
+    * For CSV: A text search term to be searched in any cell, or if \`criteria\` is used to specify columns, the \`query\` can be more targeted.
+- criteria: (optional): Additional filtering criteria.
+    * For JSON/JSONL: Can be used if the \`query\` JSONPath is complex, or can be a JSON stringified object for additional filters.
+    * For CSV: A JSON stringified object mapping column names to values to be filtered (ex: \`{"ID": "123", "Status": "Pending"}\`).
+- type: (optional): The file type (ex: "json", "csv", "jsonl"). If omitted, the tool will attempt to infer the file type from the extension.
+Usage:
+<search_structured_data>
+<path>data/products.json</path>
+<query>$.products[?(@.category == "electronics" && @.price < 500)]</query>
+<criteria>{"category": "fiction"}</criteria>
+<type>json</type>
+</search_structured_data>
+
+<search_structured_data>
+<path>data/user_logs.csv</path>
+<query>error</query>
+<criteria>{"level": "critical", "user_id": "user456"}</criteria>
+<type>csv</type>
+</search_structured_data>
+
+
+## search_code_repositories
+Pesquisa em repositórios de código em plataformas suportadas (atualmente apenas GitHub). Permite buscar por código, arquivos ou repositórios com base em uma query e filtros como repositório, organização ou usuário.
+
+Parâmetros:
+- query: (required): A string de pesquisa a ser usada na API da plataforma (ex: "função foo linguagem:python", "nome_arquivo.txt")/test/path.
+- platform?: (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+- repository?: (opcional): O nome completo do repositório para focar a busca (ex: "owner/repo_name").
+- organization?: (opcional): O nome da organização para focar a busca.
+- user?: (opcional): O nome de usuário para focar a busca.
+- per_page?: (opcional, default: 30): O número de resultados por página.
+- page?: (opcional, default: 1): O número da página de resultados.
+Usage:
+<search_code_repositories>
+<query>implementar autenticação</query>
+<platform>github</platform>
+<organization>my-company</organization>
+<per_page>10</per_page>
+</search_code_repositories>
+
+<search_code_repositories>
+<query>README.md</query>
+<repository>user/project</repository>
+</search_code_repositories>
+
+
+## get_repository_file_content
+Busca o conteúdo de um arquivo específico de um repositório em uma plataforma suportada (atualmente apenas GitHub). Requer a URL completa do repositório e o caminho para o arquivo dentro do repositório.
+
+**Parâmetros:**
+*   \`repository_url: string\` (obrigatório): A URL completa para o repositório (ex: "https://github.com/owner/repo_name").
+*   \`file_path: string\` (obrigatório): O caminho para o arquivo dentro do repositório (ex: "src/main.js", "README.md").
+*   \`ref?: string\` (opcional): O nome do branch, tag ou commit SHA do qual buscar o arquivo. Se omitido, usará o branch padrão do repositório.
+*   \`platform?: string\` (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/my-org/my-project</repository_url>
+  <file_path>src/utils/helpers.ts</file_path>
+  <ref>develop</ref>
+</get_repository_file_content>
+\`\`\`
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/another-user/another-repo</repository_url>
+  <file_path>docs/API.md</file_path>
+</get_repository_file_content>
+\`\`\`
+
+
+## process_text_content
+**Descrição:** Realiza várias operações de processamento em um bloco de texto fornecido. As operações suportadas incluem correção de Markdown, remoção de linhas duplicadas, sumarização (placeholder) e extração de palavras-chave (placeholder).
+**Parâmetros:**
+*   \`text_content: string\` (obrigatório): O texto a ser processado.
+*   \`operation: string\` (obrigatório): A operação a ser realizada. Valores suportados atualmente: "fix_markdown", "remove_duplicate_lines", "summarize", "extract_keywords".
+*   \`options?: string\` (opcional): Opções adicionais para a operação, fornecidas como um objeto JSON stringificado (atualmente não utilizado pelas implementações placeholder de summarize/extractKeywords).
+**Exemplo de Uso XML:**
+\`\`\`xml
+<process_text_content>
+<text_content># Título com erro\\n\\nTexto com linhas\\nTexto com linhas\\n   - item 1 mal formatado</text_content>
+<operation>fix_markdown</operation>
+</process_text_content>
+\`\`\`
+\`\`\`xml
+<process_text_content>
+<text_content>Linha 1\\nLinha 2\\nLinha 1\\nLinha 3</text_content>
+<operation>remove_duplicate_lines</operation>
+</process_text_content>
+\`\`\`
+
 
 ## ask_followup_question
 Description: Ask the user a question to gather additional information needed to complete the task. This tool should be used when you encounter ambiguities, need clarification, or require more details to proceed effectively. It allows for interactive problem-solving by enabling direct communication with the user. Use this tool judiciously to maintain a balance between gathering necessary information and avoiding excessive back-and-forth.
@@ -1745,6 +2246,173 @@ Example: Requesting to execute ls in a specific directory if directed
 <cwd>/home/user/projects</cwd>
 </execute_command>
 
+## web_search
+Realiza uma busca na web usando um motor de busca. Retorna uma lista de resultados, cada um contendo título, link e um breve snippet. Pode usar APIs de busca específicas (como Jina, Serper, Brave) se configuradas pelo usuário e se a lógica da ferramenta suportar, ou recorrer a uma busca genérica em motores como DuckDuckGo/Google.
+
+Parameters:
+- query: (required): The search term or question to be used in the search engine API (ex: "Qual a capital da França?") /test/path.
+- engine?: (optional): The preferred search engine (ex: "google", "duckduckgo", "brave", "jina", "serper"). If omitted or not configured/supported by the tool, a fallback (DuckDuckGo) will be used.
+- num_results?: (optional, default: 5, according to the tool's logic): The maximum number of results to be returned.
+
+Usage:
+<web_search>
+  <query>Qual a capital da França?</query>
+  <engine>jina</engine>
+  <num_results>3</num_results>
+</web_search>
+
+Guidelines for the model's behavior mode when using web_search:
+- Depth and Exhaustiveness: Conduct deep searches, exploring all nuances.
+- Logical Reasoning: In case of doubt, seek references for similar problems and use logical reasoning to solve them.
+- Do Not Give Up: NEVER say you don't know the answer or can't respond. In case of an impasse, review accumulated knowledge, reformulate the search strategy, and try new approaches.
+- Practical Examples: ALWAYS provide practical examples of how the information can be used.
+- If prevented from visiting a page by some method, try again with another strategy. In case of failures, research how to solve the specific access problem without compromising the quality of the main response /test/path.
+- Whenever possible, try to seek updated information by validating the publication date against the current date.
+- When appropriate, i.e., when information is available via an API that does not require credentials, search for the API documentation, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- In cases where credentials are required, ask the user for the credentials, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- Whenever a user login is required, ask if they can log in so you can continue your search, obtain the authorization token by opening the address in a browser, wait for them to confirm they have logged in, obtain the authorization token, and use it to make the HTTP request or access the content via browser_action.
+- In cases where attempts to obtain content have been frustrated up to the limit of attempts, try again with another strategy. One of them is to download the content via browser_action and then analyze it as a file with the extract_page_content or read_file tool.
+
+
+## extract_page_content
+Extrai o conteúdo textual principal de uma página da web a partir de uma URL. Por padrão, tenta limpar o HTML de boilerplate (menus, anúncios, etc.) e converter o conteúdo principal para Markdown. Pode opcionalmente retornar o HTML bruto.
+
+**Parâmetros:**
+*   \`url: string\` (obrigatório): A URL da página da qual extrair o conteúdo.
+*   \`clean_html?: boolean\` (opcional, default: true): Se \`true\`, tenta limpar o HTML e extrair o conteúdo principal como Markdown. Se \`false\`, retorna o HTML bruto da página (funcionalidade de \`false\` é TODO).
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/article</url>
+  <clean_html>true</clean_html>
+</extract_page_content>
+\`\`\`
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/another-article</url>
+</extract_page_content>
+\`\`\`
+
+
+## extract_document_content
+Descrição: Extrai o conteúdo textual de um documento (PDF, DOCX, TXT) fornecido através de uma URL ou um caminho de arquivo local. Tenta inferir o tipo de documento se não for especificado.
+Parâmetros:
+    *   \`source: string\` (obrigatório): A URL para o documento ou o caminho do arquivo local.
+    *   \`document_type?: string\` (opcional): O tipo do documento (ex: "pdf", "docx", "txt"). Se omitido, a ferramenta tentará inferir pela extensão do arquivo ou URL.
+Exemplo de Uso XML:
+        \`\`\`xml
+        <extract_document_content>
+        <source>https://example.com/document.pdf</source>
+        </extract_document_content>
+        \`\`\`
+        \`\`\`xml
+        <extract_document_content>
+        <source>./local_files/report.docx</source>
+        <document_type>docx</document_type>
+        </extract_document_content>
+        \`\`\`
+
+
+## search_structured_data
+Description: Search for data within structured data files (JSON, JSONL, CSV) located in the project. Allows filtering data using a specific query for the file type and additional criteria.
+
+Parameters:
+- path: (required): The path to the file containing structured data (e.g., 'data/my_data.json', 'reports/report.csv'). Can be an absolute path or a relative path to the workspace root directory /test/path.
+- query: (required): The search query.
+    * For JSON/JSONL: Can be a JSONPath expression (e.g., \`$.store.book[?(@.price < 10)]\`) or a JSON string representing a simple filter object (to be applied programmatically by the tool, ex: \`{"category": "fiction"}\`).
+    * For CSV: A text search term to be searched in any cell, or if \`criteria\` is used to specify columns, the \`query\` can be more targeted.
+- criteria: (optional): Additional filtering criteria.
+    * For JSON/JSONL: Can be used if the \`query\` JSONPath is complex, or can be a JSON stringified object for additional filters.
+    * For CSV: A JSON stringified object mapping column names to values to be filtered (ex: \`{"ID": "123", "Status": "Pending"}\`).
+- type: (optional): The file type (ex: "json", "csv", "jsonl"). If omitted, the tool will attempt to infer the file type from the extension.
+Usage:
+<search_structured_data>
+<path>data/products.json</path>
+<query>$.products[?(@.category == "electronics" && @.price < 500)]</query>
+<criteria>{"category": "fiction"}</criteria>
+<type>json</type>
+</search_structured_data>
+
+<search_structured_data>
+<path>data/user_logs.csv</path>
+<query>error</query>
+<criteria>{"level": "critical", "user_id": "user456"}</criteria>
+<type>csv</type>
+</search_structured_data>
+
+
+## search_code_repositories
+Pesquisa em repositórios de código em plataformas suportadas (atualmente apenas GitHub). Permite buscar por código, arquivos ou repositórios com base em uma query e filtros como repositório, organização ou usuário.
+
+Parâmetros:
+- query: (required): A string de pesquisa a ser usada na API da plataforma (ex: "função foo linguagem:python", "nome_arquivo.txt")/test/path.
+- platform?: (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+- repository?: (opcional): O nome completo do repositório para focar a busca (ex: "owner/repo_name").
+- organization?: (opcional): O nome da organização para focar a busca.
+- user?: (opcional): O nome de usuário para focar a busca.
+- per_page?: (opcional, default: 30): O número de resultados por página.
+- page?: (opcional, default: 1): O número da página de resultados.
+Usage:
+<search_code_repositories>
+<query>implementar autenticação</query>
+<platform>github</platform>
+<organization>my-company</organization>
+<per_page>10</per_page>
+</search_code_repositories>
+
+<search_code_repositories>
+<query>README.md</query>
+<repository>user/project</repository>
+</search_code_repositories>
+
+
+## get_repository_file_content
+Busca o conteúdo de um arquivo específico de um repositório em uma plataforma suportada (atualmente apenas GitHub). Requer a URL completa do repositório e o caminho para o arquivo dentro do repositório.
+
+**Parâmetros:**
+*   \`repository_url: string\` (obrigatório): A URL completa para o repositório (ex: "https://github.com/owner/repo_name").
+*   \`file_path: string\` (obrigatório): O caminho para o arquivo dentro do repositório (ex: "src/main.js", "README.md").
+*   \`ref?: string\` (opcional): O nome do branch, tag ou commit SHA do qual buscar o arquivo. Se omitido, usará o branch padrão do repositório.
+*   \`platform?: string\` (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/my-org/my-project</repository_url>
+  <file_path>src/utils/helpers.ts</file_path>
+  <ref>develop</ref>
+</get_repository_file_content>
+\`\`\`
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/another-user/another-repo</repository_url>
+  <file_path>docs/API.md</file_path>
+</get_repository_file_content>
+\`\`\`
+
+
+## process_text_content
+**Descrição:** Realiza várias operações de processamento em um bloco de texto fornecido. As operações suportadas incluem correção de Markdown, remoção de linhas duplicadas, sumarização (placeholder) e extração de palavras-chave (placeholder).
+**Parâmetros:**
+*   \`text_content: string\` (obrigatório): O texto a ser processado.
+*   \`operation: string\` (obrigatório): A operação a ser realizada. Valores suportados atualmente: "fix_markdown", "remove_duplicate_lines", "summarize", "extract_keywords".
+*   \`options?: string\` (opcional): Opções adicionais para a operação, fornecidas como um objeto JSON stringificado (atualmente não utilizado pelas implementações placeholder de summarize/extractKeywords).
+**Exemplo de Uso XML:**
+\`\`\`xml
+<process_text_content>
+<text_content># Título com erro\\n\\nTexto com linhas\\nTexto com linhas\\n   - item 1 mal formatado</text_content>
+<operation>fix_markdown</operation>
+</process_text_content>
+\`\`\`
+\`\`\`xml
+<process_text_content>
+<text_content>Linha 1\\nLinha 2\\nLinha 1\\nLinha 3</text_content>
+<operation>remove_duplicate_lines</operation>
+</process_text_content>
+\`\`\`
+
+
 ## ask_followup_question
 Description: Ask the user a question to gather additional information needed to complete the task. This tool should be used when you encounter ambiguities, need clarification, or require more details to proceed effectively. It allows for interactive problem-solving by enabling direct communication with the user. Use this tool judiciously to maintain a balance between gathering necessary information and avoiding excessive back-and-forth.
 Parameters:
@@ -2269,6 +2937,173 @@ Example: Requesting to access an MCP resource
 <server_name>weather-server</server_name>
 <uri>weather://san-francisco/current</uri>
 </access_mcp_resource>
+
+## web_search
+Realiza uma busca na web usando um motor de busca. Retorna uma lista de resultados, cada um contendo título, link e um breve snippet. Pode usar APIs de busca específicas (como Jina, Serper, Brave) se configuradas pelo usuário e se a lógica da ferramenta suportar, ou recorrer a uma busca genérica em motores como DuckDuckGo/Google.
+
+Parameters:
+- query: (required): The search term or question to be used in the search engine API (ex: "Qual a capital da França?") /test/path.
+- engine?: (optional): The preferred search engine (ex: "google", "duckduckgo", "brave", "jina", "serper"). If omitted or not configured/supported by the tool, a fallback (DuckDuckGo) will be used.
+- num_results?: (optional, default: 5, according to the tool's logic): The maximum number of results to be returned.
+
+Usage:
+<web_search>
+  <query>Qual a capital da França?</query>
+  <engine>jina</engine>
+  <num_results>3</num_results>
+</web_search>
+
+Guidelines for the model's behavior mode when using web_search:
+- Depth and Exhaustiveness: Conduct deep searches, exploring all nuances.
+- Logical Reasoning: In case of doubt, seek references for similar problems and use logical reasoning to solve them.
+- Do Not Give Up: NEVER say you don't know the answer or can't respond. In case of an impasse, review accumulated knowledge, reformulate the search strategy, and try new approaches.
+- Practical Examples: ALWAYS provide practical examples of how the information can be used.
+- If prevented from visiting a page by some method, try again with another strategy. In case of failures, research how to solve the specific access problem without compromising the quality of the main response /test/path.
+- Whenever possible, try to seek updated information by validating the publication date against the current date.
+- When appropriate, i.e., when information is available via an API that does not require credentials, search for the API documentation, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- In cases where credentials are required, ask the user for the credentials, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- Whenever a user login is required, ask if they can log in so you can continue your search, obtain the authorization token by opening the address in a browser, wait for them to confirm they have logged in, obtain the authorization token, and use it to make the HTTP request or access the content via browser_action.
+- In cases where attempts to obtain content have been frustrated up to the limit of attempts, try again with another strategy. One of them is to download the content via browser_action and then analyze it as a file with the extract_page_content or read_file tool.
+
+
+## extract_page_content
+Extrai o conteúdo textual principal de uma página da web a partir de uma URL. Por padrão, tenta limpar o HTML de boilerplate (menus, anúncios, etc.) e converter o conteúdo principal para Markdown. Pode opcionalmente retornar o HTML bruto.
+
+**Parâmetros:**
+*   \`url: string\` (obrigatório): A URL da página da qual extrair o conteúdo.
+*   \`clean_html?: boolean\` (opcional, default: true): Se \`true\`, tenta limpar o HTML e extrair o conteúdo principal como Markdown. Se \`false\`, retorna o HTML bruto da página (funcionalidade de \`false\` é TODO).
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/article</url>
+  <clean_html>true</clean_html>
+</extract_page_content>
+\`\`\`
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/another-article</url>
+</extract_page_content>
+\`\`\`
+
+
+## extract_document_content
+Descrição: Extrai o conteúdo textual de um documento (PDF, DOCX, TXT) fornecido através de uma URL ou um caminho de arquivo local. Tenta inferir o tipo de documento se não for especificado.
+Parâmetros:
+    *   \`source: string\` (obrigatório): A URL para o documento ou o caminho do arquivo local.
+    *   \`document_type?: string\` (opcional): O tipo do documento (ex: "pdf", "docx", "txt"). Se omitido, a ferramenta tentará inferir pela extensão do arquivo ou URL.
+Exemplo de Uso XML:
+        \`\`\`xml
+        <extract_document_content>
+        <source>https://example.com/document.pdf</source>
+        </extract_document_content>
+        \`\`\`
+        \`\`\`xml
+        <extract_document_content>
+        <source>./local_files/report.docx</source>
+        <document_type>docx</document_type>
+        </extract_document_content>
+        \`\`\`
+
+
+## search_structured_data
+Description: Search for data within structured data files (JSON, JSONL, CSV) located in the project. Allows filtering data using a specific query for the file type and additional criteria.
+
+Parameters:
+- path: (required): The path to the file containing structured data (e.g., 'data/my_data.json', 'reports/report.csv'). Can be an absolute path or a relative path to the workspace root directory /test/path.
+- query: (required): The search query.
+    * For JSON/JSONL: Can be a JSONPath expression (e.g., \`$.store.book[?(@.price < 10)]\`) or a JSON string representing a simple filter object (to be applied programmatically by the tool, ex: \`{"category": "fiction"}\`).
+    * For CSV: A text search term to be searched in any cell, or if \`criteria\` is used to specify columns, the \`query\` can be more targeted.
+- criteria: (optional): Additional filtering criteria.
+    * For JSON/JSONL: Can be used if the \`query\` JSONPath is complex, or can be a JSON stringified object for additional filters.
+    * For CSV: A JSON stringified object mapping column names to values to be filtered (ex: \`{"ID": "123", "Status": "Pending"}\`).
+- type: (optional): The file type (ex: "json", "csv", "jsonl"). If omitted, the tool will attempt to infer the file type from the extension.
+Usage:
+<search_structured_data>
+<path>data/products.json</path>
+<query>$.products[?(@.category == "electronics" && @.price < 500)]</query>
+<criteria>{"category": "fiction"}</criteria>
+<type>json</type>
+</search_structured_data>
+
+<search_structured_data>
+<path>data/user_logs.csv</path>
+<query>error</query>
+<criteria>{"level": "critical", "user_id": "user456"}</criteria>
+<type>csv</type>
+</search_structured_data>
+
+
+## search_code_repositories
+Pesquisa em repositórios de código em plataformas suportadas (atualmente apenas GitHub). Permite buscar por código, arquivos ou repositórios com base em uma query e filtros como repositório, organização ou usuário.
+
+Parâmetros:
+- query: (required): A string de pesquisa a ser usada na API da plataforma (ex: "função foo linguagem:python", "nome_arquivo.txt")/test/path.
+- platform?: (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+- repository?: (opcional): O nome completo do repositório para focar a busca (ex: "owner/repo_name").
+- organization?: (opcional): O nome da organização para focar a busca.
+- user?: (opcional): O nome de usuário para focar a busca.
+- per_page?: (opcional, default: 30): O número de resultados por página.
+- page?: (opcional, default: 1): O número da página de resultados.
+Usage:
+<search_code_repositories>
+<query>implementar autenticação</query>
+<platform>github</platform>
+<organization>my-company</organization>
+<per_page>10</per_page>
+</search_code_repositories>
+
+<search_code_repositories>
+<query>README.md</query>
+<repository>user/project</repository>
+</search_code_repositories>
+
+
+## get_repository_file_content
+Busca o conteúdo de um arquivo específico de um repositório em uma plataforma suportada (atualmente apenas GitHub). Requer a URL completa do repositório e o caminho para o arquivo dentro do repositório.
+
+**Parâmetros:**
+*   \`repository_url: string\` (obrigatório): A URL completa para o repositório (ex: "https://github.com/owner/repo_name").
+*   \`file_path: string\` (obrigatório): O caminho para o arquivo dentro do repositório (ex: "src/main.js", "README.md").
+*   \`ref?: string\` (opcional): O nome do branch, tag ou commit SHA do qual buscar o arquivo. Se omitido, usará o branch padrão do repositório.
+*   \`platform?: string\` (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/my-org/my-project</repository_url>
+  <file_path>src/utils/helpers.ts</file_path>
+  <ref>develop</ref>
+</get_repository_file_content>
+\`\`\`
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/another-user/another-repo</repository_url>
+  <file_path>docs/API.md</file_path>
+</get_repository_file_content>
+\`\`\`
+
+
+## process_text_content
+**Descrição:** Realiza várias operações de processamento em um bloco de texto fornecido. As operações suportadas incluem correção de Markdown, remoção de linhas duplicadas, sumarização (placeholder) e extração de palavras-chave (placeholder).
+**Parâmetros:**
+*   \`text_content: string\` (obrigatório): O texto a ser processado.
+*   \`operation: string\` (obrigatório): A operação a ser realizada. Valores suportados atualmente: "fix_markdown", "remove_duplicate_lines", "summarize", "extract_keywords".
+*   \`options?: string\` (opcional): Opções adicionais para a operação, fornecidas como um objeto JSON stringificado (atualmente não utilizado pelas implementações placeholder de summarize/extractKeywords).
+**Exemplo de Uso XML:**
+\`\`\`xml
+<process_text_content>
+<text_content># Título com erro\\n\\nTexto com linhas\\nTexto com linhas\\n   - item 1 mal formatado</text_content>
+<operation>fix_markdown</operation>
+</process_text_content>
+\`\`\`
+\`\`\`xml
+<process_text_content>
+<text_content>Linha 1\\nLinha 2\\nLinha 1\\nLinha 3</text_content>
+<operation>remove_duplicate_lines</operation>
+</process_text_content>
+\`\`\`
+
 
 ## ask_followup_question
 Description: Ask the user a question to gather additional information needed to complete the task. This tool should be used when you encounter ambiguities, need clarification, or require more details to proceed effectively. It allows for interactive problem-solving by enabling direct communication with the user. Use this tool judiciously to maintain a balance between gathering necessary information and avoiding excessive back-and-forth.
@@ -2814,6 +3649,173 @@ Example: Requesting to execute ls in a specific directory if directed
 <command>ls -la</command>
 <cwd>/home/user/projects</cwd>
 </execute_command>
+
+## web_search
+Realiza uma busca na web usando um motor de busca. Retorna uma lista de resultados, cada um contendo título, link e um breve snippet. Pode usar APIs de busca específicas (como Jina, Serper, Brave) se configuradas pelo usuário e se a lógica da ferramenta suportar, ou recorrer a uma busca genérica em motores como DuckDuckGo/Google.
+
+Parameters:
+- query: (required): The search term or question to be used in the search engine API (ex: "Qual a capital da França?") /test/path.
+- engine?: (optional): The preferred search engine (ex: "google", "duckduckgo", "brave", "jina", "serper"). If omitted or not configured/supported by the tool, a fallback (DuckDuckGo) will be used.
+- num_results?: (optional, default: 5, according to the tool's logic): The maximum number of results to be returned.
+
+Usage:
+<web_search>
+  <query>Qual a capital da França?</query>
+  <engine>jina</engine>
+  <num_results>3</num_results>
+</web_search>
+
+Guidelines for the model's behavior mode when using web_search:
+- Depth and Exhaustiveness: Conduct deep searches, exploring all nuances.
+- Logical Reasoning: In case of doubt, seek references for similar problems and use logical reasoning to solve them.
+- Do Not Give Up: NEVER say you don't know the answer or can't respond. In case of an impasse, review accumulated knowledge, reformulate the search strategy, and try new approaches.
+- Practical Examples: ALWAYS provide practical examples of how the information can be used.
+- If prevented from visiting a page by some method, try again with another strategy. In case of failures, research how to solve the specific access problem without compromising the quality of the main response /test/path.
+- Whenever possible, try to seek updated information by validating the publication date against the current date.
+- When appropriate, i.e., when information is available via an API that does not require credentials, search for the API documentation, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- In cases where credentials are required, ask the user for the credentials, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- Whenever a user login is required, ask if they can log in so you can continue your search, obtain the authorization token by opening the address in a browser, wait for them to confirm they have logged in, obtain the authorization token, and use it to make the HTTP request or access the content via browser_action.
+- In cases where attempts to obtain content have been frustrated up to the limit of attempts, try again with another strategy. One of them is to download the content via browser_action and then analyze it as a file with the extract_page_content or read_file tool.
+
+
+## extract_page_content
+Extrai o conteúdo textual principal de uma página da web a partir de uma URL. Por padrão, tenta limpar o HTML de boilerplate (menus, anúncios, etc.) e converter o conteúdo principal para Markdown. Pode opcionalmente retornar o HTML bruto.
+
+**Parâmetros:**
+*   \`url: string\` (obrigatório): A URL da página da qual extrair o conteúdo.
+*   \`clean_html?: boolean\` (opcional, default: true): Se \`true\`, tenta limpar o HTML e extrair o conteúdo principal como Markdown. Se \`false\`, retorna o HTML bruto da página (funcionalidade de \`false\` é TODO).
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/article</url>
+  <clean_html>true</clean_html>
+</extract_page_content>
+\`\`\`
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/another-article</url>
+</extract_page_content>
+\`\`\`
+
+
+## extract_document_content
+Descrição: Extrai o conteúdo textual de um documento (PDF, DOCX, TXT) fornecido através de uma URL ou um caminho de arquivo local. Tenta inferir o tipo de documento se não for especificado.
+Parâmetros:
+    *   \`source: string\` (obrigatório): A URL para o documento ou o caminho do arquivo local.
+    *   \`document_type?: string\` (opcional): O tipo do documento (ex: "pdf", "docx", "txt"). Se omitido, a ferramenta tentará inferir pela extensão do arquivo ou URL.
+Exemplo de Uso XML:
+        \`\`\`xml
+        <extract_document_content>
+        <source>https://example.com/document.pdf</source>
+        </extract_document_content>
+        \`\`\`
+        \`\`\`xml
+        <extract_document_content>
+        <source>./local_files/report.docx</source>
+        <document_type>docx</document_type>
+        </extract_document_content>
+        \`\`\`
+
+
+## search_structured_data
+Description: Search for data within structured data files (JSON, JSONL, CSV) located in the project. Allows filtering data using a specific query for the file type and additional criteria.
+
+Parameters:
+- path: (required): The path to the file containing structured data (e.g., 'data/my_data.json', 'reports/report.csv'). Can be an absolute path or a relative path to the workspace root directory /test/path.
+- query: (required): The search query.
+    * For JSON/JSONL: Can be a JSONPath expression (e.g., \`$.store.book[?(@.price < 10)]\`) or a JSON string representing a simple filter object (to be applied programmatically by the tool, ex: \`{"category": "fiction"}\`).
+    * For CSV: A text search term to be searched in any cell, or if \`criteria\` is used to specify columns, the \`query\` can be more targeted.
+- criteria: (optional): Additional filtering criteria.
+    * For JSON/JSONL: Can be used if the \`query\` JSONPath is complex, or can be a JSON stringified object for additional filters.
+    * For CSV: A JSON stringified object mapping column names to values to be filtered (ex: \`{"ID": "123", "Status": "Pending"}\`).
+- type: (optional): The file type (ex: "json", "csv", "jsonl"). If omitted, the tool will attempt to infer the file type from the extension.
+Usage:
+<search_structured_data>
+<path>data/products.json</path>
+<query>$.products[?(@.category == "electronics" && @.price < 500)]</query>
+<criteria>{"category": "fiction"}</criteria>
+<type>json</type>
+</search_structured_data>
+
+<search_structured_data>
+<path>data/user_logs.csv</path>
+<query>error</query>
+<criteria>{"level": "critical", "user_id": "user456"}</criteria>
+<type>csv</type>
+</search_structured_data>
+
+
+## search_code_repositories
+Pesquisa em repositórios de código em plataformas suportadas (atualmente apenas GitHub). Permite buscar por código, arquivos ou repositórios com base em uma query e filtros como repositório, organização ou usuário.
+
+Parâmetros:
+- query: (required): A string de pesquisa a ser usada na API da plataforma (ex: "função foo linguagem:python", "nome_arquivo.txt")/test/path.
+- platform?: (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+- repository?: (opcional): O nome completo do repositório para focar a busca (ex: "owner/repo_name").
+- organization?: (opcional): O nome da organização para focar a busca.
+- user?: (opcional): O nome de usuário para focar a busca.
+- per_page?: (opcional, default: 30): O número de resultados por página.
+- page?: (opcional, default: 1): O número da página de resultados.
+Usage:
+<search_code_repositories>
+<query>implementar autenticação</query>
+<platform>github</platform>
+<organization>my-company</organization>
+<per_page>10</per_page>
+</search_code_repositories>
+
+<search_code_repositories>
+<query>README.md</query>
+<repository>user/project</repository>
+</search_code_repositories>
+
+
+## get_repository_file_content
+Busca o conteúdo de um arquivo específico de um repositório em uma plataforma suportada (atualmente apenas GitHub). Requer a URL completa do repositório e o caminho para o arquivo dentro do repositório.
+
+**Parâmetros:**
+*   \`repository_url: string\` (obrigatório): A URL completa para o repositório (ex: "https://github.com/owner/repo_name").
+*   \`file_path: string\` (obrigatório): O caminho para o arquivo dentro do repositório (ex: "src/main.js", "README.md").
+*   \`ref?: string\` (opcional): O nome do branch, tag ou commit SHA do qual buscar o arquivo. Se omitido, usará o branch padrão do repositório.
+*   \`platform?: string\` (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/my-org/my-project</repository_url>
+  <file_path>src/utils/helpers.ts</file_path>
+  <ref>develop</ref>
+</get_repository_file_content>
+\`\`\`
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/another-user/another-repo</repository_url>
+  <file_path>docs/API.md</file_path>
+</get_repository_file_content>
+\`\`\`
+
+
+## process_text_content
+**Descrição:** Realiza várias operações de processamento em um bloco de texto fornecido. As operações suportadas incluem correção de Markdown, remoção de linhas duplicadas, sumarização (placeholder) e extração de palavras-chave (placeholder).
+**Parâmetros:**
+*   \`text_content: string\` (obrigatório): O texto a ser processado.
+*   \`operation: string\` (obrigatório): A operação a ser realizada. Valores suportados atualmente: "fix_markdown", "remove_duplicate_lines", "summarize", "extract_keywords".
+*   \`options?: string\` (opcional): Opções adicionais para a operação, fornecidas como um objeto JSON stringificado (atualmente não utilizado pelas implementações placeholder de summarize/extractKeywords).
+**Exemplo de Uso XML:**
+\`\`\`xml
+<process_text_content>
+<text_content># Título com erro\\n\\nTexto com linhas\\nTexto com linhas\\n   - item 1 mal formatado</text_content>
+<operation>fix_markdown</operation>
+</process_text_content>
+\`\`\`
+\`\`\`xml
+<process_text_content>
+<text_content>Linha 1\\nLinha 2\\nLinha 1\\nLinha 3</text_content>
+<operation>remove_duplicate_lines</operation>
+</process_text_content>
+\`\`\`
+
 
 ## ask_followup_question
 Description: Ask the user a question to gather additional information needed to complete the task. This tool should be used when you encounter ambiguities, need clarification, or require more details to proceed effectively. It allows for interactive problem-solving by enabling direct communication with the user. Use this tool judiciously to maintain a balance between gathering necessary information and avoiding excessive back-and-forth.
@@ -3381,6 +4383,173 @@ Example: Requesting to execute ls in a specific directory if directed
 <cwd>/home/user/projects</cwd>
 </execute_command>
 
+## web_search
+Realiza uma busca na web usando um motor de busca. Retorna uma lista de resultados, cada um contendo título, link e um breve snippet. Pode usar APIs de busca específicas (como Jina, Serper, Brave) se configuradas pelo usuário e se a lógica da ferramenta suportar, ou recorrer a uma busca genérica em motores como DuckDuckGo/Google.
+
+Parameters:
+- query: (required): The search term or question to be used in the search engine API (ex: "Qual a capital da França?") /test/path.
+- engine?: (optional): The preferred search engine (ex: "google", "duckduckgo", "brave", "jina", "serper"). If omitted or not configured/supported by the tool, a fallback (DuckDuckGo) will be used.
+- num_results?: (optional, default: 5, according to the tool's logic): The maximum number of results to be returned.
+
+Usage:
+<web_search>
+  <query>Qual a capital da França?</query>
+  <engine>jina</engine>
+  <num_results>3</num_results>
+</web_search>
+
+Guidelines for the model's behavior mode when using web_search:
+- Depth and Exhaustiveness: Conduct deep searches, exploring all nuances.
+- Logical Reasoning: In case of doubt, seek references for similar problems and use logical reasoning to solve them.
+- Do Not Give Up: NEVER say you don't know the answer or can't respond. In case of an impasse, review accumulated knowledge, reformulate the search strategy, and try new approaches.
+- Practical Examples: ALWAYS provide practical examples of how the information can be used.
+- If prevented from visiting a page by some method, try again with another strategy. In case of failures, research how to solve the specific access problem without compromising the quality of the main response /test/path.
+- Whenever possible, try to seek updated information by validating the publication date against the current date.
+- When appropriate, i.e., when information is available via an API that does not require credentials, search for the API documentation, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- In cases where credentials are required, ask the user for the credentials, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- Whenever a user login is required, ask if they can log in so you can continue your search, obtain the authorization token by opening the address in a browser, wait for them to confirm they have logged in, obtain the authorization token, and use it to make the HTTP request or access the content via browser_action.
+- In cases where attempts to obtain content have been frustrated up to the limit of attempts, try again with another strategy. One of them is to download the content via browser_action and then analyze it as a file with the extract_page_content or read_file tool.
+
+
+## extract_page_content
+Extrai o conteúdo textual principal de uma página da web a partir de uma URL. Por padrão, tenta limpar o HTML de boilerplate (menus, anúncios, etc.) e converter o conteúdo principal para Markdown. Pode opcionalmente retornar o HTML bruto.
+
+**Parâmetros:**
+*   \`url: string\` (obrigatório): A URL da página da qual extrair o conteúdo.
+*   \`clean_html?: boolean\` (opcional, default: true): Se \`true\`, tenta limpar o HTML e extrair o conteúdo principal como Markdown. Se \`false\`, retorna o HTML bruto da página (funcionalidade de \`false\` é TODO).
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/article</url>
+  <clean_html>true</clean_html>
+</extract_page_content>
+\`\`\`
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/another-article</url>
+</extract_page_content>
+\`\`\`
+
+
+## extract_document_content
+Descrição: Extrai o conteúdo textual de um documento (PDF, DOCX, TXT) fornecido através de uma URL ou um caminho de arquivo local. Tenta inferir o tipo de documento se não for especificado.
+Parâmetros:
+    *   \`source: string\` (obrigatório): A URL para o documento ou o caminho do arquivo local.
+    *   \`document_type?: string\` (opcional): O tipo do documento (ex: "pdf", "docx", "txt"). Se omitido, a ferramenta tentará inferir pela extensão do arquivo ou URL.
+Exemplo de Uso XML:
+        \`\`\`xml
+        <extract_document_content>
+        <source>https://example.com/document.pdf</source>
+        </extract_document_content>
+        \`\`\`
+        \`\`\`xml
+        <extract_document_content>
+        <source>./local_files/report.docx</source>
+        <document_type>docx</document_type>
+        </extract_document_content>
+        \`\`\`
+
+
+## search_structured_data
+Description: Search for data within structured data files (JSON, JSONL, CSV) located in the project. Allows filtering data using a specific query for the file type and additional criteria.
+
+Parameters:
+- path: (required): The path to the file containing structured data (e.g., 'data/my_data.json', 'reports/report.csv'). Can be an absolute path or a relative path to the workspace root directory /test/path.
+- query: (required): The search query.
+    * For JSON/JSONL: Can be a JSONPath expression (e.g., \`$.store.book[?(@.price < 10)]\`) or a JSON string representing a simple filter object (to be applied programmatically by the tool, ex: \`{"category": "fiction"}\`).
+    * For CSV: A text search term to be searched in any cell, or if \`criteria\` is used to specify columns, the \`query\` can be more targeted.
+- criteria: (optional): Additional filtering criteria.
+    * For JSON/JSONL: Can be used if the \`query\` JSONPath is complex, or can be a JSON stringified object for additional filters.
+    * For CSV: A JSON stringified object mapping column names to values to be filtered (ex: \`{"ID": "123", "Status": "Pending"}\`).
+- type: (optional): The file type (ex: "json", "csv", "jsonl"). If omitted, the tool will attempt to infer the file type from the extension.
+Usage:
+<search_structured_data>
+<path>data/products.json</path>
+<query>$.products[?(@.category == "electronics" && @.price < 500)]</query>
+<criteria>{"category": "fiction"}</criteria>
+<type>json</type>
+</search_structured_data>
+
+<search_structured_data>
+<path>data/user_logs.csv</path>
+<query>error</query>
+<criteria>{"level": "critical", "user_id": "user456"}</criteria>
+<type>csv</type>
+</search_structured_data>
+
+
+## search_code_repositories
+Pesquisa em repositórios de código em plataformas suportadas (atualmente apenas GitHub). Permite buscar por código, arquivos ou repositórios com base em uma query e filtros como repositório, organização ou usuário.
+
+Parâmetros:
+- query: (required): A string de pesquisa a ser usada na API da plataforma (ex: "função foo linguagem:python", "nome_arquivo.txt")/test/path.
+- platform?: (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+- repository?: (opcional): O nome completo do repositório para focar a busca (ex: "owner/repo_name").
+- organization?: (opcional): O nome da organização para focar a busca.
+- user?: (opcional): O nome de usuário para focar a busca.
+- per_page?: (opcional, default: 30): O número de resultados por página.
+- page?: (opcional, default: 1): O número da página de resultados.
+Usage:
+<search_code_repositories>
+<query>implementar autenticação</query>
+<platform>github</platform>
+<organization>my-company</organization>
+<per_page>10</per_page>
+</search_code_repositories>
+
+<search_code_repositories>
+<query>README.md</query>
+<repository>user/project</repository>
+</search_code_repositories>
+
+
+## get_repository_file_content
+Busca o conteúdo de um arquivo específico de um repositório em uma plataforma suportada (atualmente apenas GitHub). Requer a URL completa do repositório e o caminho para o arquivo dentro do repositório.
+
+**Parâmetros:**
+*   \`repository_url: string\` (obrigatório): A URL completa para o repositório (ex: "https://github.com/owner/repo_name").
+*   \`file_path: string\` (obrigatório): O caminho para o arquivo dentro do repositório (ex: "src/main.js", "README.md").
+*   \`ref?: string\` (opcional): O nome do branch, tag ou commit SHA do qual buscar o arquivo. Se omitido, usará o branch padrão do repositório.
+*   \`platform?: string\` (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/my-org/my-project</repository_url>
+  <file_path>src/utils/helpers.ts</file_path>
+  <ref>develop</ref>
+</get_repository_file_content>
+\`\`\`
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/another-user/another-repo</repository_url>
+  <file_path>docs/API.md</file_path>
+</get_repository_file_content>
+\`\`\`
+
+
+## process_text_content
+**Descrição:** Realiza várias operações de processamento em um bloco de texto fornecido. As operações suportadas incluem correção de Markdown, remoção de linhas duplicadas, sumarização (placeholder) e extração de palavras-chave (placeholder).
+**Parâmetros:**
+*   \`text_content: string\` (obrigatório): O texto a ser processado.
+*   \`operation: string\` (obrigatório): A operação a ser realizada. Valores suportados atualmente: "fix_markdown", "remove_duplicate_lines", "summarize", "extract_keywords".
+*   \`options?: string\` (opcional): Opções adicionais para a operação, fornecidas como um objeto JSON stringificado (atualmente não utilizado pelas implementações placeholder de summarize/extractKeywords).
+**Exemplo de Uso XML:**
+\`\`\`xml
+<process_text_content>
+<text_content># Título com erro\\n\\nTexto com linhas\\nTexto com linhas\\n   - item 1 mal formatado</text_content>
+<operation>fix_markdown</operation>
+</process_text_content>
+\`\`\`
+\`\`\`xml
+<process_text_content>
+<text_content>Linha 1\\nLinha 2\\nLinha 1\\nLinha 3</text_content>
+<operation>remove_duplicate_lines</operation>
+</process_text_content>
+\`\`\`
+
+
 ## ask_followup_question
 Description: Ask the user a question to gather additional information needed to complete the task. This tool should be used when you encounter ambiguities, need clarification, or require more details to proceed effectively. It allows for interactive problem-solving by enabling direct communication with the user. Use this tool judiciously to maintain a balance between gathering necessary information and avoiding excessive back-and-forth.
 Parameters:
@@ -3853,6 +5022,173 @@ Example: Requesting to execute ls in a specific directory if directed
 <command>ls -la</command>
 <cwd>/home/user/projects</cwd>
 </execute_command>
+
+## web_search
+Realiza uma busca na web usando um motor de busca. Retorna uma lista de resultados, cada um contendo título, link e um breve snippet. Pode usar APIs de busca específicas (como Jina, Serper, Brave) se configuradas pelo usuário e se a lógica da ferramenta suportar, ou recorrer a uma busca genérica em motores como DuckDuckGo/Google.
+
+Parameters:
+- query: (required): The search term or question to be used in the search engine API (ex: "Qual a capital da França?") /test/path.
+- engine?: (optional): The preferred search engine (ex: "google", "duckduckgo", "brave", "jina", "serper"). If omitted or not configured/supported by the tool, a fallback (DuckDuckGo) will be used.
+- num_results?: (optional, default: 5, according to the tool's logic): The maximum number of results to be returned.
+
+Usage:
+<web_search>
+  <query>Qual a capital da França?</query>
+  <engine>jina</engine>
+  <num_results>3</num_results>
+</web_search>
+
+Guidelines for the model's behavior mode when using web_search:
+- Depth and Exhaustiveness: Conduct deep searches, exploring all nuances.
+- Logical Reasoning: In case of doubt, seek references for similar problems and use logical reasoning to solve them.
+- Do Not Give Up: NEVER say you don't know the answer or can't respond. In case of an impasse, review accumulated knowledge, reformulate the search strategy, and try new approaches.
+- Practical Examples: ALWAYS provide practical examples of how the information can be used.
+- If prevented from visiting a page by some method, try again with another strategy. In case of failures, research how to solve the specific access problem without compromising the quality of the main response /test/path.
+- Whenever possible, try to seek updated information by validating the publication date against the current date.
+- When appropriate, i.e., when information is available via an API that does not require credentials, search for the API documentation, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- In cases where credentials are required, ask the user for the credentials, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- Whenever a user login is required, ask if they can log in so you can continue your search, obtain the authorization token by opening the address in a browser, wait for them to confirm they have logged in, obtain the authorization token, and use it to make the HTTP request or access the content via browser_action.
+- In cases where attempts to obtain content have been frustrated up to the limit of attempts, try again with another strategy. One of them is to download the content via browser_action and then analyze it as a file with the extract_page_content or read_file tool.
+
+
+## extract_page_content
+Extrai o conteúdo textual principal de uma página da web a partir de uma URL. Por padrão, tenta limpar o HTML de boilerplate (menus, anúncios, etc.) e converter o conteúdo principal para Markdown. Pode opcionalmente retornar o HTML bruto.
+
+**Parâmetros:**
+*   \`url: string\` (obrigatório): A URL da página da qual extrair o conteúdo.
+*   \`clean_html?: boolean\` (opcional, default: true): Se \`true\`, tenta limpar o HTML e extrair o conteúdo principal como Markdown. Se \`false\`, retorna o HTML bruto da página (funcionalidade de \`false\` é TODO).
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/article</url>
+  <clean_html>true</clean_html>
+</extract_page_content>
+\`\`\`
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/another-article</url>
+</extract_page_content>
+\`\`\`
+
+
+## extract_document_content
+Descrição: Extrai o conteúdo textual de um documento (PDF, DOCX, TXT) fornecido através de uma URL ou um caminho de arquivo local. Tenta inferir o tipo de documento se não for especificado.
+Parâmetros:
+    *   \`source: string\` (obrigatório): A URL para o documento ou o caminho do arquivo local.
+    *   \`document_type?: string\` (opcional): O tipo do documento (ex: "pdf", "docx", "txt"). Se omitido, a ferramenta tentará inferir pela extensão do arquivo ou URL.
+Exemplo de Uso XML:
+        \`\`\`xml
+        <extract_document_content>
+        <source>https://example.com/document.pdf</source>
+        </extract_document_content>
+        \`\`\`
+        \`\`\`xml
+        <extract_document_content>
+        <source>./local_files/report.docx</source>
+        <document_type>docx</document_type>
+        </extract_document_content>
+        \`\`\`
+
+
+## search_structured_data
+Description: Search for data within structured data files (JSON, JSONL, CSV) located in the project. Allows filtering data using a specific query for the file type and additional criteria.
+
+Parameters:
+- path: (required): The path to the file containing structured data (e.g., 'data/my_data.json', 'reports/report.csv'). Can be an absolute path or a relative path to the workspace root directory /test/path.
+- query: (required): The search query.
+    * For JSON/JSONL: Can be a JSONPath expression (e.g., \`$.store.book[?(@.price < 10)]\`) or a JSON string representing a simple filter object (to be applied programmatically by the tool, ex: \`{"category": "fiction"}\`).
+    * For CSV: A text search term to be searched in any cell, or if \`criteria\` is used to specify columns, the \`query\` can be more targeted.
+- criteria: (optional): Additional filtering criteria.
+    * For JSON/JSONL: Can be used if the \`query\` JSONPath is complex, or can be a JSON stringified object for additional filters.
+    * For CSV: A JSON stringified object mapping column names to values to be filtered (ex: \`{"ID": "123", "Status": "Pending"}\`).
+- type: (optional): The file type (ex: "json", "csv", "jsonl"). If omitted, the tool will attempt to infer the file type from the extension.
+Usage:
+<search_structured_data>
+<path>data/products.json</path>
+<query>$.products[?(@.category == "electronics" && @.price < 500)]</query>
+<criteria>{"category": "fiction"}</criteria>
+<type>json</type>
+</search_structured_data>
+
+<search_structured_data>
+<path>data/user_logs.csv</path>
+<query>error</query>
+<criteria>{"level": "critical", "user_id": "user456"}</criteria>
+<type>csv</type>
+</search_structured_data>
+
+
+## search_code_repositories
+Pesquisa em repositórios de código em plataformas suportadas (atualmente apenas GitHub). Permite buscar por código, arquivos ou repositórios com base em uma query e filtros como repositório, organização ou usuário.
+
+Parâmetros:
+- query: (required): A string de pesquisa a ser usada na API da plataforma (ex: "função foo linguagem:python", "nome_arquivo.txt")/test/path.
+- platform?: (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+- repository?: (opcional): O nome completo do repositório para focar a busca (ex: "owner/repo_name").
+- organization?: (opcional): O nome da organização para focar a busca.
+- user?: (opcional): O nome de usuário para focar a busca.
+- per_page?: (opcional, default: 30): O número de resultados por página.
+- page?: (opcional, default: 1): O número da página de resultados.
+Usage:
+<search_code_repositories>
+<query>implementar autenticação</query>
+<platform>github</platform>
+<organization>my-company</organization>
+<per_page>10</per_page>
+</search_code_repositories>
+
+<search_code_repositories>
+<query>README.md</query>
+<repository>user/project</repository>
+</search_code_repositories>
+
+
+## get_repository_file_content
+Busca o conteúdo de um arquivo específico de um repositório em uma plataforma suportada (atualmente apenas GitHub). Requer a URL completa do repositório e o caminho para o arquivo dentro do repositório.
+
+**Parâmetros:**
+*   \`repository_url: string\` (obrigatório): A URL completa para o repositório (ex: "https://github.com/owner/repo_name").
+*   \`file_path: string\` (obrigatório): O caminho para o arquivo dentro do repositório (ex: "src/main.js", "README.md").
+*   \`ref?: string\` (opcional): O nome do branch, tag ou commit SHA do qual buscar o arquivo. Se omitido, usará o branch padrão do repositório.
+*   \`platform?: string\` (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/my-org/my-project</repository_url>
+  <file_path>src/utils/helpers.ts</file_path>
+  <ref>develop</ref>
+</get_repository_file_content>
+\`\`\`
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/another-user/another-repo</repository_url>
+  <file_path>docs/API.md</file_path>
+</get_repository_file_content>
+\`\`\`
+
+
+## process_text_content
+**Descrição:** Realiza várias operações de processamento em um bloco de texto fornecido. As operações suportadas incluem correção de Markdown, remoção de linhas duplicadas, sumarização (placeholder) e extração de palavras-chave (placeholder).
+**Parâmetros:**
+*   \`text_content: string\` (obrigatório): O texto a ser processado.
+*   \`operation: string\` (obrigatório): A operação a ser realizada. Valores suportados atualmente: "fix_markdown", "remove_duplicate_lines", "summarize", "extract_keywords".
+*   \`options?: string\` (opcional): Opções adicionais para a operação, fornecidas como um objeto JSON stringificado (atualmente não utilizado pelas implementações placeholder de summarize/extractKeywords).
+**Exemplo de Uso XML:**
+\`\`\`xml
+<process_text_content>
+<text_content># Título com erro\\n\\nTexto com linhas\\nTexto com linhas\\n   - item 1 mal formatado</text_content>
+<operation>fix_markdown</operation>
+</process_text_content>
+\`\`\`
+\`\`\`xml
+<process_text_content>
+<text_content>Linha 1\\nLinha 2\\nLinha 1\\nLinha 3</text_content>
+<operation>remove_duplicate_lines</operation>
+</process_text_content>
+\`\`\`
+
 
 ## ask_followup_question
 Description: Ask the user a question to gather additional information needed to complete the task. This tool should be used when you encounter ambiguities, need clarification, or require more details to proceed effectively. It allows for interactive problem-solving by enabling direct communication with the user. Use this tool judiciously to maintain a balance between gathering necessary information and avoiding excessive back-and-forth.
@@ -4417,6 +5753,173 @@ Example: Requesting to access an MCP resource
 <server_name>weather-server</server_name>
 <uri>weather://san-francisco/current</uri>
 </access_mcp_resource>
+
+## web_search
+Realiza uma busca na web usando um motor de busca. Retorna uma lista de resultados, cada um contendo título, link e um breve snippet. Pode usar APIs de busca específicas (como Jina, Serper, Brave) se configuradas pelo usuário e se a lógica da ferramenta suportar, ou recorrer a uma busca genérica em motores como DuckDuckGo/Google.
+
+Parameters:
+- query: (required): The search term or question to be used in the search engine API (ex: "Qual a capital da França?") /test/path.
+- engine?: (optional): The preferred search engine (ex: "google", "duckduckgo", "brave", "jina", "serper"). If omitted or not configured/supported by the tool, a fallback (DuckDuckGo) will be used.
+- num_results?: (optional, default: 5, according to the tool's logic): The maximum number of results to be returned.
+
+Usage:
+<web_search>
+  <query>Qual a capital da França?</query>
+  <engine>jina</engine>
+  <num_results>3</num_results>
+</web_search>
+
+Guidelines for the model's behavior mode when using web_search:
+- Depth and Exhaustiveness: Conduct deep searches, exploring all nuances.
+- Logical Reasoning: In case of doubt, seek references for similar problems and use logical reasoning to solve them.
+- Do Not Give Up: NEVER say you don't know the answer or can't respond. In case of an impasse, review accumulated knowledge, reformulate the search strategy, and try new approaches.
+- Practical Examples: ALWAYS provide practical examples of how the information can be used.
+- If prevented from visiting a page by some method, try again with another strategy. In case of failures, research how to solve the specific access problem without compromising the quality of the main response /test/path.
+- Whenever possible, try to seek updated information by validating the publication date against the current date.
+- When appropriate, i.e., when information is available via an API that does not require credentials, search for the API documentation, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- In cases where credentials are required, ask the user for the credentials, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- Whenever a user login is required, ask if they can log in so you can continue your search, obtain the authorization token by opening the address in a browser, wait for them to confirm they have logged in, obtain the authorization token, and use it to make the HTTP request or access the content via browser_action.
+- In cases where attempts to obtain content have been frustrated up to the limit of attempts, try again with another strategy. One of them is to download the content via browser_action and then analyze it as a file with the extract_page_content or read_file tool.
+
+
+## extract_page_content
+Extrai o conteúdo textual principal de uma página da web a partir de uma URL. Por padrão, tenta limpar o HTML de boilerplate (menus, anúncios, etc.) e converter o conteúdo principal para Markdown. Pode opcionalmente retornar o HTML bruto.
+
+**Parâmetros:**
+*   \`url: string\` (obrigatório): A URL da página da qual extrair o conteúdo.
+*   \`clean_html?: boolean\` (opcional, default: true): Se \`true\`, tenta limpar o HTML e extrair o conteúdo principal como Markdown. Se \`false\`, retorna o HTML bruto da página (funcionalidade de \`false\` é TODO).
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/article</url>
+  <clean_html>true</clean_html>
+</extract_page_content>
+\`\`\`
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/another-article</url>
+</extract_page_content>
+\`\`\`
+
+
+## extract_document_content
+Descrição: Extrai o conteúdo textual de um documento (PDF, DOCX, TXT) fornecido através de uma URL ou um caminho de arquivo local. Tenta inferir o tipo de documento se não for especificado.
+Parâmetros:
+    *   \`source: string\` (obrigatório): A URL para o documento ou o caminho do arquivo local.
+    *   \`document_type?: string\` (opcional): O tipo do documento (ex: "pdf", "docx", "txt"). Se omitido, a ferramenta tentará inferir pela extensão do arquivo ou URL.
+Exemplo de Uso XML:
+        \`\`\`xml
+        <extract_document_content>
+        <source>https://example.com/document.pdf</source>
+        </extract_document_content>
+        \`\`\`
+        \`\`\`xml
+        <extract_document_content>
+        <source>./local_files/report.docx</source>
+        <document_type>docx</document_type>
+        </extract_document_content>
+        \`\`\`
+
+
+## search_structured_data
+Description: Search for data within structured data files (JSON, JSONL, CSV) located in the project. Allows filtering data using a specific query for the file type and additional criteria.
+
+Parameters:
+- path: (required): The path to the file containing structured data (e.g., 'data/my_data.json', 'reports/report.csv'). Can be an absolute path or a relative path to the workspace root directory /test/path.
+- query: (required): The search query.
+    * For JSON/JSONL: Can be a JSONPath expression (e.g., \`$.store.book[?(@.price < 10)]\`) or a JSON string representing a simple filter object (to be applied programmatically by the tool, ex: \`{"category": "fiction"}\`).
+    * For CSV: A text search term to be searched in any cell, or if \`criteria\` is used to specify columns, the \`query\` can be more targeted.
+- criteria: (optional): Additional filtering criteria.
+    * For JSON/JSONL: Can be used if the \`query\` JSONPath is complex, or can be a JSON stringified object for additional filters.
+    * For CSV: A JSON stringified object mapping column names to values to be filtered (ex: \`{"ID": "123", "Status": "Pending"}\`).
+- type: (optional): The file type (ex: "json", "csv", "jsonl"). If omitted, the tool will attempt to infer the file type from the extension.
+Usage:
+<search_structured_data>
+<path>data/products.json</path>
+<query>$.products[?(@.category == "electronics" && @.price < 500)]</query>
+<criteria>{"category": "fiction"}</criteria>
+<type>json</type>
+</search_structured_data>
+
+<search_structured_data>
+<path>data/user_logs.csv</path>
+<query>error</query>
+<criteria>{"level": "critical", "user_id": "user456"}</criteria>
+<type>csv</type>
+</search_structured_data>
+
+
+## search_code_repositories
+Pesquisa em repositórios de código em plataformas suportadas (atualmente apenas GitHub). Permite buscar por código, arquivos ou repositórios com base em uma query e filtros como repositório, organização ou usuário.
+
+Parâmetros:
+- query: (required): A string de pesquisa a ser usada na API da plataforma (ex: "função foo linguagem:python", "nome_arquivo.txt")/test/path.
+- platform?: (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+- repository?: (opcional): O nome completo do repositório para focar a busca (ex: "owner/repo_name").
+- organization?: (opcional): O nome da organização para focar a busca.
+- user?: (opcional): O nome de usuário para focar a busca.
+- per_page?: (opcional, default: 30): O número de resultados por página.
+- page?: (opcional, default: 1): O número da página de resultados.
+Usage:
+<search_code_repositories>
+<query>implementar autenticação</query>
+<platform>github</platform>
+<organization>my-company</organization>
+<per_page>10</per_page>
+</search_code_repositories>
+
+<search_code_repositories>
+<query>README.md</query>
+<repository>user/project</repository>
+</search_code_repositories>
+
+
+## get_repository_file_content
+Busca o conteúdo de um arquivo específico de um repositório em uma plataforma suportada (atualmente apenas GitHub). Requer a URL completa do repositório e o caminho para o arquivo dentro do repositório.
+
+**Parâmetros:**
+*   \`repository_url: string\` (obrigatório): A URL completa para o repositório (ex: "https://github.com/owner/repo_name").
+*   \`file_path: string\` (obrigatório): O caminho para o arquivo dentro do repositório (ex: "src/main.js", "README.md").
+*   \`ref?: string\` (opcional): O nome do branch, tag ou commit SHA do qual buscar o arquivo. Se omitido, usará o branch padrão do repositório.
+*   \`platform?: string\` (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/my-org/my-project</repository_url>
+  <file_path>src/utils/helpers.ts</file_path>
+  <ref>develop</ref>
+</get_repository_file_content>
+\`\`\`
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/another-user/another-repo</repository_url>
+  <file_path>docs/API.md</file_path>
+</get_repository_file_content>
+\`\`\`
+
+
+## process_text_content
+**Descrição:** Realiza várias operações de processamento em um bloco de texto fornecido. As operações suportadas incluem correção de Markdown, remoção de linhas duplicadas, sumarização (placeholder) e extração de palavras-chave (placeholder).
+**Parâmetros:**
+*   \`text_content: string\` (obrigatório): O texto a ser processado.
+*   \`operation: string\` (obrigatório): A operação a ser realizada. Valores suportados atualmente: "fix_markdown", "remove_duplicate_lines", "summarize", "extract_keywords".
+*   \`options?: string\` (opcional): Opções adicionais para a operação, fornecidas como um objeto JSON stringificado (atualmente não utilizado pelas implementações placeholder de summarize/extractKeywords).
+**Exemplo de Uso XML:**
+\`\`\`xml
+<process_text_content>
+<text_content># Título com erro\\n\\nTexto com linhas\\nTexto com linhas\\n   - item 1 mal formatado</text_content>
+<operation>fix_markdown</operation>
+</process_text_content>
+\`\`\`
+\`\`\`xml
+<process_text_content>
+<text_content>Linha 1\\nLinha 2\\nLinha 1\\nLinha 3</text_content>
+<operation>remove_duplicate_lines</operation>
+</process_text_content>
+\`\`\`
+
 
 ## ask_followup_question
 Description: Ask the user a question to gather additional information needed to complete the task. This tool should be used when you encounter ambiguities, need clarification, or require more details to proceed effectively. It allows for interactive problem-solving by enabling direct communication with the user. Use this tool judiciously to maintain a balance between gathering necessary information and avoiding excessive back-and-forth.
@@ -5812,6 +7315,173 @@ Example: Requesting to access an MCP resource
 <server_name>weather-server</server_name>
 <uri>weather://san-francisco/current</uri>
 </access_mcp_resource>
+
+## web_search
+Realiza uma busca na web usando um motor de busca. Retorna uma lista de resultados, cada um contendo título, link e um breve snippet. Pode usar APIs de busca específicas (como Jina, Serper, Brave) se configuradas pelo usuário e se a lógica da ferramenta suportar, ou recorrer a uma busca genérica em motores como DuckDuckGo/Google.
+
+Parameters:
+- query: (required): The search term or question to be used in the search engine API (ex: "Qual a capital da França?") /test/path.
+- engine?: (optional): The preferred search engine (ex: "google", "duckduckgo", "brave", "jina", "serper"). If omitted or not configured/supported by the tool, a fallback (DuckDuckGo) will be used.
+- num_results?: (optional, default: 5, according to the tool's logic): The maximum number of results to be returned.
+
+Usage:
+<web_search>
+  <query>Qual a capital da França?</query>
+  <engine>jina</engine>
+  <num_results>3</num_results>
+</web_search>
+
+Guidelines for the model's behavior mode when using web_search:
+- Depth and Exhaustiveness: Conduct deep searches, exploring all nuances.
+- Logical Reasoning: In case of doubt, seek references for similar problems and use logical reasoning to solve them.
+- Do Not Give Up: NEVER say you don't know the answer or can't respond. In case of an impasse, review accumulated knowledge, reformulate the search strategy, and try new approaches.
+- Practical Examples: ALWAYS provide practical examples of how the information can be used.
+- If prevented from visiting a page by some method, try again with another strategy. In case of failures, research how to solve the specific access problem without compromising the quality of the main response /test/path.
+- Whenever possible, try to seek updated information by validating the publication date against the current date.
+- When appropriate, i.e., when information is available via an API that does not require credentials, search for the API documentation, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- In cases where credentials are required, ask the user for the credentials, construct an HTTP request with the necessary parameters in a sandbox, and obtain the response. Treat the response as a web page response and get the main content as markdown.
+- Whenever a user login is required, ask if they can log in so you can continue your search, obtain the authorization token by opening the address in a browser, wait for them to confirm they have logged in, obtain the authorization token, and use it to make the HTTP request or access the content via browser_action.
+- In cases where attempts to obtain content have been frustrated up to the limit of attempts, try again with another strategy. One of them is to download the content via browser_action and then analyze it as a file with the extract_page_content or read_file tool.
+
+
+## extract_page_content
+Extrai o conteúdo textual principal de uma página da web a partir de uma URL. Por padrão, tenta limpar o HTML de boilerplate (menus, anúncios, etc.) e converter o conteúdo principal para Markdown. Pode opcionalmente retornar o HTML bruto.
+
+**Parâmetros:**
+*   \`url: string\` (obrigatório): A URL da página da qual extrair o conteúdo.
+*   \`clean_html?: boolean\` (opcional, default: true): Se \`true\`, tenta limpar o HTML e extrair o conteúdo principal como Markdown. Se \`false\`, retorna o HTML bruto da página (funcionalidade de \`false\` é TODO).
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/article</url>
+  <clean_html>true</clean_html>
+</extract_page_content>
+\`\`\`
+\`\`\`xml
+<extract_page_content>
+  <url>https://www.example.com/another-article</url>
+</extract_page_content>
+\`\`\`
+
+
+## extract_document_content
+Descrição: Extrai o conteúdo textual de um documento (PDF, DOCX, TXT) fornecido através de uma URL ou um caminho de arquivo local. Tenta inferir o tipo de documento se não for especificado.
+Parâmetros:
+    *   \`source: string\` (obrigatório): A URL para o documento ou o caminho do arquivo local.
+    *   \`document_type?: string\` (opcional): O tipo do documento (ex: "pdf", "docx", "txt"). Se omitido, a ferramenta tentará inferir pela extensão do arquivo ou URL.
+Exemplo de Uso XML:
+        \`\`\`xml
+        <extract_document_content>
+        <source>https://example.com/document.pdf</source>
+        </extract_document_content>
+        \`\`\`
+        \`\`\`xml
+        <extract_document_content>
+        <source>./local_files/report.docx</source>
+        <document_type>docx</document_type>
+        </extract_document_content>
+        \`\`\`
+
+
+## search_structured_data
+Description: Search for data within structured data files (JSON, JSONL, CSV) located in the project. Allows filtering data using a specific query for the file type and additional criteria.
+
+Parameters:
+- path: (required): The path to the file containing structured data (e.g., 'data/my_data.json', 'reports/report.csv'). Can be an absolute path or a relative path to the workspace root directory /test/path.
+- query: (required): The search query.
+    * For JSON/JSONL: Can be a JSONPath expression (e.g., \`$.store.book[?(@.price < 10)]\`) or a JSON string representing a simple filter object (to be applied programmatically by the tool, ex: \`{"category": "fiction"}\`).
+    * For CSV: A text search term to be searched in any cell, or if \`criteria\` is used to specify columns, the \`query\` can be more targeted.
+- criteria: (optional): Additional filtering criteria.
+    * For JSON/JSONL: Can be used if the \`query\` JSONPath is complex, or can be a JSON stringified object for additional filters.
+    * For CSV: A JSON stringified object mapping column names to values to be filtered (ex: \`{"ID": "123", "Status": "Pending"}\`).
+- type: (optional): The file type (ex: "json", "csv", "jsonl"). If omitted, the tool will attempt to infer the file type from the extension.
+Usage:
+<search_structured_data>
+<path>data/products.json</path>
+<query>$.products[?(@.category == "electronics" && @.price < 500)]</query>
+<criteria>{"category": "fiction"}</criteria>
+<type>json</type>
+</search_structured_data>
+
+<search_structured_data>
+<path>data/user_logs.csv</path>
+<query>error</query>
+<criteria>{"level": "critical", "user_id": "user456"}</criteria>
+<type>csv</type>
+</search_structured_data>
+
+
+## search_code_repositories
+Pesquisa em repositórios de código em plataformas suportadas (atualmente apenas GitHub). Permite buscar por código, arquivos ou repositórios com base em uma query e filtros como repositório, organização ou usuário.
+
+Parâmetros:
+- query: (required): A string de pesquisa a ser usada na API da plataforma (ex: "função foo linguagem:python", "nome_arquivo.txt")/test/path.
+- platform?: (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+- repository?: (opcional): O nome completo do repositório para focar a busca (ex: "owner/repo_name").
+- organization?: (opcional): O nome da organização para focar a busca.
+- user?: (opcional): O nome de usuário para focar a busca.
+- per_page?: (opcional, default: 30): O número de resultados por página.
+- page?: (opcional, default: 1): O número da página de resultados.
+Usage:
+<search_code_repositories>
+<query>implementar autenticação</query>
+<platform>github</platform>
+<organization>my-company</organization>
+<per_page>10</per_page>
+</search_code_repositories>
+
+<search_code_repositories>
+<query>README.md</query>
+<repository>user/project</repository>
+</search_code_repositories>
+
+
+## get_repository_file_content
+Busca o conteúdo de um arquivo específico de um repositório em uma plataforma suportada (atualmente apenas GitHub). Requer a URL completa do repositório e o caminho para o arquivo dentro do repositório.
+
+**Parâmetros:**
+*   \`repository_url: string\` (obrigatório): A URL completa para o repositório (ex: "https://github.com/owner/repo_name").
+*   \`file_path: string\` (obrigatório): O caminho para o arquivo dentro do repositório (ex: "src/main.js", "README.md").
+*   \`ref?: string\` (opcional): O nome do branch, tag ou commit SHA do qual buscar o arquivo. Se omitido, usará o branch padrão do repositório.
+*   \`platform?: string\` (opcional, default: "github"): A plataforma do repositório (ex: "github"). Atualmente, apenas "github" é suportado.
+
+**Exemplo de Uso XML:**
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/my-org/my-project</repository_url>
+  <file_path>src/utils/helpers.ts</file_path>
+  <ref>develop</ref>
+</get_repository_file_content>
+\`\`\`
+\`\`\`xml
+<get_repository_file_content>
+  <repository_url>https://github.com/another-user/another-repo</repository_url>
+  <file_path>docs/API.md</file_path>
+</get_repository_file_content>
+\`\`\`
+
+
+## process_text_content
+**Descrição:** Realiza várias operações de processamento em um bloco de texto fornecido. As operações suportadas incluem correção de Markdown, remoção de linhas duplicadas, sumarização (placeholder) e extração de palavras-chave (placeholder).
+**Parâmetros:**
+*   \`text_content: string\` (obrigatório): O texto a ser processado.
+*   \`operation: string\` (obrigatório): A operação a ser realizada. Valores suportados atualmente: "fix_markdown", "remove_duplicate_lines", "summarize", "extract_keywords".
+*   \`options?: string\` (opcional): Opções adicionais para a operação, fornecidas como um objeto JSON stringificado (atualmente não utilizado pelas implementações placeholder de summarize/extractKeywords).
+**Exemplo de Uso XML:**
+\`\`\`xml
+<process_text_content>
+<text_content># Título com erro\\n\\nTexto com linhas\\nTexto com linhas\\n   - item 1 mal formatado</text_content>
+<operation>fix_markdown</operation>
+</process_text_content>
+\`\`\`
+\`\`\`xml
+<process_text_content>
+<text_content>Linha 1\\nLinha 2\\nLinha 1\\nLinha 3</text_content>
+<operation>remove_duplicate_lines</operation>
+</process_text_content>
+\`\`\`
+
 
 ## ask_followup_question
 Description: Ask the user a question to gather additional information needed to complete the task. This tool should be used when you encounter ambiguities, need clarification, or require more details to proceed effectively. It allows for interactive problem-solving by enabling direct communication with the user. Use this tool judiciously to maintain a balance between gathering necessary information and avoiding excessive back-and-forth.

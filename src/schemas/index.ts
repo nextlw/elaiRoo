@@ -32,6 +32,8 @@ export const providerNames = [
 	"groq",
 	"chutes",
 	"litellm",
+	"extract_page_content",
+	"get_repository_file_content",
 ] as const
 
 export const providerNamesSchema = z.enum(providerNames)
@@ -42,7 +44,17 @@ export type ProviderName = z.infer<typeof providerNamesSchema>
  * ToolGroup
  */
 
-export const toolGroups = ["read", "edit", "browser", "command", "mcp", "modes"] as const
+export const toolGroups = [
+	"read",
+	"edit",
+	"browser",
+	"command",
+	"mcp",
+	"modes",
+	"deepSearchTools",
+	"ask",
+	"completion",
+] as const
 
 export const toolGroupsSchema = z.enum(toolGroups)
 
@@ -331,6 +343,78 @@ export type Experiments = z.infer<typeof experimentsSchema>
 
 type _AssertExperiments = AssertEqual<Equals<ExperimentId, Keys<Experiments>>>
 
+// Search API Settings Schemas
+
+export const SearchApiProviderNameSchema = z.enum([
+	"jina",
+	"google_custom_search",
+	"serper",
+	"brave_search",
+	"duckduckgo_fallback",
+])
+
+export type SearchApiProviderName = z.infer<typeof SearchApiProviderNameSchema>
+
+export const baseSearchApiSettingsSchema = z.object({
+	isEnabled: z.preprocess(
+		(val) => (val === undefined ? true : val), // Se undefined, usa true, senão usa o valor fornecido
+		z.boolean(), // Garante que o valor processado (e agora definido) seja um booleano
+	),
+})
+
+export const jinaSearchApiSchema = baseSearchApiSettingsSchema.extend({
+	searchApiProviderName: z.literal("jina"),
+	apiKey: z.string().optional(), // Secret
+	searchEndpoint: z.string().url().optional().default("https://s.jina.ai/search"),
+	enableReranking: z.boolean().optional().default(false),
+	rerankModel: z.string().optional().default("jina-reranker-v2-base-multilingual"),
+	rerankEndpoint: z.string().url().optional().default("https://s.jina.ai/rerank"),
+	enableResultEmbeddings: z.boolean().optional().default(false),
+	embeddingModel: z.string().optional().default("jina-embeddings-v3"),
+	embeddingEndpoint: z.string().url().optional().default("https://s.jina.ai/embed"),
+	embeddingTaskForResult: z.string().optional().default("retrieval.passage"),
+	embeddingDimensions: z.number().int().positive().optional().default(1024),
+})
+
+export const googleCustomSearchApiSchema = baseSearchApiSettingsSchema.extend({
+	searchApiProviderName: z.literal("google_custom_search"),
+	apiKey: z.string().optional(), // Secret
+	cxId: z.string().optional(),
+})
+
+export const serperApiSchema = baseSearchApiSettingsSchema.extend({
+	searchApiProviderName: z.literal("serper"),
+	apiKey: z.string().optional(), // Secret
+})
+
+export const braveSearchApiSchema = baseSearchApiSettingsSchema.extend({
+	searchApiProviderName: z.literal("brave_search"),
+	apiKey: z.string().optional(), // Secret
+})
+
+export const duckduckgoFallbackSearchApiSchema = baseSearchApiSettingsSchema.extend({
+	searchApiProviderName: z.literal("duckduckgo_fallback"),
+})
+
+export const searchApiSettingsSchemaDiscriminated = z.discriminatedUnion("searchApiProviderName", [
+	jinaSearchApiSchema,
+	googleCustomSearchApiSchema,
+	serperApiSchema,
+	braveSearchApiSchema,
+	duckduckgoFallbackSearchApiSchema,
+])
+
+export type SearchApiSettings = z.infer<typeof searchApiSettingsSchemaDiscriminated>
+
+export const SearchApiSettingsMetaSchema = z.object({
+	id: z.string(),
+	name: z.string(),
+	provider: SearchApiProviderNameSchema,
+})
+
+export type SearchApiSettingsMeta = z.infer<typeof SearchApiSettingsMetaSchema>
+
+// Fim dos Search API Settings Schemas
 /**
  * ProviderSettingsEntry
  */
@@ -656,8 +740,13 @@ export const PROVIDER_SETTINGS_KEYS = Object.keys(providerSettingsRecord) as Key
 
 export const globalSettingsSchema = z.object({
 	currentApiConfigName: z.string().optional(),
-	listApiConfigMeta: z.array(providerSettingsEntrySchema).optional(),
+	listApiConfigMeta: z.array(providerSettingsEntrySchema).optional(), // Mantido para configurações de provedor de LLM
 	pinnedApiConfigs: z.record(z.string(), z.boolean()).optional(),
+
+	// Configurações da API de Busca
+	currentSearchApiConfigName: z.string().optional(),
+	searchApiConfigurations: z.array(SearchApiSettingsMetaSchema).optional(),
+	activeSearchApiSettings: searchApiSettingsSchemaDiscriminated.optional(),
 
 	lastShownAnnouncementId: z.string().optional(),
 	customInstructions: z.string().optional(),
@@ -737,6 +826,11 @@ const globalSettingsRecord: GlobalSettingsRecord = {
 	currentApiConfigName: undefined,
 	listApiConfigMeta: undefined,
 	pinnedApiConfigs: undefined,
+
+	// Search API Settings
+	currentSearchApiConfigName: undefined,
+	searchApiConfigurations: undefined,
+	activeSearchApiSettings: undefined,
 
 	lastShownAnnouncementId: undefined,
 	customInstructions: undefined,
@@ -882,6 +976,44 @@ export const GLOBAL_STATE_KEYS = [...GLOBAL_SETTINGS_KEYS, ...PROVIDER_SETTINGS_
 
 export const isGlobalStateKey = (key: string): key is Keys<GlobalState> =>
 	GLOBAL_STATE_KEYS.includes(key as Keys<GlobalState>)
+/**
+ * SearchAPISettings Keys
+ */
+
+export const SEARCH_API_SECRET_STATE_KEYS = [
+	"jina.apiKey",
+	"google_custom_search.apiKey",
+	"serper.apiKey",
+	"brave_search.apiKey",
+] as const
+
+export type SearchApiSecretStateKeys = (typeof SEARCH_API_SECRET_STATE_KEYS)[number]
+
+export const isSearchApiSecretStateKey = (key: string): key is SearchApiSecretStateKeys =>
+	SEARCH_API_SECRET_STATE_KEYS.includes(key as SearchApiSecretStateKeys)
+
+export const SEARCH_API_GLOBAL_STATE_KEYS = [
+	"jina.isEnabled",
+	"jina.searchEndpoint",
+	"jina.enableReranking",
+	"jina.rerankModel",
+	"jina.rerankEndpoint",
+	"jina.enableResultEmbeddings",
+	"jina.embeddingModel",
+	"jina.embeddingEndpoint",
+	"jina.embeddingTaskForResult",
+	"jina.embeddingDimensions",
+	"google_custom_search.isEnabled",
+	"google_custom_search.cxId",
+	"serper.isEnabled",
+	"brave_search.isEnabled",
+	"duckduckgo_fallback.isEnabled",
+] as const
+
+export type SearchApiGlobalStateKeys = (typeof SEARCH_API_GLOBAL_STATE_KEYS)[number]
+
+export const isSearchApiGlobalStateKey = (key: string): key is SearchApiGlobalStateKeys =>
+	SEARCH_API_GLOBAL_STATE_KEYS.includes(key as SearchApiGlobalStateKeys)
 
 /**
  * ClineAsk
@@ -1003,11 +1135,41 @@ export const toolNames = [
 	"switch_mode",
 	"new_task",
 	"fetch_instructions",
+	"web_search",
+	"extract_page_content",
+	"extract_document_content",
+	"search_structured_data",
+	"search_code_repositories",
+	"get_repository_file_content",
+	"process_text_content",
 ] as const
 
 export const toolNamesSchema = z.enum(toolNames)
 
 export type ToolName = z.infer<typeof toolNamesSchema>
+
+/**
+ * WebSearchParams
+ */
+
+export const webSearchParamsSchema = z.object({
+	tool_name: z.literal("web_search"),
+	query: z.string(),
+	engine: z.string().optional(),
+	num_results: z.number().optional(),
+})
+
+export type WebSearchParams = z.infer<typeof webSearchParamsSchema>
+
+/**
+ * WebSearchResult
+ */
+export const webSearchResultSchema = z.object({
+	title: z.string(),
+	link: z.string().url(),
+	snippet: z.string(),
+})
+export type WebSearchResult = z.infer<typeof webSearchResultSchema>
 
 /**
  * ToolUsage
@@ -1202,6 +1364,80 @@ export const ipcMessageSchema = z.discriminatedUnion("type", [
 export type IpcMessage = z.infer<typeof ipcMessageSchema>
 
 /**
+ * ExtractPageContentParams
+ */
+
+export const extractPageContentParamsSchema = z.object({
+	url: z.string(), // Intenção de ser uma URL
+	clean_html: z.boolean().optional().default(true),
+})
+
+export type ExtractPageContentParams = z.infer<typeof extractPageContentParamsSchema>
+
+/**
+ * ExtractDocumentContentParams
+ */
+
+export const extractDocumentContentParamsSchema = z.object({
+	source: z.string(), // Pode ser uma URL ou um caminho de arquivo local.
+	document_type: z.string().optional(), // Ex: "pdf", "docx", "txt".
+})
+
+export type ExtractDocumentContentParams = z.infer<typeof extractDocumentContentParamsSchema>
+
+/**
+ * SearchStructuredDataParams
+ */
+
+export const searchStructuredDataParamsSchema = z.object({
+	file_path: z.string(),
+	query: z.string(),
+	criteria: z.string().optional(),
+	file_type: z.string().optional(),
+})
+
+export type SearchStructuredDataParams = z.infer<typeof searchStructuredDataParamsSchema>
+/**
+ * SearchCodeRepositoriesParams
+ */
+
+export const searchCodeRepositoriesParamsSchema = z.object({
+	query: z.string(),
+	platform: z.string().optional().default("github"),
+	repository: z.string().optional(),
+	organization: z.string().optional(),
+	user: z.string().optional(),
+	per_page: z.number().optional(),
+	page: z.number().optional(),
+})
+
+export type SearchCodeRepositoriesParams = z.infer<typeof searchCodeRepositoriesParamsSchema>
+/**
+ * ProcessTextContentParams
+ */
+
+export const processTextContentParamsSchema = z.object({
+	text_content: z.string(),
+	operation: z.string(), // Ex: "fix_markdown", "summarize"
+	options: z.string().optional(),
+})
+
+export type ProcessTextContentParams = z.infer<typeof processTextContentParamsSchema>
+
+/**
+ * GetRepositoryFileContentParams
+ */
+
+export const getRepositoryFileContentParamsSchema = z.object({
+	repository_url: z.string(),
+	file_path: z.string(),
+	ref: z.string().optional(),
+	platform: z.string().optional().default("github"),
+})
+
+export type GetRepositoryFileContentParams = z.infer<typeof getRepositoryFileContentParamsSchema>
+
+/**
  * TypeDefinition
  */
 
@@ -1221,6 +1457,17 @@ export const typeDefinitions: TypeDefinition[] = [
 	{ schema: ipcMessageSchema, identifier: "IpcMessage" },
 	{ schema: taskCommandSchema, identifier: "TaskCommand" },
 	{ schema: taskEventSchema, identifier: "TaskEvent" },
+	{ schema: processTextContentParamsSchema, identifier: "ProcessTextContentParams" },
+	{ schema: SearchApiProviderNameSchema, identifier: "SearchApiProviderName" },
+	{ schema: baseSearchApiSettingsSchema, identifier: "BaseSearchApiSettings" },
+	{ schema: jinaSearchApiSchema, identifier: "JinaSearchApiSettings" },
+	{ schema: googleCustomSearchApiSchema, identifier: "GoogleCustomSearchApiSettings" },
+	{ schema: serperApiSchema, identifier: "SerperApiSettings" },
+	{ schema: braveSearchApiSchema, identifier: "BraveSearchApiSettings" },
+	{ schema: duckduckgoFallbackSearchApiSchema, identifier: "DuckDuckGoFallbackSearchApiSettings" },
+	{ schema: searchApiSettingsSchemaDiscriminated, identifier: "SearchApiSettingsDiscriminated" },
+	// O tipo SearchApiSettings é inferido, então não adicionamos o schema diretamente,
+	// mas sim o schema do qual ele é inferido para que o tipo seja gerado.
 ]
 
 // Also export as default for ESM compatibility.

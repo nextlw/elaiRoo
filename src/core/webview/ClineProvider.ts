@@ -9,7 +9,14 @@ import axios from "axios"
 import pWaitFor from "p-wait-for"
 import * as vscode from "vscode"
 
-import type { GlobalState, ProviderName, ProviderSettings, RooCodeSettings, ProviderSettingsEntry } from "../../schemas"
+import type {
+	GlobalState,
+	ProviderName,
+	ProviderSettings,
+	RooCodeSettings,
+	ProviderSettingsEntry,
+	SearchApiSettings,
+} from "../../schemas"
 import { t } from "../../i18n"
 import { setPanel } from "../../activate/registerCommands"
 import { requestyDefaultModelId, openRouterDefaultModelId, glamaDefaultModelId } from "../../shared/api"
@@ -33,6 +40,7 @@ import { setSoundEnabled } from "../../utils/sound"
 import { setTtsEnabled, setTtsSpeed } from "../../utils/tts"
 import { ContextProxy } from "../config/ContextProxy"
 import { ProviderSettingsManager } from "../config/ProviderSettingsManager"
+import { SearchApiSettingsManager } from "../config/SearchApiSettingsManager"
 import { CustomModesManager } from "../config/CustomModesManager"
 import { buildApiHandler } from "../../api"
 import { CodeActionName } from "../../activate/CodeActionProvider"
@@ -72,6 +80,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 	public readonly latestAnnouncementId = "may-14-2025-3-17" // Update for v3.17.0 announcement
 	public readonly providerSettingsManager: ProviderSettingsManager
 	public readonly customModesManager: CustomModesManager
+	public readonly searchApiSettingsManager: SearchApiSettingsManager
 
 	constructor(
 		readonly context: vscode.ExtensionContext,
@@ -95,6 +104,8 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 		this.customModesManager = new CustomModesManager(this.context, async () => {
 			await this.postStateToWebview()
 		})
+
+		this.searchApiSettingsManager = new SearchApiSettingsManager(this.context)
 
 		// Initialize MCP Hub through the singleton manager
 		McpServerManager.getInstance(this.context, this)
@@ -519,6 +530,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 	}
 
 	public async postMessageToWebview(message: ExtensionMessage) {
+		this.log(`[ClineProvider] postingMessageToWebview: ${message.type} - ${JSON.stringify(message)}`)
 		await this.view?.webview.postMessage(message)
 	}
 
@@ -895,6 +907,86 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 		await this.postStateToWebview()
 	}
 
+	async upsertSearchApiProfile(name: string, settings: SearchApiSettings, activate?: boolean): Promise<void> {
+		// createOrUpdateProfile retorna o ID do perfil (string)
+		const profileId = await this.searchApiSettingsManager.createOrUpdateProfile(name, settings)
+
+		// Atualizar a lista de perfis no estado global
+		const listSearchApiConfigMeta = await this.searchApiSettingsManager.getAllProfiles()
+		await this.contextProxy.setValue("searchApiConfigurations", listSearchApiConfigMeta)
+
+		if (activate && profileId) {
+			// Usar o 'name' original para ativar, pois é o nome do perfil.
+			await this.searchApiSettingsManager.activateProfile(name)
+
+			// Atualizar o nome do perfil ativo no estado global
+			await this.contextProxy.setValue("currentSearchApiConfigName", name)
+
+			const activeSettings = await this.searchApiSettingsManager.getCurrentProfileSettings()
+			// activeSettings pode ser undefined se o perfil não for encontrado ou não tiver settings.
+			// setSearchApiSettings deve aceitar SearchApiSettings | undefined
+			if (activeSettings) {
+				// Remover o id antes de salvar no ContextProxy
+				const { id: _id, name: _profileName, ...settingsWithoutId } = activeSettings
+				await this.contextProxy.setSearchApiSettings(settingsWithoutId as SearchApiSettings)
+				await this.contextProxy.setValue("activeSearchApiSettings", settingsWithoutId as SearchApiSettings)
+			}
+		}
+
+		// Notificar a webview sobre a mudança no estado
+		await this.postStateToWebview()
+	}
+
+	async deleteSearchApiProfile(name: string): Promise<void> {
+		await this.searchApiSettingsManager.deleteProfile(name)
+
+		// Atualizar a lista de perfis no estado global
+		const listSearchApiConfigMeta = await this.searchApiSettingsManager.getAllProfiles()
+		await this.contextProxy.setValue("searchApiConfigurations", listSearchApiConfigMeta)
+
+		// deleteProfile em SearchApiSettingsManager já lida com a redefinição do perfil ativo.
+		// Apenas precisamos buscar as configurações ativas atualizadas.
+		const activeSettings = await this.searchApiSettingsManager.getCurrentProfileSettings()
+		const currentProfileName = await this.searchApiSettingsManager.getCurrentProfileName()
+
+		// Atualizar o nome do perfil ativo
+		if (currentProfileName) {
+			await this.contextProxy.setValue("currentSearchApiConfigName", currentProfileName)
+		}
+
+		// activeSettings pode ser undefined. setSearchApiSettings deve aceitar SearchApiSettings | undefined
+		if (activeSettings) {
+			const { id: _id, name: _profileName, ...settingsWithoutId } = activeSettings
+			await this.contextProxy.setSearchApiSettings(settingsWithoutId as SearchApiSettings)
+			await this.contextProxy.setValue("activeSearchApiSettings", settingsWithoutId as SearchApiSettings)
+		} else {
+			await this.contextProxy.setSearchApiSettings(undefined)
+			await this.contextProxy.setValue("activeSearchApiSettings", undefined)
+		}
+
+		await this.postStateToWebview()
+	}
+
+	async activateSearchApiProfile(name: string): Promise<void> {
+		await this.searchApiSettingsManager.activateProfile(name)
+
+		// Atualizar o nome do perfil de API de busca ativo no ContextProxy
+		await this.contextProxy.setValue("currentSearchApiConfigName", name)
+
+		const activeSettings = await this.searchApiSettingsManager.getCurrentProfileSettings()
+		// activeSettings pode ser undefined. setSearchApiSettings deve aceitar SearchApiSettings | undefined
+		if (activeSettings) {
+			const { id: _id, name: _profileName, ...settingsWithoutId } = activeSettings
+			await this.contextProxy.setSearchApiSettings(settingsWithoutId as SearchApiSettings)
+			await this.contextProxy.setValue("activeSearchApiSettings", settingsWithoutId as SearchApiSettings)
+		} else {
+			await this.contextProxy.setSearchApiSettings(undefined)
+			await this.contextProxy.setValue("activeSearchApiSettings", undefined)
+		}
+
+		await this.postStateToWebview()
+	}
+
 	// Task Management
 
 	async cancelTask() {
@@ -980,7 +1072,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 	// OpenRouter
 
 	async handleOpenRouterCallback(code: string) {
-		let { apiConfiguration, currentApiConfigName } = await this.getState()
+		let { apiConfiguration, currentProviderConfigName } = await this.getState()
 
 		let apiKey: string
 		try {
@@ -1007,7 +1099,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			openRouterModelId: apiConfiguration?.openRouterModelId || openRouterDefaultModelId,
 		}
 
-		await this.upsertProviderProfile(currentApiConfigName, newConfiguration)
+		await this.upsertProviderProfile(currentProviderConfigName ?? "openrouter", newConfiguration)
 	}
 
 	// Glama
@@ -1028,7 +1120,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			throw error
 		}
 
-		const { apiConfiguration, currentApiConfigName } = await this.getState()
+		const { apiConfiguration, currentProviderConfigName: _currentProviderConfigName } = await this.getState()
 
 		const newConfiguration: ProviderSettings = {
 			...apiConfiguration,
@@ -1037,13 +1129,13 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			glamaModelId: apiConfiguration?.glamaModelId || glamaDefaultModelId,
 		}
 
-		await this.upsertProviderProfile(currentApiConfigName, newConfiguration)
+		await this.upsertProviderProfile("glama", newConfiguration)
 	}
 
 	// Requesty
 
 	async handleRequestyCallback(code: string) {
-		let { apiConfiguration, currentApiConfigName } = await this.getState()
+		let { apiConfiguration, currentProviderConfigName: _currentProviderConfigName } = await this.getState()
 
 		const newConfiguration: ProviderSettings = {
 			...apiConfiguration,
@@ -1052,7 +1144,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			requestyModelId: apiConfiguration?.requestyModelId || requestyDefaultModelId,
 		}
 
-		await this.upsertProviderProfile(currentApiConfigName, newConfiguration)
+		await this.upsertProviderProfile("requesty", newConfiguration)
 	}
 
 	// Task history
@@ -1218,7 +1310,8 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			enableMcpServerCreation,
 			alwaysApproveResubmit,
 			requestDelaySeconds,
-			currentApiConfigName,
+			currentProviderConfigName,
+			searchApiConfigurations,
 			listApiConfigMeta,
 			pinnedApiConfigs,
 			mode,
@@ -1237,7 +1330,12 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			maxReadFileLine,
 			terminalCompressProgressBar,
 			historyPreviewCollapsed,
+			// Novas propriedades da API de Busca
+			currentSearchApiConfigName,
+			activeSearchApiSettings,
 		} = await this.getState()
+
+		this.log(`[ClineProvider] activeSearchApiSettings: ${JSON.stringify(activeSearchApiSettings, null, 2)}`)
 
 		const telemetryKey = process.env.POSTHOG_API_KEY
 		const machineId = vscode.env.machineId
@@ -1247,6 +1345,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 		// Check if there's a system prompt override for the current mode
 		const currentMode = mode ?? defaultModeSlug
 		const hasSystemPromptOverride = await this.hasFileBasedSystemPromptOverride(currentMode)
+		// const listSearchApiConfigMeta = await this.searchApiSettingsManager.getAllProfiles() // Removido, pois searchApiConfigurations já vem de getState()
 
 		return {
 			version: this.context.extension?.packageJSON?.version ?? "",
@@ -1298,10 +1397,14 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			enableMcpServerCreation: enableMcpServerCreation ?? true,
 			alwaysApproveResubmit: alwaysApproveResubmit ?? false,
 			requestDelaySeconds: requestDelaySeconds ?? 10,
-			currentApiConfigName: currentApiConfigName ?? "default",
+			currentProviderConfigName: currentProviderConfigName ?? "default", // Renomeado
 			listApiConfigMeta: listApiConfigMeta ?? [],
 			pinnedApiConfigs: pinnedApiConfigs ?? {},
 			mode: mode ?? defaultModeSlug,
+			// Novas propriedades da API de Busca
+			currentSearchApiConfigName: currentSearchApiConfigName ?? "default",
+			listSearchApiConfigMeta: searchApiConfigurations ?? [], // Para API de Busca
+			activeSearchApiSettings: activeSearchApiSettings,
 			customModePrompts: customModePrompts ?? {},
 			customSupportPrompts: customSupportPrompts ?? {},
 			enhancementApiConfigId,
@@ -1334,7 +1437,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 	 */
 
 	async getState() {
-		const stateValues = this.contextProxy.getValues()
+		const stateValues = this.contextProxy.getValues() as GlobalState // Cast para GlobalState para acesso às novas chaves
 
 		const customModes = await this.customModesManager.getCustomModes()
 
@@ -1342,19 +1445,29 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 		const apiProvider: ProviderName = stateValues.apiProvider ? stateValues.apiProvider : "anthropic"
 
 		// Build the apiConfiguration object combining state values and secrets.
-		const providerSettings = this.contextProxy.getProviderSettings()
+		const providerSettings = this.contextProxy.getProviderSettings() // providerSettings é do tipo ProviderSettings
 
 		// Ensure apiProvider is set properly if not already in state
 		if (!providerSettings.apiProvider) {
 			providerSettings.apiProvider = apiProvider
 		}
 
-		// Return the same structure as before
+		// Return the same structure as before, adding new search API properties
 		return {
+			// Propriedades existentes para configurações de provedor de LLM
 			apiConfiguration: providerSettings,
+			currentProviderConfigName: stateValues.currentApiConfigName ?? "default", // Para LLM
+			listApiConfigMeta: stateValues.listApiConfigMeta ?? [], // Para LLM
+
+			// Novas propriedades para configurações da API de Busca
+			currentSearchApiConfigName: stateValues.currentSearchApiConfigName, // Para API de Busca
+			searchApiConfigurations: stateValues.searchApiConfigurations ?? [], // Para API de Busca
+			activeSearchApiSettings: stateValues.activeSearchApiSettings, // Para API de Busca
+
+			// Outras propriedades globais existentes
 			lastShownAnnouncementId: stateValues.lastShownAnnouncementId,
 			customInstructions: stateValues.customInstructions,
-			apiModelId: stateValues.apiModelId,
+			apiModelId: stateValues.apiModelId, // Legado, mas mantido se ainda usado
 			alwaysAllowReadOnly: stateValues.alwaysAllowReadOnly ?? false,
 			alwaysAllowReadOnlyOutsideWorkspace: stateValues.alwaysAllowReadOnlyOutsideWorkspace ?? false,
 			alwaysAllowWrite: stateValues.alwaysAllowWrite ?? false,
@@ -1364,7 +1477,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			alwaysAllowMcp: stateValues.alwaysAllowMcp ?? false,
 			alwaysAllowModeSwitch: stateValues.alwaysAllowModeSwitch ?? false,
 			alwaysAllowSubtasks: stateValues.alwaysAllowSubtasks ?? false,
-			taskHistory: stateValues.taskHistory,
+			taskHistory: stateValues.taskHistory ?? [], // Renomeado para history em getStateToPostToWebview
 			allowedCommands: stateValues.allowedCommands,
 			soundEnabled: stateValues.soundEnabled ?? false,
 			ttsEnabled: stateValues.ttsEnabled ?? false,
@@ -1377,7 +1490,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			remoteBrowserHost: stateValues.remoteBrowserHost,
 			remoteBrowserEnabled: stateValues.remoteBrowserEnabled ?? false,
 			cachedChromeHostUrl: stateValues.cachedChromeHostUrl as string | undefined,
-			fuzzyMatchThreshold: stateValues.fuzzyMatchThreshold ?? 1.0,
+			fuzzyMatchThreshold: stateValues.fuzzyMatchThreshold ?? 1.0, // Este é o fuzzyMatchThreshold que getStateToPostToWebview usa
 			writeDelayMs: stateValues.writeDelayMs ?? 1000,
 			terminalOutputLineLimit: stateValues.terminalOutputLineLimit ?? 500,
 			terminalShellIntegrationTimeout:
@@ -1396,14 +1509,14 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			enableMcpServerCreation: stateValues.enableMcpServerCreation ?? true,
 			alwaysApproveResubmit: stateValues.alwaysApproveResubmit ?? false,
 			requestDelaySeconds: Math.max(5, stateValues.requestDelaySeconds ?? 10),
-			currentApiConfigName: stateValues.currentApiConfigName ?? "default",
-			listApiConfigMeta: stateValues.listApiConfigMeta ?? [],
+			// currentApiConfigName já tratado como currentProviderConfigName
+			// listApiConfigMeta é para getStateToPostToWebview, não para o estado bruto
 			pinnedApiConfigs: stateValues.pinnedApiConfigs ?? {},
 			modeApiConfigs: stateValues.modeApiConfigs ?? ({} as Record<Mode, string>),
 			customModePrompts: stateValues.customModePrompts ?? {},
 			customSupportPrompts: stateValues.customSupportPrompts ?? {},
 			enhancementApiConfigId: stateValues.enhancementApiConfigId,
-			experiments: stateValues.experiments ?? experimentDefault,
+			experiments: stateValues.experiments ?? experimentDefault, // Corrigido: sem ()
 			autoApprovalEnabled: stateValues.autoApprovalEnabled ?? false,
 			customModes,
 			maxOpenTabsContext: stateValues.maxOpenTabsContext ?? 20,
@@ -1414,6 +1527,10 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			showRooIgnoredFiles: stateValues.showRooIgnoredFiles ?? true,
 			maxReadFileLine: stateValues.maxReadFileLine ?? 500,
 			historyPreviewCollapsed: stateValues.historyPreviewCollapsed ?? false,
+			// Adicionar as chaves de GlobalState que não foram explicitamente listadas acima, se houver.
+			// É importante que o objeto retornado seja compatível com o que getStateToPostToWebview espera.
+			// Assegurar que todas as chaves desestruturadas em getStateToPostToWebview estejam presentes aqui.
+			history: stateValues.taskHistory ?? [], // Adicionando 'history' que é usado por getStateToPostToWebview
 		}
 	}
 

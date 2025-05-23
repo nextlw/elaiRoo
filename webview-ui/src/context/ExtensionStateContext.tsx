@@ -13,6 +13,7 @@ import { TelemetrySetting } from "@roo/shared/TelemetrySetting"
 
 import { vscode } from "@src/utils/vscode"
 import { convertTextMateToHljs } from "@src/utils/textMateToHljs"
+import type { SearchApiSettings, SearchApiSettingsMeta } from "@roo/schemas"
 
 export interface ExtensionStateContextType extends ExtensionState {
 	historyPreviewCollapsed?: boolean // Add the new state property
@@ -95,15 +96,24 @@ export interface ExtensionStateContextType extends ExtensionState {
 	terminalCompressProgressBar?: boolean
 	setTerminalCompressProgressBar: (value: boolean) => void
 	setHistoryPreviewCollapsed: (value: boolean) => void
+	// Adicionadas propriedades para a API de Busca
+	searchApiConfigurations?: SearchApiSettingsMeta[] // Renomeado de listSearchApiConfigMeta
+	currentSearchApiConfigName?: string
+	activeSearchApiSettings?: SearchApiSettings // Renomeado de searchApiConfiguration
 }
 
 export const ExtensionStateContext = createContext<ExtensionStateContextType | undefined>(undefined)
-
 export const mergeExtensionState = (prevState: ExtensionState, newState: ExtensionState) => {
+	console.log("mergeExtensionState - prevState:", prevState)
+	console.log("mergeExtensionState - newState:", newState)
+
 	const {
 		customModePrompts: prevCustomModePrompts,
 		customSupportPrompts: prevCustomSupportPrompts,
 		experiments: prevExperiments,
+		activeSearchApiSettings: prevActiveSearchApiSettings, // Renomeado e corrigido
+		searchApiConfigurations: prevSearchApiConfigurations, // Renomeado e corrigido
+		currentSearchApiConfigName: prevCurrentSearchApiConfigName,
 		...prevRest
 	} = prevState
 
@@ -112,6 +122,9 @@ export const mergeExtensionState = (prevState: ExtensionState, newState: Extensi
 		customModePrompts: newCustomModePrompts,
 		customSupportPrompts: newCustomSupportPrompts,
 		experiments: newExperiments,
+		activeSearchApiSettings: newActiveSearchApiSettings, // Renomeado e corrigido
+		searchApiConfigurations: newSearchApiConfigurations, // Renomeado e corrigido
+		currentSearchApiConfigName: newCurrentSearchApiConfigName,
 		...newRest
 	} = newState
 
@@ -120,10 +133,24 @@ export const mergeExtensionState = (prevState: ExtensionState, newState: Extensi
 	const experiments = { ...prevExperiments, ...newExperiments }
 	const rest = { ...prevRest, ...newRest }
 
+	// Mesclar as configurações da API de Busca
+	const activeSearchApiSettings = newActiveSearchApiSettings ?? prevActiveSearchApiSettings
+	const searchApiConfigurations = newSearchApiConfigurations ?? prevSearchApiConfigurations
+	const currentSearchApiConfigName = newCurrentSearchApiConfigName ?? prevCurrentSearchApiConfigName
+
 	// Note that we completely replace the previous apiConfiguration object with
 	// a new one since the state that is broadcast is the entire apiConfiguration
 	// and therefore merging is not necessary.
-	return { ...rest, apiConfiguration, customModePrompts, customSupportPrompts, experiments }
+	return {
+		...rest,
+		apiConfiguration,
+		customModePrompts,
+		customSupportPrompts,
+		experiments,
+		activeSearchApiSettings, // Renomeado e corrigido
+		searchApiConfigurations, // Renomeado e corrigido
+		currentSearchApiConfigName,
+	}
 }
 
 export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -173,6 +200,10 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		terminalZdotdir: false, // Default ZDOTDIR handling setting
 		terminalCompressProgressBar: true, // Default to compress progress bar output
 		historyPreviewCollapsed: false, // Initialize the new state (default to expanded)
+		// Inicialização das novas propriedades da API de Busca
+		searchApiConfigurations: [], // Renomeado
+		currentSearchApiConfigName: "default",
+		activeSearchApiSettings: undefined, // Renomeado, pode ser undefined inicialmente
 	})
 
 	const [didHydrateState, setDidHydrateState] = useState(false)
@@ -193,10 +224,17 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 			const message: ExtensionMessage = event.data
 			switch (message.type) {
 				case "state": {
-					const newState = message.state!
-					setState((prevState) => mergeExtensionState(prevState, newState))
-					setShowWelcome(!checkExistKey(newState.apiConfiguration))
-					setDidHydrateState(true)
+					const newState = message.state
+					if (newState) {
+						setState((prevState) => mergeExtensionState(prevState, newState))
+						setShowWelcome(!checkExistKey(newState.apiConfiguration))
+						setDidHydrateState(true)
+					} else {
+						console.error(
+							"Received state message with undefined state payload (message.state is undefined). Full message:",
+							JSON.stringify(message),
+						)
+					}
 					break
 				}
 				case "theme": {
