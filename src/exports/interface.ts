@@ -35,7 +35,7 @@ export type {
  * Enums
  */
 
-import { RooCodeEventName, IpcOrigin, IpcMessageType } from "../schemas"
+import { RooCodeEventName, IpcOrigin, IpcMessageType } from "../schemas/index"
 
 export { RooCodeEventName, IpcOrigin, IpcMessageType }
 
@@ -43,7 +43,7 @@ export { RooCodeEventName, IpcOrigin, IpcMessageType }
  * Constants
  */
 
-import { providerNames, Package } from "../schemas"
+import { providerNames, Package } from "../schemas/index"
 
 export { providerNames, Package }
 

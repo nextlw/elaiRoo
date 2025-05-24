@@ -18,16 +18,48 @@ async function main() {
 		types.push(`export type { ${identifier} }`)
 	}
 
-	fs.writeFileSync("exports/types.ts", types.join("\n\n"))
+	fs.writeFileSync(
+		path.join(path.dirname(new URL(import.meta.url).pathname), "..", "exports", "types.ts"),
+		types.join("\n\n"),
+	)
 
-	await $`npx tsup exports/interface.ts --dts -d out`
-	fs.copyFileSync("out/interface.d.ts", "exports/roo-code.d.ts")
+	await $`npx tsup ${path.join(path.dirname(new URL(import.meta.url).pathname), "..", "exports", "interface.ts")} --dts -d ${path.join(path.dirname(new URL(import.meta.url).pathname), "..", "..", "out")}`
+	fs.copyFileSync(
+		path.join(path.dirname(new URL(import.meta.url).pathname), "..", "..", "out", "interface.d.ts"),
+		path.join(path.dirname(new URL(import.meta.url).pathname), "..", "exports", "roo-code.d.ts"),
+	)
 
-	await $`npx prettier --write exports/types.ts exports/roo-code.d.ts`
+	await $`npx prettier --write ${path.join(path.dirname(new URL(import.meta.url).pathname), "..", "exports", "types.ts")} ${path.join(path.dirname(new URL(import.meta.url).pathname), "..", "exports", "roo-code.d.ts")}`
 
-	if (fs.existsSync(path.join("..", "..", "Roo-Code-Types", "src"))) {
-		fs.copyFileSync("out/interface.js", path.join("..", "..", "Roo-Code-Types", "src", "index.js"))
-		fs.copyFileSync("out/interface.d.ts", path.join("..", "..", "Roo-Code-Types", "src", "index.d.ts"))
+	if (
+		fs.existsSync(
+			path.join(path.dirname(new URL(import.meta.url).pathname), "..", "..", "..", "Roo-Code-Types", "src"),
+		)
+	) {
+		fs.copyFileSync(
+			path.join(path.dirname(new URL(import.meta.url).pathname), "..", "..", "out", "interface.js"),
+			path.join(
+				path.dirname(new URL(import.meta.url).pathname),
+				"..",
+				"..",
+				"..",
+				"Roo-Code-Types",
+				"src",
+				"index.js",
+			),
+		)
+		fs.copyFileSync(
+			path.join(path.dirname(new URL(import.meta.url).pathname), "..", "..", "out", "interface.d.ts"),
+			path.join(
+				path.dirname(new URL(import.meta.url).pathname),
+				"..",
+				"..",
+				"..",
+				"Roo-Code-Types",
+				"src",
+				"index.d.ts",
+			),
+		)
 	}
 }
 
