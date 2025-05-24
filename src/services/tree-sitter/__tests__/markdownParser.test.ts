@@ -457,7 +457,19 @@ Line 5`
 			for (let i = minLines; i <= 6; i++) {
 				const headerPrefix = "#".repeat(i)
 				expect(formatted).toContain(
-					`${headerPrefix} ${i === 1 ? "One" : i === 2 ? "Two" : i === 3 ? "Three" : i === 4 ? "Four" : i === 5 ? "Five" : "Six"} line header`,
+					`${headerPrefix} ${
+						i === 1
+							? "One"
+							: i === 2
+								? "Two"
+								: i === 3
+									? "Three"
+									: i === 4
+										? "Four"
+										: i === 5
+											? "Five"
+											: "Six"
+					} line header`,
 				)
 			}
 		}

@@ -101,7 +101,9 @@ export class ShellIntegrationManager {
 			return true
 		} catch (error: unknown) {
 			console.error(
-				`[TerminalRegistry] Error cleaning up temporary directory ${tmpDir}: ${error instanceof Error ? error.message : String(error)}`,
+				`[TerminalRegistry] Error cleaning up temporary directory ${tmpDir}: ${
+					error instanceof Error ? error.message : String(error)
+				}`,
 			)
 
 			return false

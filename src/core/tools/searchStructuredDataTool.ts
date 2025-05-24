@@ -126,7 +126,10 @@ export async function searchStructuredDataTool(
 		const summary = `Found ${results.length} item(s) in ${params.file_path}.`
 
 		if (results.length > 0) {
-			const approvalMessage = `${summary}\nPreview (first 500 chars):\n${resultString.substring(0, 500)}...\n\nProceed to push full result?`
+			const approvalMessage = `${summary}\nPreview (first 500 chars):\n${resultString.substring(
+				0,
+				500,
+			)}...\n\nProceed to push full result?`
 			const userResponse = await askApproval(approvalMessage, ["Yes", "No"])
 			if (userResponse === "Yes") {
 				pushToolResult(resultString)

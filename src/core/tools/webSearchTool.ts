@@ -406,7 +406,9 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 
 		let approvalMessageContent = `Web search for "${query}" (using ${providerNameForResults}) found ${searchResults.length} results.`
 		if (searchResults.length > 0) {
-			approvalMessageContent += `\nExample: "${searchResults[0]?.title || "N/A"}" - ${searchResults[0]?.link || "N/A"}`
+			approvalMessageContent += `\nExample: "${searchResults[0]?.title || "N/A"}" - ${
+				searchResults[0]?.link || "N/A"
+			}`
 			const codeBlockStr = JSON.stringify(searchResults.slice(0, Math.min(searchResults.length, 3)), null, 2)
 			approvalMessageContent += `\n\n\`\`\`json\n${codeBlockStr}\n\`\`\``
 		}
@@ -428,7 +430,9 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 		}
 		pushToolResult(JSON.stringify(finalResultObject, null, 2))
 	} catch (error: any) {
-		const errorMessage = `Error in web_search for query "${query || "unknown"}": ${error.message}\nRaw output (if any):\n${typeof rawResultsOutput === "string" ? rawResultsOutput.substring(0, 500) : "N/A"}`
+		const errorMessage = `Error in web_search for query "${query || "unknown"}": ${
+			error.message
+		}\nRaw output (if any):\n${typeof rawResultsOutput === "string" ? rawResultsOutput.substring(0, 500) : "N/A"}`
 		logger.error(`[webSearchTool] ${errorMessage}`, error)
 		if (handleError) {
 			await handleError(`web_search failed for query "${query || "unknown"}" (Tool ID: ${block.name})`, error)

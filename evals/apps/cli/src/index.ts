@@ -178,6 +178,15 @@ const runExercise = async ({ run, task, server }: { run: Run; task: Task; server
 	const workspacePath = path.resolve(exercisesPath, language, exercise)
 	const taskSocketPath = path.resolve(dirname, `${dirname}/task-${task.id}.sock`)
 
+	// Inject foot gun system prompt if present
+	if (process.env.FOOTGUN_SYSTEM_PROMPT) {
+		const rooDir = path.join(workspacePath, ".roo")
+		if (!fs.existsSync(rooDir)) {
+			fs.mkdirSync(rooDir, { recursive: true })
+		}
+		fs.writeFileSync(path.join(rooDir, "system-prompt-code"), process.env.FOOTGUN_SYSTEM_PROMPT)
+	}
+
 	// If debugging:
 	// Use --wait --log trace or --verbose.
 	// Don't await execa and store result as subprocess.
@@ -387,20 +396,26 @@ const runUnitTest = async ({ task }: { task: Task }) => {
 				})
 
 				console.log(
-					`${Date.now()} [cli#runUnitTest | ${task.language} / ${task.exercise}] "${command.join(" ")}": unit tests timed out, killing ${subprocess.pid} + ${JSON.stringify(descendants)}`,
+					`${Date.now()} [cli#runUnitTest | ${task.language} / ${task.exercise}] "${command.join(
+						" ",
+					)}": unit tests timed out, killing ${subprocess.pid} + ${JSON.stringify(descendants)}`,
 				)
 
 				if (descendants.length > 0) {
 					for (const descendant of descendants) {
 						try {
 							console.log(
-								`${Date.now()} [cli#runUnitTest | ${task.language} / ${task.exercise}] killing ${descendant}`,
+								`${Date.now()} [cli#runUnitTest | ${task.language} / ${
+									task.exercise
+								}] killing ${descendant}`,
 							)
 
 							await execa`kill -9 ${descendant}`
 						} catch (error) {
 							console.error(
-								`${Date.now()} [cli#runUnitTest | ${task.language} / ${task.exercise}] Error killing descendant processes:`,
+								`${Date.now()} [cli#runUnitTest | ${task.language} / ${
+									task.exercise
+								}] Error killing descendant processes:`,
 								error,
 							)
 						}
@@ -424,7 +439,9 @@ const runUnitTest = async ({ task }: { task: Task }) => {
 			const result = await subprocess
 
 			console.log(
-				`${Date.now()} [cli#runUnitTest | ${task.language} / ${task.exercise}] "${command.join(" ")}" result -> ${JSON.stringify(result)}`,
+				`${Date.now()} [cli#runUnitTest | ${task.language} / ${task.exercise}] "${command.join(
+					" ",
+				)}" result -> ${JSON.stringify(result)}`,
 			)
 
 			clearTimeout(timeout)

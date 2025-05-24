@@ -1182,7 +1182,9 @@ export class McpHub {
 		const connection = this.findConnection(serverName, source)
 		if (!connection) {
 			throw new Error(
-				`No connection found for server: ${serverName}${source ? ` with source ${source}` : ""}. Please make sure to use MCP servers available under 'Connected MCP Servers'.`,
+				`No connection found for server: ${serverName}${
+					source ? ` with source ${source}` : ""
+				}. Please make sure to use MCP servers available under 'Connected MCP Servers'.`,
 			)
 		}
 		if (connection.server.disabled) {

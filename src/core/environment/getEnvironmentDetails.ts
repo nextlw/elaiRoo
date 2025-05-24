@@ -185,7 +185,9 @@ export async function getEnvironmentDetails(cline: Task, includeFileDetails: boo
 	const timeZoneOffset = -now.getTimezoneOffset() / 60 // Convert to hours and invert sign to match conventional notation
 	const timeZoneOffsetHours = Math.floor(Math.abs(timeZoneOffset))
 	const timeZoneOffsetMinutes = Math.abs(Math.round((Math.abs(timeZoneOffset) - timeZoneOffsetHours) * 60))
-	const timeZoneOffsetStr = `${timeZoneOffset >= 0 ? "+" : "-"}${timeZoneOffsetHours}:${timeZoneOffsetMinutes.toString().padStart(2, "0")}`
+	const timeZoneOffsetStr = `${timeZoneOffset >= 0 ? "+" : "-"}${timeZoneOffsetHours}:${timeZoneOffsetMinutes
+		.toString()
+		.padStart(2, "0")}`
 	details += `\n\n# Current Time\n${formatter.format(now)} (${timeZone}, UTC${timeZoneOffsetStr})`
 
 	// Add context tokens information.
@@ -196,7 +198,9 @@ export async function getEnvironmentDetails(cline: Task, includeFileDetails: boo
 	const contextPercentage =
 		contextTokens && contextWindow ? Math.round((contextTokens / contextWindow) * 100) : undefined
 
-	details += `\n\n# Current Context Size (Tokens)\n${contextTokens ? `${contextTokens.toLocaleString()} (${contextPercentage}%)` : "(Not available)"}`
+	details += `\n\n# Current Context Size (Tokens)\n${
+		contextTokens ? `${contextTokens.toLocaleString()} (${contextPercentage}%)` : "(Not available)"
+	}`
 	details += `\n\n# Current Cost\n${totalCost !== null ? `$${totalCost.toFixed(2)}` : "(Not available)"}`
 
 	// Add current mode and any mode-specific warnings.

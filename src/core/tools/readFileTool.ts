@@ -173,7 +173,9 @@ export async function readFileTool(
 								return undefined
 							} else {
 								console.error(
-									`[read_file] Unhandled error: ${error instanceof Error ? error.message : String(error)}`,
+									`[read_file] Unhandled error: ${
+										error instanceof Error ? error.message : String(error)
+									}`,
 								)
 								return undefined
 							}

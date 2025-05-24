@@ -4,9 +4,8 @@ import fs from "fs/promises"
 import { ClineSayTool } from "../../shared/ExtensionMessage"
 import { getReadablePath } from "../../utils/path"
 import { Task } from "../task/Task"
-import { ToolUse, RemoveClosingTag } from "../../shared/tools"
+import { ToolUse, RemoveClosingTag, AskApproval, HandleError, PushToolResult } from "../../shared/tools"
 import { formatResponse } from "../prompts/responses"
-import { AskApproval, HandleError, PushToolResult } from "../../shared/tools"
 import { fileExistsAtPath } from "../../utils/fs"
 import { addLineNumbers } from "../../integrations/misc/extract-text"
 import { RecordSource } from "../context-tracking/FileContextTrackerTypes"
@@ -114,9 +113,9 @@ export async function applyDiffTool(
 
 						const errorDetails = failPart.details ? JSON.stringify(failPart.details, null, 2) : ""
 
-						formattedError = `<error_details>\n${
-							failPart.error
-						}${errorDetails ? `\n\nDetails:\n${errorDetails}` : ""}\n</error_details>`
+						formattedError = `<error_details>\n${failPart.error}${
+							errorDetails ? `\n\nDetails:\n${errorDetails}` : ""
+						}\n</error_details>`
 					}
 				} else {
 					const errorDetails = diffResult.details ? JSON.stringify(diffResult.details, null, 2) : ""

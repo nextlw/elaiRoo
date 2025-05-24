@@ -162,7 +162,9 @@ export function isCustomMode(slug: string, customModes?: ModeConfig[]): boolean 
 export class FileRestrictionError extends Error {
 	constructor(mode: string, pattern: string, description: string | undefined, filePath: string) {
 		super(
-			`This mode (${mode}) can only edit files matching pattern: ${pattern}${description ? ` (${description})` : ""}. Got: ${filePath}`,
+			`This mode (${mode}) can only edit files matching pattern: ${pattern}${
+				description ? ` (${description})` : ""
+			}. Got: ${filePath}`,
 		)
 		this.name = "FileRestrictionError"
 	}

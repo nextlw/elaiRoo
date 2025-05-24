@@ -80,6 +80,11 @@
 			"allowedCommandsDescription": "Befehlspräfixe, die automatisch ausgeführt werden können, wenn 'Ausführungsoperationen immer genehmigen' aktiviert ist. Fügen Sie * hinzu, um alle Befehle zu erlauben (mit Vorsicht verwenden).",
 			"commandPlaceholder": "Befehlspräfix eingeben (z.B. 'git ')",
 			"addButton": "Hinzufügen"
+		},
+		"apiRequestLimit": {
+			"title": "Maximale Anfragen",
+			"description": "Automatisch so viele API-Anfragen stellen, bevor du um die Erlaubnis gebeten wirst, mit der Aufgabe fortzufahren.",
+			"unlimited": "Unbegrenzt"
 		}
 	},
 	"providers": {
@@ -110,6 +115,7 @@
 		"glamaApiKey": "Glama API-Schlüssel",
 		"getGlamaApiKey": "Glama API-Schlüssel erhalten",
 		"useCustomBaseUrl": "Benutzerdefinierte Basis-URL verwenden",
+		"useReasoning": "Reasoning aktivieren",
 		"useHostHeader": "Benutzerdefinierten Host-Header verwenden",
 		"useLegacyFormat": "Altes OpenAI API-Format verwenden",
 		"customHeaders": "Benutzerdefinierte Headers",
@@ -119,7 +125,10 @@
 		"requestyApiKey": "Requesty API-Schlüssel",
 		"refreshModels": {
 			"label": "Modelle aktualisieren",
-			"hint": "Bitte öffne die Einstellungen erneut, um die neuesten Modelle zu sehen."
+			"hint": "Bitte öffne die Einstellungen erneut, um die neuesten Modelle zu sehen.",
+			"loading": "Modellliste wird aktualisiert...",
+			"success": "Modellliste erfolgreich aktualisiert!",
+			"error": "Fehler beim Aktualisieren der Modellliste. Bitte versuche es erneut."
 		},
 		"getRequestyApiKey": "Requesty API-Schlüssel erhalten",
 		"openRouterTransformsText": "Prompts und Nachrichtenketten auf Kontextgröße komprimieren (<a>OpenRouter Transformationen</a>)",
@@ -399,9 +408,25 @@
 	},
 	"experimental": {
 		"warning": "⚠️",
+		"autoCondenseContextPercent": {
+			"label": "Schwellenwert für intelligente Kontextkomprimierung",
+			"description": "Wenn das Kontextfenster diesen Schwellenwert erreicht, wird Roo es automatisch komprimieren."
+		},
+		"condensingApiConfiguration": {
+			"label": "API-Konfiguration für Kontextkomprimierung",
+			"description": "Wählen Sie, welche API-Konfiguration für Kontextkomprimierungsoperationen verwendet werden soll. Lassen Sie unausgewählt, um die aktuelle aktive Konfiguration zu verwenden.",
+			"useCurrentConfig": "Aktuelle Konfiguration verwenden"
+		},
+		"customCondensingPrompt": {
+			"label": "Benutzerdefinierter Kontextkomprimierungs-Prompt",
+			"description": "Passen Sie den System-Prompt an, der für die Kontextkomprimierung verwendet wird. Lassen Sie leer, um den Standard-Prompt zu verwenden.",
+			"placeholder": "Geben Sie hier Ihren benutzerdefinierten Komprimierungs-Prompt ein...\n\nSie können die gleiche Struktur wie der Standard-Prompt verwenden:\n- Vorherige Konversation\n- Aktuelle Arbeit\n- Wichtige technische Konzepte\n- Relevante Dateien und Code\n- Problemlösung\n- Ausstehende Aufgaben und nächste Schritte",
+			"reset": "Auf Standard zurücksetzen",
+			"hint": "Leer = Standard-Prompt verwenden"
+		},
 		"AUTO_CONDENSE_CONTEXT": {
-			"name": "Kontextfenster intelligent komprimieren",
-			"description": "Verwendet einen LLM-Aufruf, um das vorherige Gespräch zusammenzufassen, wenn das Kontextfenster der Aufgabe fast voll ist, anstatt alte Nachrichten zu verwerfen. Hinweis: Die Kosten für die Zusammenfassung sind derzeit nicht in den in der Benutzeroberfläche angezeigten API-Kosten enthalten."
+			"name": "Intelligente Kontextkomprimierung automatisch auslösen",
+			"description": "Intelligente Kontextkomprimierung verwendet einen LLM-Aufruf, um das vorherige Gespräch zusammenzufassen, wenn das Kontextfenster der Aufgabe einen voreingestellten Schwellenwert erreicht, anstatt alte Nachrichten zu verwerfen, wenn der Kontext voll ist."
 		},
 		"DIFF_STRATEGY_UNIFIED": {
 			"name": "Experimentelle einheitliche Diff-Strategie verwenden",
@@ -464,7 +489,7 @@
 		"useCustomModel": "Benutzerdefiniert verwenden: {{modelId}}"
 	},
 	"footer": {
-		"feedback": "Wenn du Fragen oder Feedback hast, kannst du gerne ein Issue auf <githubLink>github.com/RooVetGit/Roo-Code</githubLink> öffnen oder <redditLink>reddit.com/r/RooCode</redditLink> oder <discordLink>discord.gg/roocode</discordLink> beitreten",
+		"feedback": "Wenn du Fragen oder Feedback hast, kannst du gerne ein Issue auf <githubLink>github.com/RooCodeInc/Roo-Code</githubLink> öffnen oder <redditLink>reddit.com/r/RooCode</redditLink> oder <discordLink>discord.gg/roocode</discordLink> beitreten",
 		"telemetry": {
 			"label": "Anonyme Fehler- und Nutzungsberichte zulassen",
 			"description": "Helfen Sie, Roo Code zu verbessern, indem Sie anonyme Nutzungsdaten und Fehlerberichte senden. Es werden niemals Code, Prompts oder persönliche Informationen gesendet. Weitere Details finden Sie in unserer Datenschutzrichtlinie."

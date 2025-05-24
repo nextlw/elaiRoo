@@ -81,13 +81,17 @@ export class TerminalProcess extends BaseTerminalProcess {
 				// Emit no_shell_integration event with descriptive message
 				this.emit(
 					"no_shell_integration",
-					`VSCE shell integration stream did not start within ${Terminal.getShellIntegrationTimeout() / 1000} seconds. Terminal problem?`,
+					`VSCE shell integration stream did not start within ${
+						Terminal.getShellIntegrationTimeout() / 1000
+					} seconds. Terminal problem?`,
 				)
 
 				// Reject with descriptive error
 				reject(
 					new Error(
-						`VSCE shell integration stream did not start within ${Terminal.getShellIntegrationTimeout() / 1000} seconds.`,
+						`VSCE shell integration stream did not start within ${
+							Terminal.getShellIntegrationTimeout() / 1000
+						} seconds.`,
 					),
 				)
 			}, Terminal.getShellIntegrationTimeout())
@@ -392,6 +396,7 @@ export class TerminalProcess extends BaseTerminalProcess {
 	// should be carefully considered to ensure they only remove control codes and don't
 	// alter the actual content or behavior of the output stream.
 	private removeEscapeSequences(str: string): string {
+		// eslint-disable-next-line no-control-regex
 		return stripAnsi(str.replace(/\x1b\]633;[^\x07]+\x07/gs, "").replace(/\x1b\]133;[^\x07]+\x07/gs, ""))
 	}
 

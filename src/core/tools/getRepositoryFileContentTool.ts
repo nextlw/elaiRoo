@@ -49,7 +49,9 @@ export async function getRepositoryFileContentTool(
 			repo = repo.slice(0, -4)
 		}
 	} catch (error) {
-		const message = `Error parsing repository URL '${repository_url}': ${error instanceof Error ? error.message : String(error)}`
+		const message = `Error parsing repository URL '${repository_url}': ${
+			error instanceof Error ? error.message : String(error)
+		}`
 		logger.error(message)
 		handleError(`Error in ${block.name}: Parsing repository URL`, new Error(message))
 		return
@@ -119,7 +121,9 @@ export async function getRepositoryFileContentTool(
 		pushToolResult(fileContent)
 		logger.info(`Successfully fetched content for ${file_path} from ${repository_url}`)
 	} catch (error) {
-		const message = `Error fetching file content from GitHub API: ${error instanceof Error ? error.message : String(error)}. API URL: ${apiUrl}`
+		const message = `Error fetching file content from GitHub API: ${
+			error instanceof Error ? error.message : String(error)
+		}. API URL: ${apiUrl}`
 		logger.error(message)
 		handleError(`Error in ${block.name}: Fetching file content from API`, new Error(message))
 	}

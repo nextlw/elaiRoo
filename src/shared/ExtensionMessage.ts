@@ -69,6 +69,8 @@ export interface ExtensionMessage {
 		| "setHistoryPreviewCollapsed"
 		| "commandExecutionStatus"
 		| "vsCodeSetting"
+		| "condenseTaskContextResponse"
+		| "singleRouterModelFetchResponse"
 	text?: string
 	action?:
 		| "chatButtonClicked"
@@ -131,6 +133,7 @@ export type ExtensionState = Pick<
 	| "alwaysAllowSubtasks"
 	| "alwaysAllowExecute"
 	| "allowedCommands"
+	| "allowedMaxRequests"
 	| "browserToolEnabled"
 	| "browserViewportSize"
 	| "screenshotQuality"
@@ -168,6 +171,8 @@ export type ExtensionState = Pick<
 	| "customModePrompts"
 	| "customSupportPrompts"
 	| "enhancementApiConfigId"
+	| "condensingApiConfigId"
+	| "customCondensingPrompt"
 	// Search API settings
 	| "currentSearchApiConfigName"
 	| "searchApiConfigurations"
@@ -208,6 +213,7 @@ export type ExtensionState = Pick<
 	renderContext: "sidebar" | "editor"
 	settingsImportedAt?: number
 	historyPreviewCollapsed?: boolean
+	autoCondenseContextPercent: number
 
 	// Search API settings
 	currentSearchApiConfigName?: string

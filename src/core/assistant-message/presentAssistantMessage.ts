@@ -184,7 +184,9 @@ export async function presentAssistantMessage(cline: Task) {
 					case "attempt_completion":
 						return `[${block.name}]`
 					case "switch_mode":
-						return `[${block.name} to '${block.params.mode_slug}'${block.params.reason ? ` because: ${block.params.reason}` : ""}]`
+						return `[${block.name} to '${block.params.mode_slug}'${
+							block.params.reason ? ` because: ${block.params.reason}` : ""
+						}]`
 					case "new_task": {
 						const mode = block.params.mode ?? defaultModeSlug
 						const message = block.params.message ?? "(no message)"

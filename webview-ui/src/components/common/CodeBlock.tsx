@@ -30,7 +30,7 @@ minWidth: "max-content",
 interface CodeBlockProps {
 	source?: string
 	rawSource?: string // Add rawSource prop for copying raw text
-	language?: string
+	language: string
 	preStyle?: React.CSSProperties
 	initialWordWrap?: boolean
 	collapsedHeight?: number
@@ -245,7 +245,9 @@ const CodeBlock = memo(
 
 		// Syntax highlighting with cached Shiki instance.
 		useEffect(() => {
-			const fallback = `<pre style="padding: 0; margin: 0;"><code class="hljs language-${currentLanguage || "txt"}">${source || ""}</code></pre>`
+			const fallback = `<pre style="padding: 0; margin: 0;"><code class="hljs language-${
+				currentLanguage || "txt"
+			}">${source || ""}</code></pre>`
 
 			const highlight = async () => {
 				// Show plain text if language needs to be loaded.
@@ -637,57 +639,48 @@ const CodeBlock = memo(
 						ref={copyButtonWrapperRef}
 						onMouseOver={() => updateCodeBlockButtonPosition()}
 						style={{ gap: 0 }}>
-						{language && (
-							<LanguageSelect
-								value={currentLanguage}
-								style={{
-									width: `calc(${currentLanguage?.length || 0}ch + 9px)`,
-								}}
-								onClick={(e) => {
-									e.currentTarget.focus()
-								}}
-								onChange={(e) => {
-									const newLang = normalizeLanguage(e.target.value)
-									userChangedLanguageRef.current = true
-									setCurrentLanguage(newLang)
-									if (onLanguageChange) {
-										onLanguageChange(newLang)
-									}
-								}}>
-								{
-									// Display original language at top of list for quick selection
-									language && (
-										<option
-											value={normalizeLanguage(language)}
-											style={{ fontWeight: "bold", textAlign: "left", fontSize: "1.2em" }}>
-											{normalizeLanguage(language)}
-										</option>
-									)
+						<LanguageSelect
+							value={currentLanguage}
+							style={{
+								width: `calc(${currentLanguage?.length || 0}ch + 9px)`,
+							}}
+							onClick={(e) => {
+								e.currentTarget.focus()
+							}}
+							onChange={(e) => {
+								const newLang = normalizeLanguage(e.target.value)
+								userChangedLanguageRef.current = true
+								setCurrentLanguage(newLang)
+								if (onLanguageChange) {
+									onLanguageChange(newLang)
 								}
-								{
-									// Display all available languages in alphabetical order
-									Object.keys(bundledLanguages)
-										.sort()
-										.map((lang) => {
-											const normalizedLang = normalizeLanguage(lang)
-											return (
-												<option
-													key={normalizedLang}
-													value={normalizedLang}
-													style={{
-														fontWeight:
-															normalizedLang === currentLanguage ? "bold" : "normal",
-														textAlign: "left",
-														fontSize:
-															normalizedLang === currentLanguage ? "1.2em" : "inherit",
-													}}>
-													{normalizedLang}
-												</option>
-											)
-										})
-								}
-							</LanguageSelect>
-						)}
+							}}>
+							<option
+								value={normalizeLanguage(language)}
+								style={{ fontWeight: "bold", textAlign: "left", fontSize: "1.2em" }}>
+								{normalizeLanguage(language)}
+							</option>
+							{
+								// Display all available languages in alphabetical order
+								Object.keys(bundledLanguages)
+									.sort()
+									.map((lang) => {
+										const normalizedLang = normalizeLanguage(lang)
+										return (
+											<option
+												key={normalizedLang}
+												value={normalizedLang}
+												style={{
+													fontWeight: normalizedLang === currentLanguage ? "bold" : "normal",
+													textAlign: "left",
+													fontSize: normalizedLang === currentLanguage ? "1.2em" : "inherit",
+												}}>
+												{normalizedLang}
+											</option>
+										)
+									})
+							}
+						</LanguageSelect>
 						{showCollapseButton && (
 							<CodeBlockButton
 								onClick={() => {

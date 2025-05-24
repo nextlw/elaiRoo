@@ -218,7 +218,9 @@ export class SearchApiSettingsManager {
 					console.error(`Unhandled error during profile '${name}' save/validation:`, error)
 				}
 				throw new Error(
-					`Failed to create or update profile '${name}': ${error instanceof Error ? error.message : String(error)}`,
+					`Failed to create or update profile '${name}': ${
+						error instanceof Error ? error.message : String(error)
+					}`,
 				)
 			}
 		})
