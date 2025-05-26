@@ -12,13 +12,13 @@ interface ReasoningBlockProps {
 	onToggleCollapse?: () => void
 }
 
-export const ReasoningBlock = ({ content, elapsed, isCollapsed = false, onToggleCollapse }: ReasoningBlockProps) => {
+export const ReasoningBlock = ({ content, elapsed, isCollapsed = true, onToggleCollapse }: ReasoningBlockProps) => {
 	const contentRef = useRef<HTMLDivElement>(null)
 	const elapsedRef = useRef<number>(0)
 	const { t } = useTranslation("chat")
 	const [thought, setThought] = useState<string>()
 	const [prevThought, setPrevThought] = useState<string>(t("chat:reasoning.thinking"))
-	const [isTransitioning, setIsTransitioning] = useState<boolean>(false)
+	const [isTransitioning, setIsTransitioning] = useState<boolean>(true)
 	const cursorRef = useRef<number>(0)
 	const queueRef = useRef<string[]>([])
 
@@ -71,7 +71,7 @@ export const ReasoningBlock = ({ content, elapsed, isCollapsed = false, onToggle
 	}, [thought, prevThought])
 
 	return (
-		<div className="bg-vscode-editor-background border border-vscode-border rounded-xs overflow-hidden">
+		<div className="bg-vscode-editor-background border border-vscode-border rounded-lg overflow-hidden">
 			<div
 				className="flex items-center justify-between gap-1 px-3 py-2 cursor-pointer text-muted-foreground"
 				onClick={onToggleCollapse}>

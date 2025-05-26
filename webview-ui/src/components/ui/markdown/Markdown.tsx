@@ -63,7 +63,7 @@ export function Markdown({ content }: { content: string }) {
 						<CodeBlock
 							language={(match && match[1]) || ""}
 							value={String(children).replace(/\n$/, "")}
-							className="rounded-xs p-3 mb-2"
+							className="rounded-lg p-3 mb-2"
 						/>
 					)
 				},

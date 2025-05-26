@@ -61,7 +61,7 @@ const TaskHeader = ({
 		<div className="py-2 px-3">
 			<div
 				className={cn(
-					"rounded-xs p-2.5 flex flex-col gap-1.5 relative z-1 border",
+					"rounded-lg p-2.5 flex flex-col gap-1.5 relative z-1 border",
 					isTaskExpanded
 						? "border-vscode-panel-border text-vscode-foreground"
 						: "border-vscode-panel-border/80 text-vscode-foreground/80",
