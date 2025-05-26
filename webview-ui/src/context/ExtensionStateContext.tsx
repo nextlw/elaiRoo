@@ -109,6 +109,8 @@ export interface ExtensionStateContextType extends ExtensionState {
 	searchApiConfigurations?: SearchApiSettingsMeta[] // Renomeado de listSearchApiConfigMeta
 	currentSearchApiConfigName?: string
 	activeSearchApiSettings?: SearchApiSettings // Renomeado de searchApiConfiguration
+	setSearchApiConfigurations: (value: SearchApiSettingsMeta[]) => void
+	setCurrentSearchApiConfigName: (value: string) => void
 }
 
 export const ExtensionStateContext = createContext<ExtensionStateContextType | undefined>(undefined)
@@ -304,6 +306,17 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 					setExtensionRouterModels(message.routerModels)
 					break
 				}
+				case "listSearchApiConfig": {
+					setState((prevState) => ({
+						...prevState,
+						searchApiConfigurations: message.listSearchApiConfig ?? [],
+					}))
+					break
+				}
+				case "currentSearchApiConfigName": {
+					setState((prevState) => ({ ...prevState, currentSearchApiConfigName: message.text ?? "default" }))
+					break
+				}
 			}
 		},
 		[setListApiConfigMeta],
@@ -413,6 +426,10 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		setCondensingApiConfigId: (value) => setState((prevState) => ({ ...prevState, condensingApiConfigId: value })),
 		setCustomCondensingPrompt: (value) =>
 			setState((prevState) => ({ ...prevState, customCondensingPrompt: value })),
+		setSearchApiConfigurations: (value) =>
+			setState((prevState) => ({ ...prevState, searchApiConfigurations: value })),
+		setCurrentSearchApiConfigName: (value) =>
+			setState((prevState) => ({ ...prevState, currentSearchApiConfigName: value })),
 	}
 
 	return <ExtensionStateContext.Provider value={contextValue}>{children}</ExtensionStateContext.Provider>

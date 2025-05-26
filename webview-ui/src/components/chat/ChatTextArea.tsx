@@ -75,6 +75,8 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			cwd,
 			pinnedApiConfigs,
 			togglePinnedApiConfig,
+			searchApiConfigurations,
+			currentSearchApiConfigName: currentSearchConfigNameFromContext, // Renomeado para evitar conflito
 		} = useExtensionState()
 
 		// Find the ID and display text for the currently selected API configuration
@@ -1078,6 +1080,130 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 
 									const config = listApiConfigMeta?.find((c) => c.id === value)
 									const isCurrentConfig = config?.name === currentApiConfigName
+
+									return (
+										<div className="flex justify-between gap-2 w-full h-5">
+											<div
+												className={cn("truncate min-w-0 overflow-hidden", {
+													"font-medium": isCurrentConfig,
+												})}
+												title={label}>
+												{label}
+											</div>
+											<div className="flex justify-end w-10 flex-shrink-0">
+												<div
+													className={cn("size-5 p-1", {
+														"block group-hover:hidden": !pinned,
+														hidden: !isCurrentConfig,
+													})}>
+													<Check className="size-3" />
+												</div>
+												<Button
+													variant="ghost"
+													size="icon"
+													title={pinned ? t("chat:unpin") : t("chat:pin")}
+													onClick={(e) => {
+														e.stopPropagation()
+														togglePinnedApiConfig(value)
+														vscode.postMessage({ type: "toggleApiConfigPin", text: value })
+													}}
+													className={cn("size-5", {
+														"hidden group-hover:flex": !pinned,
+														"bg-accent": pinned,
+													})}>
+													<Pin className="size-3 p-0.5 opacity-50" />
+												</Button>
+											</div>
+										</div>
+									)
+								}}
+							/>
+						</div>
+
+						<div className={cn("flex-1", "min-w-0", "overflow-hidden")}>
+							<SelectDropdown
+								value={
+									searchApiConfigurations?.find(
+										(config) => config.name === currentSearchConfigNameFromContext,
+									)?.id || ""
+								}
+								disabled={selectApiConfigDisabled}
+								title={t("chat:selectSearchApiConfig")}
+								placeholder={currentSearchConfigNameFromContext || "default"}
+								options={[
+									// Pinned items first.
+									...(searchApiConfigurations || [])
+										.filter((config) => pinnedApiConfigs && pinnedApiConfigs[config.name])
+										.map((config) => ({
+											value: config.id,
+											label: config.name,
+											name: config.name, // Keep name for comparison with currentSearchApiConfigName.
+											type: DropdownOptionType.ITEM,
+											pinned: true,
+										}))
+										.sort((a, b) => a.label.localeCompare(b.label)),
+									// If we have pinned items and unpinned items, add a separator.
+									...(pinnedApiConfigs &&
+									Object.keys(pinnedApiConfigs).length > 0 &&
+									(searchApiConfigurations || []).some((config) => !pinnedApiConfigs[config.name])
+										? [
+												{
+													value: "sep-pinned-search",
+													label: t("chat:separator"),
+													type: DropdownOptionType.SEPARATOR,
+												},
+											]
+										: []),
+									// Unpinned items sorted alphabetically.
+									...(searchApiConfigurations || [])
+										.filter((config) => !pinnedApiConfigs || !pinnedApiConfigs[config.name])
+										.map((config) => ({
+											value: config.id,
+											label: config.name,
+											name: config.name, // Keep name for comparison with currentSearchApiConfigName.
+											type: DropdownOptionType.ITEM,
+											pinned: false,
+										}))
+										.sort((a, b) => a.label.localeCompare(b.label)),
+									{
+										value: "sep-search-2",
+										label: t("chat:separator"),
+										type: DropdownOptionType.SEPARATOR,
+									},
+									{
+										value: "searchSettingsButtonClicked",
+										label: t("chat:edit"),
+										type: DropdownOptionType.ACTION,
+									},
+								]}
+								onChange={(value) => {
+									if (value === "searchSettingsButtonClicked") {
+										vscode.postMessage({
+											type: "openSettings",
+											text: value,
+											values: { section: "searchApi" },
+										})
+									} else {
+										const selectedConfig = searchApiConfigurations?.find(
+											(config) => config.id === value,
+										)
+										if (selectedConfig) {
+											vscode.postMessage({
+												type: "currentSearchApiConfigName",
+												text: selectedConfig.name,
+											})
+										}
+									}
+								}}
+								triggerClassName="w-full text-ellipsis overflow-hidden"
+								itemClassName="group"
+								renderItem={({ type, value, label, pinned }) => {
+									if (type !== DropdownOptionType.ITEM) {
+										return label
+									}
+
+									const config = searchApiConfigurations?.find((c) => c.id === value)
+									const isCurrentConfig = config?.name === currentSearchConfigNameFromContext
 
 									return (
 										<div className="flex justify-between gap-2 w-full h-5">

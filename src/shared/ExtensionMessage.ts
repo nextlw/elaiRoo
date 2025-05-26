@@ -42,6 +42,7 @@ export interface ExtensionMessage {
 		| "enhancedPrompt"
 		| "commitSearchResults"
 		| "listApiConfig"
+		| "listSearchApiConfig"
 		| "routerModels"
 		| "openAiModels"
 		| "ollamaModels"
@@ -71,7 +72,14 @@ export interface ExtensionMessage {
 		| "vsCodeSetting"
 		| "condenseTaskContextResponse"
 		| "singleRouterModelFetchResponse"
+		| "listSearchApiConfig"
+		| "currentSearchApiConfigName"
+		| "currentSearchApiConfigName"
+
 	text?: string
+	listSearchApiConfig?: ProviderSettingsEntry[]
+	currentSearchApiConfigName?: string
+
 	action?:
 		| "chatButtonClicked"
 		| "mcpButtonClicked"
