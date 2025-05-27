@@ -1399,7 +1399,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			enableMcpServerCreation: enableMcpServerCreation ?? true,
 			alwaysApproveResubmit: alwaysApproveResubmit ?? false,
 			requestDelaySeconds: requestDelaySeconds ?? 10,
-			currentProviderConfigName: currentProviderConfigName ?? "default", // Renomeado
+			currentApiConfigName: currentProviderConfigName ?? "default", // Usar a variável desestruturada corretamente
 			listApiConfigMeta: listApiConfigMeta ?? [],
 			pinnedApiConfigs: pinnedApiConfigs ?? {},
 			mode: mode ?? defaultModeSlug,

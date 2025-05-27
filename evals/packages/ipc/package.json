@@ -2,10 +2,13 @@
 	"name": "@evals/ipc",
 	"private": true,
 	"type": "module",
-	"exports": "./src/index.ts",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": "./dist/index.js",
 	"scripts": {
 		"lint": "eslint src/**/*.ts --max-warnings=0",
 		"check-types": "tsc --noEmit",
+		"build": "tsc",
 		"format": "prettier --write src"
 	},
 	"dependencies": {

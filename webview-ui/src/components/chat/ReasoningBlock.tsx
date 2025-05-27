@@ -12,13 +12,13 @@ interface ReasoningBlockProps {
 	onToggleCollapse?: () => void
 }
 
-export const ReasoningBlock = ({ content, elapsed, isCollapsed = true, onToggleCollapse }: ReasoningBlockProps) => {
+export const ReasoningBlock = ({ content, elapsed, isCollapsed = false, onToggleCollapse }: ReasoningBlockProps) => {
 	const contentRef = useRef<HTMLDivElement>(null)
 	const elapsedRef = useRef<number>(0)
 	const { t } = useTranslation("chat")
 	const [thought, setThought] = useState<string>()
 	const [prevThought, setPrevThought] = useState<string>(t("chat:reasoning.thinking"))
-	const [isTransitioning, setIsTransitioning] = useState<boolean>(true)
+	const [isTransitioning, setIsTransitioning] = useState<boolean>(false)
 	const cursorRef = useRef<number>(0)
 	const queueRef = useRef<string[]>([])
 

@@ -1133,11 +1133,11 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 								options={[
 									// Pinned items first.
 									...(searchApiConfigurations || [])
-										.filter((config) => pinnedApiConfigs && pinnedApiConfigs[config.name])
+										.filter((config) => pinnedApiConfigs && pinnedApiConfigs[config.provider])
 										.map((config) => ({
 											value: config.id,
 											label: config.name,
-											name: config.name, // Keep name for comparison with currentSearchApiConfigName.
+											name: config.provider, // Keep name for comparison with currentSearchApiConfigName.
 											type: DropdownOptionType.ITEM,
 											pinned: true,
 										}))
@@ -1156,11 +1156,11 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 										: []),
 									// Unpinned items sorted alphabetically.
 									...(searchApiConfigurations || [])
-										.filter((config) => !pinnedApiConfigs || !pinnedApiConfigs[config.name])
+										.filter((config) => !pinnedApiConfigs || !pinnedApiConfigs[config.provider])
 										.map((config) => ({
 											value: config.id,
 											label: config.name,
-											name: config.name, // Keep name for comparison with currentSearchApiConfigName.
+											name: config.provider, // Keep name for comparison with currentSearchApiConfigName.
 											type: DropdownOptionType.ITEM,
 											pinned: false,
 										}))
@@ -1179,7 +1179,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 								onChange={(value) => {
 									if (value === "searchSettingsButtonClicked") {
 										vscode.postMessage({
-											type: "openSettings",
+											type: "currentSearchApiConfigName",
 											text: value,
 											values: { section: "searchApi" },
 										})
@@ -1189,7 +1189,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 										)
 										if (selectedConfig) {
 											vscode.postMessage({
-												type: "currentSearchApiConfigName",
+												type: "upsertSearchApiConfiguration",
 												text: selectedConfig.name,
 											})
 										}

@@ -1,6 +1,6 @@
-export * from "./schema.js"
+export * from "./schema"
 
-export * from "./queries/runs.js"
-export * from "./queries/tasks.js"
-export * from "./queries/taskMetrics.js"
-export * from "./queries/toolErrors.js"
+export * from "./queries/runs"
+export * from "./queries/tasks"
+export * from "./queries/taskMetrics"
+export * from "./queries/toolErrors"

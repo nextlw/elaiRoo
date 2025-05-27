@@ -102,6 +102,7 @@ type GlobalSettings = {
 				totalCost: number
 				size?: number | undefined
 				workspace?: string | undefined
+				parentId?: string | undefined
 		  }[]
 		| undefined
 	condensingApiConfigId?: string | undefined
@@ -949,6 +950,7 @@ type IpcMessage =
 											totalCost: number
 											size?: number | undefined
 											workspace?: string | undefined
+											parentId?: string | undefined
 									  }[]
 									| undefined
 								condensingApiConfigId?: string | undefined
@@ -1508,6 +1510,7 @@ type TaskCommand =
 								totalCost: number
 								size?: number | undefined
 								workspace?: string | undefined
+								parentId?: string | undefined
 						  }[]
 						| undefined
 					condensingApiConfigId?: string | undefined

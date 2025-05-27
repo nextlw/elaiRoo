@@ -137,6 +137,7 @@ export interface WebviewMessage {
 		| "setHistoryPreviewCollapsed"
 		| "condenseTaskContextRequest"
 		// Novos tipos para Search API Configuration
+		| "currentSearchApiConfigName"
 		| "upsertSearchApiConfiguration"
 		| "deleteSearchApiConfiguration"
 		| "activateSearchApiConfiguration"

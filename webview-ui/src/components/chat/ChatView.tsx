@@ -1291,6 +1291,15 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 						buttonsDisabled={sendingDisabled}
 						handleCondenseContext={handleCondenseContext}
 						onClose={handleTaskCloseButtonClick}
+						hasParentTask={!!(currentTaskItem as any)?.parentId}
+						onNavigateToParent={() => {
+							if ((currentTaskItem as any)?.parentId) {
+								vscode.postMessage({
+									type: "showTaskWithId",
+									text: (currentTaskItem as any).parentId,
+								})
+							}
+						}}
 					/>
 
 					{hasSystemPromptOverride && (

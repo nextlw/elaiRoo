@@ -309,12 +309,12 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 				case "listSearchApiConfig": {
 					setState((prevState) => ({
 						...prevState,
-						searchApiConfigurations: message.listSearchApiConfig ?? [],
+						setSearchApiConfigurations: message.listSearchApiConfig ?? [],
 					}))
 					break
 				}
 				case "currentSearchApiConfigName": {
-					setState((prevState) => ({ ...prevState, currentSearchApiConfigName: message.text ?? "default" }))
+					setState((prevState) => ({ ...prevState, currentSearchApiConfigName: message.text }))
 					break
 				}
 			}
