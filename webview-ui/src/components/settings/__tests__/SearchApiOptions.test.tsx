@@ -1,7 +1,7 @@
 import React from "react"
 import { render, screen, fireEvent } from "@testing-library/react"
 import SearchApiOptions from "../SearchApiOptions" // Assumindo que o caminho está correto
-import { SearchApiSettings } from "../../../../../src/schemas" // Caminho corrigido
+import { SearchApiSettings } from "@roo-code/types" // Caminho corrigido
 
 // Mock dos componentes de provedor específicos
 jest.mock("../search-providers/JinaSearchProviderSettings", () => ({

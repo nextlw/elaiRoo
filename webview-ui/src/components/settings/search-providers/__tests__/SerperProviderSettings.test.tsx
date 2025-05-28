@@ -1,7 +1,7 @@
 import React from "react"
 import { render, screen, fireEvent } from "@testing-library/react"
 import SerperProviderSettings from "../SerperProviderSettings" // Assumindo que o caminho está correto
-import { serperApiSchema } from "../../../../../../src/schemas" // Caminho corrigido para schemas
+import { serperApiSchema } from "@roo-code/types" // Caminho corrigido para schemas
 import { z } from "zod"
 
 // Mock VSCodeTextField e outros componentes UI se necessário

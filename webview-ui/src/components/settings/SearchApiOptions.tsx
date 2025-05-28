@@ -9,7 +9,7 @@ import type {
 	serperApiSchema,
 	braveSearchApiSchema,
 	duckduckgoFallbackSearchApiSchema,
-} from "../../../../src/schemas"
+} from "@roo-code/types"
 import JinaSearchProviderSettings from "./search-providers/JinaSearchProviderSettings"
 import GoogleCustomSearchProviderSettings from "./search-providers/GoogleCustomSearchProviderSettings"
 import SerperProviderSettings from "./search-providers/SerperProviderSettings"

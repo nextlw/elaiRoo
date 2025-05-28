@@ -1,6 +1,6 @@
 import React from "react"
 import { t } from "i18next" // Agora será usado
-import type { SearchApiSettings } from "../../../../../src/schemas"
+import type { SearchApiSettings } from "@roo-code/types"
 
 interface DuckDuckGoFallbackProviderSettingsProps {
 	searchApiConfiguration: SearchApiSettings | undefined

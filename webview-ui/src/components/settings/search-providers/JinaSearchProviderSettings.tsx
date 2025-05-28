@@ -1,7 +1,7 @@
 import React from "react"
 import { VSCodeTextField, VSCodeCheckbox, VSCodeDivider } from "@vscode/webview-ui-toolkit/react"
 import { t } from "i18next"
-import { SearchApiSettings } from "../../../../../src/schemas"
+import { SearchApiSettings } from "@roo-code/types"
 
 interface JinaSpecificSettings {
 	apiKey?: string

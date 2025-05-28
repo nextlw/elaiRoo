@@ -1,7 +1,7 @@
 import React from "react"
 import { render, screen, fireEvent } from "@testing-library/react"
 import GoogleCustomSearchProviderSettings from "../GoogleCustomSearchProviderSettings" // Assumindo que o caminho está correto
-import { googleCustomSearchApiSchema } from "../../../../../../src/schemas" // Caminho corrigido para schemas
+import { googleCustomSearchApiSchema } from "@roo-code/types" // Caminho corrigido para schemas
 import { z } from "zod"
 
 // Mock VSCodeTextField e outros componentes UI se necessário, similar a SettingsView.test.tsx

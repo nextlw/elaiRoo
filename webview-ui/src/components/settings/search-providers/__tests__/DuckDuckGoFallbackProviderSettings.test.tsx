@@ -1,7 +1,7 @@
 import React from "react"
 import { render, screen } from "@testing-library/react"
 import DuckDuckGoFallbackProviderSettings from "../DuckDuckGoFallbackProviderSettings" // Assumindo que o caminho está correto
-import { duckduckgoFallbackSearchApiSchema } from "../../../../../../src/schemas" // Caminho corrigido para schemas
+import { duckduckgoFallbackSearchApiSchema } from "@roo-code/types" // Caminho corrigido para schemas
 import { z } from "zod"
 
 // Mock VSCodeCheckbox, pois é o único controle esperado aqui

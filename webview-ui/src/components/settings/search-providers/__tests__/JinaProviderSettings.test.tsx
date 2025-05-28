@@ -1,7 +1,7 @@
 import React from "react"
 import { render, screen, fireEvent } from "@testing-library/react"
 import JinaProviderSettings from "../JinaSearchProviderSettings"
-import { jinaSearchApiSchema } from "../../../../../../src/schemas"
+import { jinaSearchApiSchema } from "@roo-code/types"
 import { z } from "zod"
 
 // Mock VSCodeTextField e outros componentes UI se necessário

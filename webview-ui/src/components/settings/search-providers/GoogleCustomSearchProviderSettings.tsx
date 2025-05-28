@@ -1,7 +1,7 @@
 import React from "react"
 import { VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
 import { t } from "i18next"
-import type { SearchApiSettings } from "../../../../../src/schemas"
+import type { SearchApiSettings } from "@roo-code/types"
 
 // Definindo os campos específicos para Google Custom Search
 interface GoogleCustomSearchSpecificSettings {

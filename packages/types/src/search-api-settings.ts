@@ -68,3 +68,6 @@ export const SearchApiSettingsMetaSchema = z.object({
 })
 
 export type SearchApiSettingsMeta = z.infer<typeof SearchApiSettingsMetaSchema>
+
+export const SEARCH_API_SECRET_STATE_KEYS = ["apiKey"] as const
+export const SEARCH_API_GLOBAL_STATE_KEYS = ["isEnabled"] as const

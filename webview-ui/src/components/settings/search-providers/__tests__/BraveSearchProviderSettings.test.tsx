@@ -1,7 +1,7 @@
 import React from "react"
 import { render, screen, fireEvent } from "@testing-library/react"
 import BraveSearchProviderSettings from "../BraveSearchProviderSettings" // Assumindo que o caminho está correto
-import { braveSearchApiSchema } from "../../../../../../src/schemas" // Caminho corrigido para schemas
+import { braveSearchApiSchema } from "@roo-code/types" // Caminho corrigido para schemas
 import { z } from "zod"
 
 // Mock VSCodeTextField e outros componentes UI se necessário
