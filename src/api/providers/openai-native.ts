@@ -1,22 +1,23 @@
 import { Anthropic } from "@anthropic-ai/sdk"
 import OpenAI from "openai"
 
+import type { ModelInfo } from "@roo-code/types"
+
 import {
 	ApiHandlerOptions,
-	ModelInfo,
 	openAiNativeDefaultModelId,
 	OpenAiNativeModelId,
 	openAiNativeModels,
 } from "../../shared/api"
 
-import { calculateApiCostOpenAI } from "../../utils/cost"
+import { calculateApiCostOpenAI } from "../../shared/cost"
 
 import { convertToOpenAiMessages } from "../transform/openai-format"
 import { ApiStream } from "../transform/stream"
 import { getModelParams } from "../transform/model-params"
 
-import type { SingleCompletionHandler } from "../index"
 import { BaseProvider } from "./base-provider"
+import type { SingleCompletionHandler, ApiHandlerCreateMessageMetadata } from "../index"
 
 const OPENAI_NATIVE_DEFAULT_TEMPERATURE = 0
 
@@ -33,7 +34,11 @@ export class OpenAiNativeHandler extends BaseProvider implements SingleCompletio
 		this.client = new OpenAI({ baseURL: this.options.openAiNativeBaseUrl, apiKey })
 	}
 
-	override async *createMessage(systemPrompt: string, messages: Anthropic.Messages.MessageParam[]): ApiStream {
+	override async *createMessage(
+		systemPrompt: string,
+		messages: Anthropic.Messages.MessageParam[],
+		metadata?: ApiHandlerCreateMessageMetadata,
+	): ApiStream {
 		const model = this.getModel()
 		let id: "o3-mini" | "o3" | "o4-mini" | undefined
 
@@ -165,7 +170,7 @@ export class OpenAiNativeHandler extends BaseProvider implements SingleCompletio
 
 		const info: ModelInfo = openAiNativeModels[id]
 
-		const { temperature, ...params } = getModelParams({
+		const params = getModelParams({
 			format: "openai",
 			modelId: id,
 			model: info,
@@ -175,13 +180,7 @@ export class OpenAiNativeHandler extends BaseProvider implements SingleCompletio
 
 		// The o3 models are named like "o3-mini-[reasoning-effort]", which are
 		// not valid model ids, so we need to strip the suffix.
-		// Also note that temperature is not supported for o1 and o3-mini.
-		return {
-			id: id.startsWith("o3-mini") ? "o3-mini" : id,
-			info,
-			...params,
-			temperature: id.startsWith("o1") || id.startsWith("o3-mini") ? undefined : temperature,
-		}
+		return { id: id.startsWith("o3-mini") ? "o3-mini" : id, info, ...params }
 	}
 
 	async completePrompt(prompt: string): Promise<string> {

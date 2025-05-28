@@ -4,13 +4,15 @@ import Anthropic from "@anthropic-ai/sdk"
 import * as vscode from "vscode"
 import axios from "axios"
 
-import { ClineProvider } from "../ClineProvider"
-import { ProviderSettingsEntry, ClineMessage, ExtensionMessage, ExtensionState } from "../../../shared/ExtensionMessage"
+import type { ProviderSettingsEntry, ClineMessage } from "@roo-code/types"
+
+import { ExtensionMessage, ExtensionState } from "../../../shared/ExtensionMessage"
+import { defaultModeSlug } from "../../../shared/modes"
 import { setTtsEnabled } from "../../../utils/tts"
-// import { defaultModeSlug } from "../../../shared/modes"; // Removido pois não é usado e causa erro no mockState ajustado
 import { experimentDefault } from "../../../shared/experiments"
 import { ContextProxy } from "../../config/ContextProxy"
 import { Task, TaskOptions } from "../../task/Task"
+import { ClineProvider } from "../ClineProvider"
 
 // Mock setup must come before imports
 jest.mock("../../prompts/sections/custom-instructions")
@@ -440,6 +442,13 @@ describe("ClineProvider", () => {
 			alwaysAllowReadOnly: false,
 			alwaysAllowReadOnlyOutsideWorkspace: false,
 			alwaysAllowWrite: false,
+			codebaseIndexConfig: {
+				codebaseIndexEnabled: false,
+				codebaseIndexQdrantUrl: "",
+				codebaseIndexEmbedderProvider: "openai",
+				codebaseIndexEmbedderBaseUrl: "",
+				codebaseIndexEmbedderModelId: "",
+			},
 			alwaysAllowWriteOutsideWorkspace: false,
 			alwaysAllowExecute: false,
 			alwaysAllowBrowser: false,
@@ -1661,8 +1670,10 @@ describe("ClineProvider", () => {
 				setModeConfig: jest.fn(),
 			} as any
 
-			// Mock current config name
-			mockContext.globalState.get = jest.fn((key: string) => {
+			// Mock the ContextProxy's getValue method to return the current config name
+			const contextProxy = (provider as any).contextProxy
+			const getValueSpy = jest.spyOn(contextProxy, "getValue")
+			getValueSpy.mockImplementation((key: any) => {
 				if (key === "currentApiConfigName") return "current-config"
 				return undefined
 			})
@@ -2212,7 +2223,7 @@ describe("getTelemetryProperties", () => {
 		mockCline = new Task(defaultTaskOptions)
 		mockCline.api = {
 			getModel: jest.fn().mockReturnValue({
-				id: "claude-3-7-sonnet-20250219",
+				id: "claude-sonnet-4-20250514",
 				info: { contextWindow: 200000 },
 			}),
 		}
@@ -2232,7 +2243,7 @@ describe("getTelemetryProperties", () => {
 
 		const properties = await provider.getTelemetryProperties()
 
-		expect(properties).toHaveProperty("modelId", "claude-3-7-sonnet-20250219")
+		expect(properties).toHaveProperty("modelId", "claude-sonnet-4-20250514")
 	})
 })
 

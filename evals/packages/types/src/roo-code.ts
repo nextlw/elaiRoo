@@ -1085,6 +1085,14 @@ export const toolNames = [
 	"switch_mode",
 	"new_task",
 	"fetch_instructions",
+	"web_search",
+	"extract_page_content",
+	"extract_document_content",
+	"search_structured_data",
+	"search_code_repositories",
+	"get_repository_file_content",
+	"process_text_content",
+	"codebase_search",
 ] as const
 
 export const toolNamesSchema = z.enum(toolNames)

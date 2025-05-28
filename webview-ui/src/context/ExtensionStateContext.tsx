@@ -1,20 +1,27 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react"
 import { useEvent } from "react-use"
 
-import { ProviderSettingsEntry, ExtensionMessage, ExtensionState } from "@roo/shared/ExtensionMessage"
-import { ProviderSettings } from "@roo/shared/api"
-import { findLastIndex } from "@roo/shared/array"
-import { McpServer } from "@roo/shared/mcp"
-import { checkExistKey } from "@roo/shared/checkExistApiConfig"
-import { Mode, CustomModePrompts, defaultModeSlug, defaultPrompts, ModeConfig } from "@roo/shared/modes"
-import { CustomSupportPrompts } from "@roo/shared/support-prompt"
-import { experimentDefault, ExperimentId } from "@roo/shared/experiments"
-import { TelemetrySetting } from "@roo/shared/TelemetrySetting"
-import { RouterModels } from "@roo/shared/api"
+import type {
+	ProviderSettings,
+	ProviderSettingsEntry,
+	CustomModePrompts,
+	ModeConfig,
+	ExperimentId,
+} from "@roo-code/types"
+
+import { ExtensionMessage, ExtensionState } from "@roo/ExtensionMessage"
+import { findLastIndex } from "@roo/array"
+import { McpServer } from "@roo/mcp"
+import { checkExistKey } from "@roo/checkExistApiConfig"
+import { Mode, defaultModeSlug, defaultPrompts } from "@roo/modes"
+import { CustomSupportPrompts } from "@roo/support-prompt"
+import { experimentDefault } from "@roo/experiments"
+import { TelemetrySetting } from "@roo/TelemetrySetting"
+import { RouterModels } from "@roo/api"
 
 import { vscode } from "@src/utils/vscode"
 import { convertTextMateToHljs } from "@src/utils/textMateToHljs"
-import type { SearchApiSettings, SearchApiSettingsMeta } from "@roo/schemas"
+import type { SearchApiSettings, SearchApiSettingsMeta } from "@roo-code/types"
 
 export interface ExtensionStateContextType extends ExtensionState {
 	historyPreviewCollapsed?: boolean // Add the new state property
@@ -206,7 +213,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		telemetrySetting: "unset",
 		showRooIgnoredFiles: true, // Default to showing .rooignore'd files with lock symbol (current behavior).
 		renderContext: "sidebar",
-		maxReadFileLine: 500, // Default max read file line limit
+		maxReadFileLine: -1, // Default max read file line limit
 		pinnedApiConfigs: {}, // Empty object for pinned API configs
 		terminalZshOhMy: false, // Default Oh My Zsh integration setting
 		terminalZshP10k: false, // Default Powerlevel10k integration setting
@@ -214,6 +221,14 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		terminalCompressProgressBar: true, // Default to compress progress bar output
 		historyPreviewCollapsed: false, // Initialize the new state (default to expanded)
 		autoCondenseContextPercent: 100,
+		codebaseIndexConfig: {
+			codebaseIndexEnabled: false,
+			codebaseIndexQdrantUrl: "http://localhost:6333",
+			codebaseIndexEmbedderProvider: "openai",
+			codebaseIndexEmbedderBaseUrl: "",
+			codebaseIndexEmbedderModelId: "",
+		},
+		codebaseIndexModels: { ollama: {}, openai: {} },
 		// Inicialização das novas propriedades da API de Busca
 		searchApiConfigurations: [], // Renomeado
 		currentSearchApiConfigName: "default",

@@ -6,11 +6,11 @@ import {
 	GLOBAL_SETTINGS_KEYS,
 	SECRET_STATE_KEYS,
 	GLOBAL_STATE_KEYS,
-	ProviderSettings,
-	GlobalSettings,
-	SecretState,
-	GlobalState,
-	RooCodeSettings,
+	type ProviderSettings,
+	type GlobalSettings,
+	type SecretState,
+	type GlobalState,
+	type RooCodeSettings,
 	providerSettingsSchema,
 	globalSettingsSchema,
 	isSecretStateKey,
@@ -19,7 +19,8 @@ import {
 	SEARCH_API_SECRET_STATE_KEYS,
 	SEARCH_API_GLOBAL_STATE_KEYS,
 	SearchApiProviderNameSchema, // Para obter a lista de nomes de provedores
-} from "../../schemas"
+} from "@roo-code/types"
+
 import { logger } from "../../utils/logging"
 import { telemetryService } from "../../services/telemetry/TelemetryService"
 

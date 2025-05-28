@@ -1,4 +1,4 @@
-import { WebSearchResult } from "../schemas"
+import { WebSearchResult } from "../schemas/index_e"
 
 /**
  * Parses HTML content from a search engine results page to extract search results.

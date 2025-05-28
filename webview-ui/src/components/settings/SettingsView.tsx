@@ -9,7 +9,6 @@ import React, {
 	useRef,
 	useState,
 } from "react"
-import { useAppTranslation } from "@/i18n/TranslationContext"
 import {
 	CheckCheck,
 	SquareMousePointer,
@@ -26,21 +25,13 @@ import {
 	Search, // Adicionado ícone de busca
 } from "lucide-react"
 
-import { ExperimentId } from "@roo/shared/experiments"
-import { TelemetrySetting } from "@roo/shared/TelemetrySetting"
-import { ProviderSettings } from "@roo/shared/api"
-import type {
-	SearchApiSettings,
-	SearchApiSettingsMeta,
-	// jinaSearchApiSchema,
-	// googleCustomSearchApiSchema,
-	// serperApiSchema,
-	// braveSearchApiSchema,
-	// duckduckgoFallbackSearchApiSchema,
-} from "@roo/schemas" // Importação correta e tipos específicos
+import type { ProviderSettings, ExperimentId, SearchApiSettings, SearchApiSettingsMeta } from "@roo-code/types"
 
-import { vscode } from "@/utils/vscode"
-import { ExtensionStateContextType, useExtensionState } from "@/context/ExtensionStateContext"
+import { TelemetrySetting } from "@roo/TelemetrySetting"
+
+import { vscode } from "@src/utils/vscode"
+import { useAppTranslation } from "@src/i18n/TranslationContext"
+import { ExtensionStateContextType, useExtensionState } from "@src/context/ExtensionStateContext"
 import {
 	AlertDialog,
 	AlertDialogContent,
@@ -55,7 +46,7 @@ import {
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@/components/ui"
+} from "@src/components/ui"
 
 import { Tab, TabContent, TabHeader, TabList, TabTrigger } from "../common/Tab"
 import { SetExperimentEnabled } from "./types"
@@ -202,6 +193,8 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 		terminalCompressProgressBar,
 		condensingApiConfigId,
 		customCondensingPrompt,
+		codebaseIndexConfig,
+		codebaseIndexModels,
 		// Campos da API de Busca
 		listSearchApiConfigMeta,
 		currentSearchApiConfigName,
@@ -399,7 +392,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 			vscode.postMessage({ type: "maxOpenTabsContext", value: maxOpenTabsContext })
 			vscode.postMessage({ type: "maxWorkspaceFiles", value: maxWorkspaceFiles ?? 200 })
 			vscode.postMessage({ type: "showRooIgnoredFiles", bool: showRooIgnoredFiles })
-			vscode.postMessage({ type: "maxReadFileLine", value: maxReadFileLine ?? 500 })
+			vscode.postMessage({ type: "maxReadFileLine", value: maxReadFileLine ?? -1 })
 			vscode.postMessage({ type: "currentApiConfigName", text: currentApiConfigName })
 			vscode.postMessage({ type: "updateExperimental", values: experiments })
 			vscode.postMessage({ type: "alwaysAllowModeSwitch", bool: alwaysAllowModeSwitch })
@@ -419,6 +412,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 				activate: true, // Assumindo que salvar o perfil ativo deve mantê-lo ativo ou reativá-lo
 			})
 			vscode.postMessage({ type: "telemetrySetting", text: telemetrySetting })
+			vscode.postMessage({ type: "codebaseIndexConfig", values: codebaseIndexConfig })
 			setChangeDetected(false)
 		}
 	}
@@ -854,12 +848,17 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 							setExperimentEnabled={setExperimentEnabled}
 							experiments={experiments}
 							autoCondenseContextPercent={autoCondenseContextPercent}
-							setCachedStateField={setCachedStateField}
 							condensingApiConfigId={condensingApiConfigId}
 							setCondensingApiConfigId={(value) => setCachedStateField("condensingApiConfigId", value)}
 							customCondensingPrompt={customCondensingPrompt}
 							setCustomCondensingPrompt={(value) => setCachedStateField("customCondensingPrompt", value)}
 							listApiConfigMeta={listApiConfigMeta ?? []}
+							setCachedStateField={setCachedStateField}
+							codebaseIndexModels={codebaseIndexModels}
+							codebaseIndexConfig={codebaseIndexConfig}
+							apiConfiguration={apiConfiguration}
+							setApiConfigurationField={setApiConfigurationField}
+							areSettingsCommitted={!isChangeDetected}
 						/>
 					)}
 

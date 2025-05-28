@@ -33,6 +33,30 @@
 		"about": "Sobre Roo Code",
 		"search-api": "API de Cerca"
 	},
+	"codeIndex": {
+		"title": "Indexació de codi",
+		"enableLabel": "Habilitar indexació de codi",
+		"enableDescription": "<0>Indexació de codi</0> és una característica experimental que crea un índex de cerca semàntica del vostre projecte utilitzant embeddings d'IA. Això permet a Roo Code entendre millor i navegar per grans bases de codi trobant codi rellevant basat en significat en lloc de només paraules clau.",
+		"providerLabel": "Proveïdor d'embeddings",
+		"selectProviderPlaceholder": "Seleccionar proveïdor",
+		"openaiProvider": "OpenAI",
+		"ollamaProvider": "Ollama",
+		"openaiKeyLabel": "Clau OpenAI:",
+		"modelLabel": "Model",
+		"selectModelPlaceholder": "Seleccionar model",
+		"ollamaUrlLabel": "URL d'Ollama:",
+		"qdrantUrlLabel": "URL de Qdrant",
+		"qdrantKeyLabel": "Clau de Qdrant:",
+		"startIndexingButton": "Iniciar indexació",
+		"clearIndexDataButton": "Esborrar dades d'índex",
+		"unsavedSettingsMessage": "Si us plau, deseu la configuració abans d'iniciar el procés d'indexació.",
+		"clearDataDialog": {
+			"title": "Esteu segur?",
+			"description": "Aquesta acció no es pot desfer. Eliminarà permanentment les dades d'índex de la vostra base de codi.",
+			"cancelButton": "Cancel·lar",
+			"confirmButton": "Esborrar dades"
+		}
+	},
 	"autoApprove": {
 		"description": "Permet que Roo realitzi operacions automàticament sense requerir aprovació. Activeu aquesta configuració només si confieu plenament en la IA i enteneu els riscos de seguretat associats.",
 		"readOnly": {
@@ -438,7 +462,6 @@
 		}
 	},
 	"experimental": {
-		"warning": "⚠️",
 		"autoCondenseContextPercent": {
 			"label": "Llindar per activar la condensació intel·ligent de context",
 			"description": "Quan la finestra de context assoleix aquest llindar, Roo la condensarà automàticament."

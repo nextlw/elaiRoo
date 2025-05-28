@@ -9,26 +9,28 @@ import axios from "axios"
 import pWaitFor from "p-wait-for"
 import * as vscode from "vscode"
 
-import {
+import type {
 	GlobalState,
 	ProviderName,
 	ProviderSettings,
 	RooCodeSettings,
 	ProviderSettingsEntry,
-	Package,
+	TelemetryProperties,
 	CodeActionId,
 	CodeActionName,
 	TerminalActionId,
 	TerminalActionPromptType,
-	SearchApiSettings,
-} from "../../schemas"
+	HistoryItem,
+} from "@roo-code/types"
+import { SearchApiSettings } from "../../schemas/index_e"
+
 import { t } from "../../i18n"
 import { setPanel } from "../../activate/registerCommands"
+import { Package } from "../../shared/package"
 import { requestyDefaultModelId, openRouterDefaultModelId, glamaDefaultModelId } from "../../shared/api"
 import { findLast } from "../../shared/array"
 import { supportPrompt } from "../../shared/support-prompt"
 import { GlobalFileNames } from "../../shared/globalFileNames"
-import { HistoryItem } from "../../shared/HistoryItem"
 import { ExtensionMessage } from "../../shared/ExtensionMessage"
 import { Mode, defaultModeSlug } from "../../shared/modes"
 import { experimentDefault } from "../../shared/experiments"
@@ -40,6 +42,8 @@ import WorkspaceTracker from "../../integrations/workspace/WorkspaceTracker"
 import { McpHub } from "../../services/mcp/McpHub"
 import { McpServerManager } from "../../services/mcp/McpServerManager"
 import { ShadowCheckpointService } from "../../services/checkpoints/ShadowCheckpointService"
+import { CodeIndexManager } from "../../services/code-index/manager"
+import type { IndexProgressUpdate } from "../../services/code-index/interfaces/manager"
 import { fileExistsAtPath } from "../../utils/fs"
 import { setTtsEnabled, setTtsSpeed } from "../../utils/tts"
 import { ContextProxy } from "../config/ContextProxy"
@@ -51,10 +55,11 @@ import { Task, TaskOptions } from "../task/Task"
 import { getNonce } from "./getNonce"
 import { getUri } from "./getUri"
 import { getSystemPromptFilePath } from "../prompts/sections/custom-system-prompt"
-import { telemetryService } from "../../services/telemetry/TelemetryService"
+import { TelemetryPropertiesProvider, telemetryService } from "../../services/telemetry"
 import { getWorkspacePath } from "../../utils/path"
 import { webviewMessageHandler } from "./webviewMessageHandler"
 import { WebviewMessage } from "../../shared/WebviewMessage"
+import { EMBEDDING_MODEL_PROFILES } from "../../shared/embeddingModels"
 
 /**
  * https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -65,7 +70,10 @@ export type ClineProviderEvents = {
 	clineCreated: [cline: Task]
 }
 
-export class ClineProvider extends EventEmitter<ClineProviderEvents> implements vscode.WebviewViewProvider {
+export class ClineProvider
+	extends EventEmitter<ClineProviderEvents>
+	implements vscode.WebviewViewProvider, TelemetryPropertiesProvider
+{
 	// Used in package.json as the view's id. This value cannot be changed due
 	// to how VSCode caches views based on their id, and updating the id would
 	// break existing instances of the extension.
@@ -75,6 +83,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 	private disposables: vscode.Disposable[] = []
 	private view?: vscode.WebviewView | vscode.WebviewPanel
 	private clineStack: Task[] = []
+	private codeIndexStatusSubscription?: vscode.Disposable
 	private _workspaceTracker?: WorkspaceTracker // workSpaceTracker read-only for access outside this class
 	public get workspaceTracker(): WorkspaceTracker | undefined {
 		return this._workspaceTracker
@@ -93,11 +102,18 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 		private readonly outputChannel: vscode.OutputChannel,
 		private readonly renderContext: "sidebar" | "editor" = "sidebar",
 		public readonly contextProxy: ContextProxy,
+		public readonly codeIndexManager?: CodeIndexManager,
 	) {
 		super()
 
 		this.log("ClineProvider instantiated")
 		ClineProvider.activeInstances.add(this)
+
+		this.codeIndexManager = codeIndexManager
+		this.updateGlobalState("codebaseIndexModels", EMBEDDING_MODEL_PROFILES)
+
+		// Start configuration loading (which might trigger indexing) in the background.
+		// Don't await, allowing activation to continue immediately.
 
 		// Register this provider with the telemetry service to enable it to add
 		// properties like mode and provider.
@@ -325,10 +341,6 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 	async resolveWebviewView(webviewView: vscode.WebviewView | vscode.WebviewPanel) {
 		this.log("Resolving webview view")
 
-		if (!this.contextProxy.isInitialized) {
-			await this.contextProxy.initialize()
-		}
-
 		this.view = webviewView
 
 		// Set panel reference according to webview type
@@ -387,6 +399,18 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 		// Sets up an event listener to listen for messages passed from the webview view context
 		// and executes code based on the message that is recieved
 		this.setWebviewMessageListener(webviewView.webview)
+
+		// Subscribe to code index status updates if the manager exists
+		if (this.codeIndexManager) {
+			this.codeIndexStatusSubscription = this.codeIndexManager.onProgressUpdate((update: IndexProgressUpdate) => {
+				this.postMessageToWebview({
+					type: "indexingStatusUpdate",
+					values: update,
+				})
+			})
+			// Add the subscription to the main disposables array
+			this.disposables.push(this.codeIndexStatusSubscription)
+		}
 
 		// Logs show up in bottom panel > Debug Console
 		//console.log("registering listener")
@@ -543,7 +567,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 		try {
 			const fs = require("fs")
 			const path = require("path")
-			const portFilePath = path.resolve(__dirname, "../.vite-port")
+			const portFilePath = path.resolve(__dirname, "../../.vite-port")
 
 			if (fs.existsSync(portFilePath)) {
 				localPort = fs.readFileSync(portFilePath, "utf8").trim()
@@ -810,6 +834,11 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 					this.providerSettingsManager.setModeConfig(mode, id),
 					this.contextProxy.setProviderSettings(providerSettings),
 				])
+
+				// Notify CodeIndexManager about the settings change
+				if (this.codeIndexManager) {
+					await this.codeIndexManager.handleExternalSettingsChange()
+				}
 
 				// Change the provider for the current task.
 				// TODO: We should rename `buildApiHandler` for clarity (e.g. `getProviderClient`).
@@ -1330,6 +1359,8 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			historyPreviewCollapsed,
 			condensingApiConfigId,
 			customCondensingPrompt,
+			codebaseIndexConfig,
+			codebaseIndexModels,
 			// Novas propriedades da API de Busca
 			currentSearchApiConfigName,
 			activeSearchApiSettings,
@@ -1424,13 +1455,21 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			showRooIgnoredFiles: showRooIgnoredFiles ?? true,
 			language: language ?? formatLanguage(vscode.env.language),
 			renderContext: this.renderContext,
-			maxReadFileLine: maxReadFileLine ?? 500,
+			maxReadFileLine: maxReadFileLine ?? -1,
 			settingsImportedAt: this.settingsImportedAt,
 			terminalCompressProgressBar: terminalCompressProgressBar ?? true,
 			hasSystemPromptOverride,
 			historyPreviewCollapsed: historyPreviewCollapsed ?? false,
 			condensingApiConfigId,
 			customCondensingPrompt,
+			codebaseIndexModels: codebaseIndexModels ?? EMBEDDING_MODEL_PROFILES,
+			codebaseIndexConfig: codebaseIndexConfig ?? {
+				codebaseIndexEnabled: false,
+				codebaseIndexQdrantUrl: "http://localhost:6333",
+				codebaseIndexEmbedderProvider: "openai",
+				codebaseIndexEmbedderBaseUrl: "",
+				codebaseIndexEmbedderModelId: "",
+			},
 		}
 	}
 
@@ -1530,7 +1569,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			browserToolEnabled: stateValues.browserToolEnabled ?? true,
 			telemetrySetting: stateValues.telemetrySetting || "unset",
 			showRooIgnoredFiles: stateValues.showRooIgnoredFiles ?? true,
-			maxReadFileLine: stateValues.maxReadFileLine ?? 500,
+			maxReadFileLine: stateValues.maxReadFileLine ?? -1,
 			historyPreviewCollapsed: stateValues.historyPreviewCollapsed ?? false,
 			// Explicitly add condensing settings
 			condensingApiConfigId: stateValues.condensingApiConfigId,
@@ -1539,6 +1578,14 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			// É importante que o objeto retornado seja compatível com o que getStateToPostToWebview espera.
 			// Assegurar que todas as chaves desestruturadas em getStateToPostToWebview estejam presentes aqui.
 			history: stateValues.taskHistory ?? [], // Adicionando 'history' que é usado por getStateToPostToWebview
+			codebaseIndexModels: stateValues.codebaseIndexModels ?? EMBEDDING_MODEL_PROFILES,
+			codebaseIndexConfig: stateValues.codebaseIndexConfig ?? {
+				codebaseIndexEnabled: false,
+				codebaseIndexQdrantUrl: "http://localhost:6333",
+				codebaseIndexEmbedderProvider: "openai",
+				codebaseIndexEmbedderBaseUrl: "",
+				codebaseIndexEmbedderModelId: "",
+			},
 		}
 	}
 
@@ -1638,59 +1685,21 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 	 * This method is called by the telemetry service to get context information
 	 * like the current mode, API provider, etc.
 	 */
-	public async getTelemetryProperties(): Promise<Record<string, any>> {
+	public async getTelemetryProperties(): Promise<TelemetryProperties> {
 		const { mode, apiConfiguration, language } = await this.getState()
-		const appVersion = this.context.extension?.packageJSON?.version
-		const vscodeVersion = vscode.version
-		const platform = process.platform
-		const editorName = vscode.env.appName // Get the editor name (VS Code, Cursor, etc.)
+		const task = this.getCurrentCline()
 
-		const properties: Record<string, any> = {
-			vscodeVersion,
-			platform,
-			editorName,
+		return {
+			appVersion: this.context.extension?.packageJSON?.version,
+			vscodeVersion: vscode.version,
+			platform: process.platform,
+			editorName: vscode.env.appName,
+			language,
+			mode,
+			apiProvider: apiConfiguration?.apiProvider,
+			modelId: task?.api?.getModel().id,
+			diffStrategy: task?.diffStrategy?.getName(),
+			isSubtask: task ? !!task.parentTask : undefined,
 		}
-
-		// Add extension version
-		if (appVersion) {
-			properties.appVersion = appVersion
-		}
-
-		// Add language
-		if (language) {
-			properties.language = language
-		}
-
-		// Add current mode
-		if (mode) {
-			properties.mode = mode
-		}
-
-		// Add API provider
-		if (apiConfiguration?.apiProvider) {
-			properties.apiProvider = apiConfiguration.apiProvider
-		}
-
-		// Add model ID if available
-		const currentCline = this.getCurrentCline()
-
-		if (currentCline?.api) {
-			const { id: modelId } = currentCline.api.getModel()
-
-			if (modelId) {
-				properties.modelId = modelId
-			}
-		}
-
-		if (currentCline?.diffStrategy) {
-			properties.diffStrategy = currentCline.diffStrategy.getName()
-		}
-
-		// Add isSubtask property that indicates whether this task is a subtask
-		if (currentCline) {
-			properties.isSubtask = !!currentCline.parentTask
-		}
-
-		return properties
 	}
 }

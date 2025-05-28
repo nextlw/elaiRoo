@@ -1,6 +1,6 @@
 import { Task } from "../../core/task/Task"
 import { ToolUse } from "../../shared/tools"
-import { searchCodeRepositoriesParamsSchema, SearchCodeRepositoriesParams } from "../../schemas"
+import { searchCodeRepositoriesParamsSchema, SearchCodeRepositoriesParams } from "../../schemas/index_e"
 import { logger } from "../../utils/logging" // Corrected import and path
 import { AskApproval } from "../../shared/tools"
 import { PushToolResult } from "../../shared/tools" // Corrected path for pushToolResult and type PushToolResult to function pushToolResult

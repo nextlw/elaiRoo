@@ -1,6 +1,4 @@
-import { GitCommit } from "../utils/git"
-
-import {
+import type {
 	GlobalSettings,
 	ProviderSettingsEntry,
 	ProviderSettings,
@@ -8,16 +6,14 @@ import {
 	ModeConfig,
 	TelemetrySetting,
 	ExperimentId,
-	ClineAsk,
-	ClineSay,
-	ToolProgressStatus,
 	ClineMessage,
-} from "../schemas"
+} from "@roo-code/types"
+
+import { GitCommit } from "../utils/git"
+
 import { McpServer } from "./mcp"
 import { Mode } from "./modes"
 import { RouterModels } from "./api"
-
-export type { ProviderSettingsEntry, ToolProgressStatus }
 
 export interface LanguageModelChatSelector {
 	vendor?: string
@@ -72,6 +68,9 @@ export interface ExtensionMessage {
 		| "vsCodeSetting"
 		| "condenseTaskContextResponse"
 		| "singleRouterModelFetchResponse"
+		| "indexingStatusUpdate"
+		| "indexCleared"
+		| "codebaseIndexConfig"
 		| "listSearchApiConfig"
 		| "currentSearchApiConfigName"
 		| "currentSearchApiConfigName"
@@ -185,6 +184,8 @@ export type ExtensionState = Pick<
 	| "currentSearchApiConfigName"
 	| "searchApiConfigurations"
 	| "activeSearchApiSettings"
+	| "codebaseIndexConfig"
+	| "codebaseIndexModels"
 > & {
 	version: string
 	clineMessages: ClineMessage[]
@@ -229,13 +230,12 @@ export type ExtensionState = Pick<
 	activeSearchApiSettings?: ProviderSettings
 }
 
-export type { ClineMessage, ClineAsk, ClineSay }
-
 export interface ClineSayTool {
 	tool:
 		| "editedExistingFile"
 		| "appliedDiff"
 		| "newFileCreated"
+		| "codebaseSearch"
 		| "readFile"
 		| "fetchInstructions"
 		| "listFilesTopLevel"
@@ -262,6 +262,7 @@ export interface ClineSayTool {
 	startLine?: number
 	endLine?: number
 	lineNumber?: number
+	query?: string
 }
 
 // Must keep in sync with system prompt.
