@@ -12,7 +12,7 @@ interface IExtractPageContentTool {
 		block: ToolUse, // block é do tipo ToolUse
 		onResult: (result: { toolExecutionId: string; result: ToolResponse; error?: string }) => void,
 		askApproval: AskApproval,
-		// log: Task['log'], // Task não possui a propriedade log diretamente
+		log: Task["emit"], // Adicionando o parâmetro log
 	) => ToolUse & { execute: () => Promise<void>; parameters: ExtractPageContentParams }
 }
 
@@ -28,8 +28,7 @@ export const extractPageContentTool: IExtractPageContentTool = {
 		cline: Task,
 		block: ToolUse,
 		onResult: (result: { toolExecutionId: string; result: ToolResponse; error?: string }) => void,
-		// askApproval: AskApproval,
-		// log: Task['log'],
+		askApproval: AskApproval,
 	) => {
 		// Os parâmetros são validados dentro da função execute
 		const toolUseWithParams = block as ToolUse & { toolExecutionId: string; parameters: ExtractPageContentParams }
@@ -60,9 +59,11 @@ export const extractPageContentTool: IExtractPageContentTool = {
 			try {
 				// O browser precisa ser inicializado antes de usar urlToMarkdown
 				await fetcher.launchBrowser()
-				const markdownContent = await fetcher.urlToMarkdown(url)
 
-				if (!markdownContent) {
+				// Usando o novo método fetchContent que implementa o processo de validação
+				const contentResult = await fetcher.fetchContent(url, clean_html)
+
+				if (!contentResult || (!contentResult.html && !contentResult.markdown)) {
 					onResult({
 						toolExecutionId: toolUseWithParams.toolExecutionId,
 						result: `Não foi possível buscar conteúdo da URL: ${url}`,
@@ -71,28 +72,33 @@ export const extractPageContentTool: IExtractPageContentTool = {
 					return
 				}
 
-				let contentToReturn: ToolResponse = markdownContent // Corrigido: usar markdownContent
+				let contentToReturn: ToolResponse
 
 				if (clean_html) {
-					// TODO: A lógica de clean_html=false precisaria retornar o HTML bruto,
-					// mas urlToMarkdown já processa para Markdown.
-					// Se clean_html for false, idealmente buscaríamos o HTML bruto.
-					// Por agora, urlToMarkdown sempre "limpa" para markdown.
-					console.log(`[extract_page_content] Conteúdo extraído como Markdown. clean_html=${clean_html}`)
+					// Se o usuário pediu para limpar o HTML
+					if (contentResult.markdown && contentResult.cleaned) {
+						// Temos um markdown validado e limpo
+						contentToReturn = contentResult.markdown
+						console.log(
+							`[extract_page_content] Conteúdo extraído e convertido para Markdown com sucesso. A validação passou.`,
+						)
+					} else {
+						// A limpeza foi solicitada, mas a validação falhou
+						// Retornamos o HTML com aviso
+						contentToReturn = contentResult.html
+						console.log(
+							`[extract_page_content] Aviso: A validação da conversão para Markdown falhou. Retornando HTML limpo.`,
+						)
+					}
 				} else {
-					// Se clean_html for false, idealmente deveríamos buscar o HTML bruto.
-					// Como urlToMarkdown já retorna markdown "limpo", vamos apenas logar.
-					// Para uma implementação completa de clean_html=false, seria necessário
-					// um método em UrlContentFetcher que retorne o HTML bruto.
-					console.log(
-						`[extract_page_content] clean_html é false, mas UrlContentFetcher.urlToMarkdown já retorna conteúdo processado (Markdown).`,
-					)
+					// O usuário pediu explicitamente o HTML bruto
+					contentToReturn = contentResult.html
+					console.log(`[extract_page_content] Retornando HTML bruto conforme solicitado (clean_html=false).`)
 				}
-				contentToReturn = markdownContent
 
 				onResult({
 					toolExecutionId: toolUseWithParams.toolExecutionId,
-					result: contentToReturn,
+					result: `@@EXACT_CONTENT_START@@\n${contentToReturn}\n@@EXACT_CONTENT_END@@`,
 				})
 			} catch (error: any) {
 				console.error(`[extract_page_content] Erro durante a execução para a URL ${url}:`, error)
