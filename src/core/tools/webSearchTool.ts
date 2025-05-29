@@ -6,6 +6,18 @@ import {
 	SearchApiSettings,
 } from "../../schemas"
 import { AskApproval, PushToolResult, HandleError, ToolUse } from "../../shared/tools"
+import { getCurrentLanguage } from "../../i18n" // Importar getCurrentLanguage
+import {
+	normalizeUrl,
+	extractUrlParts,
+	rankURLs,
+	TrackerContext,
+	SearchSnippet,
+	BoostedSearchSnippet,
+	Schemas,
+	fixBadURLMdLinks,
+	getLastModified,
+} from "../../utils/urlUtils" // Adicionando as novas importações
 import { parseHtmlResults } from "../../utils/htmlParsingUtils"
 import { z } from "zod"
 import * as https from "https"
@@ -14,8 +26,16 @@ import { logger } from "../../utils/logging"
 // Estender WebSearchResult para incluir 'provider' e campos opcionais de Jina
 interface WebSearchResultExtended extends OriginalWebSearchResult {
 	provider: string
-	score?: number
+	score?: number // Score inicial do provedor de busca
 	embedding?: number[]
+	favicon?: string
+	finalScore?: number // Score após re-ranqueamento local
+	lastModified?: string
+	// Campos de BoostedSearchSnippet que podem ser úteis para depuração ou exibição
+	freqBoost?: number
+	hostnameBoost?: number
+	pathBoost?: number
+	jinaRerankBoost?: number
 }
 
 // Interface para os callbacks para clareza
@@ -148,22 +168,21 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 			logger.info(`[webSearchTool] Using search provider: ${searchApiSettings.searchApiProviderName}`)
 
 			switch (searchApiSettings.searchApiProviderName) {
-				case "jina":
+				case "jina": {
 					const jinaSettings = searchApiSettings // TypeScript infere JinaSearchApiSettings aqui
 					if (!jinaSettings.apiKey) {
 						logger.warn("[webSearchTool] Jina API key is missing. Falling back to DuckDuckGo.")
 						providerNameForResults = "duckduckgo_fallback"
-						// Deixa cair para o default/fallback
+						// Deixa cair para o default/fallback, não precisa de break explícito aqui se a lógica de fallback for no default
 					} else {
 						try {
 							const searchUrl = new URL(jinaSettings.searchEndpoint || "https://s.jina.ai/")
-							// Jina search API espera a query como parte do path, não como query param
 							searchUrl.pathname = searchUrl.pathname.replace(/\/$/, "") + `/${encodeURIComponent(query)}`
 
 							const searchOptions: https.RequestOptions = {
 								method: "GET",
 								hostname: searchUrl.hostname,
-								path: searchUrl.pathname + searchUrl.search, // searchUrl.search deve estar vazio aqui
+								path: searchUrl.pathname + searchUrl.search,
 								headers: {
 									Authorization: `Bearer ${jinaSettings.apiKey}`,
 									Accept: "application/json",
@@ -254,7 +273,7 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 							if (jinaSettings.enableResultEmbeddings && processedJinaResults.length > 0) {
 								logger.info("[webSearchTool] Jina result embeddings enabled.")
 								const embeddingPayload = {
-									model: jinaSettings.embeddingModel || "jina-embeddings-v2-base-en", // Defaulting to v2 as v3 might not be standard
+									model: jinaSettings.embeddingModel || "jina-embeddings-v2-base-en",
 									input: processedJinaResults.map((r) => r.content || r.description || ""),
 								}
 								const embeddingUrl = new URL(
@@ -296,28 +315,32 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 							searchResults = processedJinaResults.slice(0, num_results).map((item) => ({
 								provider: "jina",
 								title: item.title,
-								link: item.url, // Mapeado de Jina 'url'
-								snippet: item.content || item.description || "", // Mapeado de Jina 'content'
+								link: item.url,
+								snippet: item.content || item.description || "",
 								score: item.score,
 								embedding: item.embedding,
+								favicon: `https://www.google.com/s2/favicons?domain=${extractUrlParts(normalizeUrl(item.url, false, { removeXAnalytics: true, removeAnchors: true, removeSessionIDs: true, removeUTMParams: true, removeTrackingParams: true }) || item.url).hostname}`,
 							}))
-							if (searchResults.length > 0) break
+							if (searchResults.length > 0) break // Sai do switch se Jina teve sucesso
 						} catch (jinaError: any) {
 							logger.error(`[webSearchTool] Error with Jina provider: ${jinaError.message}`, jinaError)
 							pushToolResult(`ERROR: Jina search failed: ${jinaError.message}`)
 							if (handleError) {
 								await handleError(`Jina search failed for query "${query}"`, jinaError)
-								return
+								return // Retorna da função webSearchTool inteira em caso de erro fatal com Jina
 							}
-							providerNameForResults = "duckduckgo_fallback" // Prepara para fallback
+							providerNameForResults = "duckduckgo_fallback" // Prepara para fallback se handleError não for fatal
 						}
 					}
+					// Se apiKey faltar ou se o try/catch acima não der break e cair aqui,
+					// o fluxo continua para o default (DuckDuckGo) se searchResults ainda estiver vazio.
+					if (searchResults.length === 0) {
+						// Garante que só fazemos fallback se Jina realmente não produziu nada
+						providerNameForResults = "duckduckgo_fallback"
+					}
 					break
-				// Se Jina não produziu resultados (apiKey faltante ou erro não tratado que não retornou),
-				// o fluxo continua para o default (DuckDuckGo) devido à ausência de 'break' aqui se apiKey faltar,
-				// ou se o 'break' acima foi pulado porque searchResults estava vazio.
-
-				case "google_custom_search":
+				}
+				case "google_custom_search": {
 					if (
 						searchApiSettings?.searchApiProviderName === "google_custom_search" &&
 						searchResults.length === 0
@@ -328,7 +351,8 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 						providerNameForResults = "duckduckgo_fallback"
 					}
 					break
-				case "serper":
+				}
+				case "serper": {
 					if (searchApiSettings?.searchApiProviderName === "serper" && searchResults.length === 0) {
 						logger.warn(
 							"[webSearchTool] Serper provider is not yet implemented. Falling back to DuckDuckGo.",
@@ -336,7 +360,8 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 						providerNameForResults = "duckduckgo_fallback"
 					}
 					break
-				case "brave_search":
+				}
+				case "brave_search": {
 					if (searchApiSettings?.searchApiProviderName === "brave_search" && searchResults.length === 0) {
 						logger.warn(
 							"[webSearchTool] Brave Search provider is not yet implemented. Falling back to DuckDuckGo.",
@@ -344,14 +369,18 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 						providerNameForResults = "duckduckgo_fallback"
 					}
 					break
+				}
 				case "duckduckgo_fallback":
-				default:
+				default: {
+					// Este bloco default será executado se:
+					// 1. O providerNameForResults for explicitamente "duckduckgo_fallback"
+					// 2. Nenhum dos cases anteriores corresponder (improvável com a lógica atual)
+					// 3. Um case anterior (como "jina" sem apiKey ou com erro não fatal) definir providerNameForResults para "duckduckgo_fallback" E searchResults estiver vazio.
 					if (searchResults.length === 0) {
-						// Só executa fallback se nenhum resultado foi obtido ainda
 						logger.info(
 							`[webSearchTool] Using DuckDuckGo fallback (Provider was: ${providerNameForResults}, now switching to duckduckgo_fallback).`,
 						)
-						providerNameForResults = "duckduckgo_fallback"
+						providerNameForResults = "duckduckgo_fallback" // Confirma que estamos usando DDG
 
 						const searchUrlDdG = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`
 						logger.info(`[webSearchTool] Fetching URL for DuckDuckGo: ${searchUrlDdG}`)
@@ -366,7 +395,12 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 								throw new Error(`No HTML content fetched from search results page: ${searchUrlDdG}.`)
 							}
 							const ddgResults = parseHtmlResults(rawResultsOutput, num_results, "duckduckgo")
-							searchResults = ddgResults.map((r) => ({ ...r, provider: "duckduckgo_fallback" }))
+							// Adicionar favicon para resultados do DuckDuckGo também
+							searchResults = ddgResults.map((r) => ({
+								...r,
+								provider: "duckduckgo_fallback",
+								favicon: `https://www.google.com/s2/favicons?domain=${extractUrlParts(normalizeUrl(r.link, false, { removeXAnalytics: true, removeAnchors: true, removeSessionIDs: true, removeUTMParams: true, removeTrackingParams: true }) || r.link).hostname}`,
+							}))
 							logger.info(
 								`[webSearchTool] Fetched and parsed ${searchResults.length} results from DuckDuckGo.`,
 							)
@@ -376,6 +410,7 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 						}
 					}
 					break
+				}
 			}
 		} else {
 			logger.info("[webSearchTool] No search provider configured or enabled. Falling back to DuckDuckGo.")
@@ -401,8 +436,104 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 			}
 		}
 
-		// Garantir que 'provider' esteja em todos os resultados, caso algum passo anterior não o tenha definido.
-		searchResults = searchResults.map((r) => ({ ...r, provider: r.provider || providerNameForResults }))
+		// Garantir que 'provider' esteja em todos os resultados.
+		searchResults = searchResults.map(
+			(r) => ({ ...r, provider: r.provider || providerNameForResults }) as WebSearchResultExtended,
+		)
+
+		// Adicionar data de última modificação
+		const resultsWithLastModifiedPromises = searchResults.map(async (result) => {
+			let lastModifiedDate: string | undefined
+			if (result.link) {
+				try {
+					lastModifiedDate = await getLastModified(result.link)
+				} catch (e: any) {
+					logger.warn(`Falha ao obter lastModified para ${result.link}: ${e.message}`)
+				}
+			}
+			return {
+				...result,
+				lastModified: lastModifiedDate,
+				snippet: result.snippet || "", // Garantir que snippet exista para o próximo passo
+			}
+		})
+		searchResults = await Promise.all(resultsWithLastModifiedPromises)
+
+		// Re-ranquear resultados usando rankURLs
+		// Criar um TrackerContext mínimo.
+		const placeholderTrackerContext: TrackerContext = {
+			tokenTracker: {
+				countTokens: async (content: any) => {
+					// Implementação placeholder para countTokens.
+					// Isso deve ser substituído por uma implementação real.
+					console.warn("[webSearchTool] Placeholder countTokens used")
+					return 0
+				},
+			},
+			actionTracker: {
+				trackAction: (action: any) => {
+					// Log da ação se o modo debug estiver ativo ou para telemetria futura.
+					logger.debug(`[webSearchTool] rankURLs action: ${JSON.stringify(action)}`)
+				},
+			},
+		}
+		// Usar o languageCode da instância cline, se disponível, caso contrário, fallback.
+		// TODO: Obter o languageCode de forma mais robusta a partir do contexto da Task/ClineProvider
+		// Tentar obter do proxy de contexto, se existir e tiver a propriedade, senão usar fallback.
+		const provider = cline.providerRef.deref()
+		const contextProxy = provider?.contextProxy
+		// Assumindo que contextProxy pode ter uma propriedade 'language' ou 'currentLanguage'
+		// Esta é uma suposição e pode precisar ser ajustada com base na estrutura real de ContextProxy.
+		const langFromProxy = (contextProxy as any)?.language || (contextProxy as any)?.currentLanguage
+		const languageCode = langFromProxy || "pt-BR"
+		const placeholderSchemas: Schemas = { languageCode }
+
+		const snippetsForRanking: SearchSnippet[] = searchResults.map((r) => ({
+			title: r.title || "",
+			url: r.link, // rankURLs espera 'url'
+			description: r.snippet || "",
+			weight: r.score, // Usar o score inicial como peso base para ranqueamento
+		}))
+
+		// A função rankURLs em urlUtils.ts retorna um novo array.
+		const rankedSnippets: BoostedSearchSnippet[] = rankURLs(
+			snippetsForRanking,
+			{ question: query }, // Passar a query atual para o reranking opcional dentro de rankURLs
+			placeholderTrackerContext,
+		)
+
+		// Mapear resultados ranqueados de volta para searchResults
+		// É importante garantir que todas as propriedades de WebSearchResultExtended sejam preservadas
+		// e que os novos scores e campos de boost sejam adicionados.
+		const rankedResultsMap = new Map<string, BoostedSearchSnippet>()
+		rankedSnippets.forEach((rs) => {
+			// Usar a URL original do snippet ranqueado, que deve corresponder ao 'link' original
+			const originalLink = rs.url
+			rankedResultsMap.set(originalLink, rs)
+		})
+
+		searchResults = searchResults
+			.map((originalResult) => {
+				const rankedData = rankedResultsMap.get(originalResult.link)
+				if (rankedData) {
+					return {
+						...originalResult, // Mantém todas as propriedades originais (provider, favicon, lastModified, etc.)
+						finalScore: rankedData.finalScore,
+						score: rankedData.score, // rankURLs pode ter atualizado o 'score' base também (originalmente 'weight')
+						freqBoost: rankedData.freqBoost,
+						hostnameBoost: rankedData.hostnameBoost,
+						pathBoost: rankedData.pathBoost,
+						jinaRerankBoost: rankedData.jinaRerankBoost, // Se aplicável
+					}
+				}
+				// Se, por algum motivo, um resultado original não estiver no mapa ranqueado
+				// (ex: filtrado por rankURLs ou erro de mapeamento), mantenha o original com um finalScore baixo.
+				return {
+					...originalResult,
+					finalScore: originalResult.score || 0,
+				}
+			})
+			.sort((a, b) => (b.finalScore ?? b.score ?? 0) - (a.finalScore ?? a.score ?? 0)) // Ordenar pelo novo finalScore
 
 		let approvalMessageContent = `Web search for "${query}" (using ${providerNameForResults}) found ${searchResults.length} results.`
 		if (searchResults.length > 0) {
@@ -428,7 +559,30 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 			query: query,
 			results: searchResults,
 		}
-		pushToolResult(JSON.stringify(finalResultObject, null, 2))
+		// Aplicar fixBadURLMdLinks nos snippets antes de enviar para o usuário
+		const resultsForUser = finalResultObject.results.map((r) => {
+			// Criar o Record allURLs necessário para fixBadURLMdLinks
+			// Este Record deve conter todas as URLs *originais* dos resultados atuais
+			// para que fixBadURLMdLinks possa tentar encontrar títulos para elas.
+			const allURLsForFixing: Record<string, SearchSnippet> = {}
+			finalResultObject.results.forEach((sr) => {
+				// Usar a URL original (não normalizada aqui) como chave se fixBadURLMdLinks espera isso,
+				// ou a URL normalizada se fixBadURLMdLinks também normaliza internamente.
+				// A implementação de fixBadURLMdLinks em urlUtils usa normalizeUrl(url) || url.
+				// Então, usar o link original aqui é seguro.
+				allURLsForFixing[sr.link] = {
+					title: sr.title || "",
+					url: sr.link, // Passar a URL original
+					description: sr.snippet || "",
+				}
+			})
+			return {
+				...r,
+				snippet: r.snippet ? fixBadURLMdLinks(r.snippet, allURLsForFixing) : "",
+			}
+		})
+
+		pushToolResult(JSON.stringify({ ...finalResultObject, results: resultsForUser }, null, 2))
 	} catch (error: any) {
 		const errorMessage = `Error in web_search for query "${query || "unknown"}": ${
 			error.message
