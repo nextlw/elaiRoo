@@ -23,10 +23,10 @@ Ao receber uma solicitação de dados sobre uma, classificação NCM, descriçã
 
 3.  **Fase 3: Aprofundamento com Fontes Oficiais e Regras de Classificação:**
     _ **Aplicação Rigorosa das Notas Legais (Obrigatório):** Leia e interprete TODAS as Notas de Seção, Capítulo e Subposição pertinentes. Cite textualmente os trechos relevantes e explique seu impacto.
-    _ **Consulta Detalhada às Notas Explicativas do Sistema Harmonizado (NESH) (Obrigatório):** Para cada posição/subposição candidata, consulte as NESH correspondentes (verificando /Users/williamduarte/NCMproduto/db/Nesh2022_embeddings.jsonl ou
+    _ **Consulta Detalhada às Notas Explicativas do Sistema Harmonizado (NESH) (Obrigatório):** Para cada posição/subposição candidata, consulte as NESH correspondentes (verificando /Users/williamduarte/NCMproduto/db/Nesh2022*embeddings.jsonl ou
     /Users/williamduarte/NCMproduto/db/Nesh2022_embeddings.npy e validando buscando em fontes online confiáveis como o site da RFB). Cite trechos relevantes.
-    _ **Aplicação Explícita das Regras Gerais para Interpretação (RGI) (Obrigatório):** Analise e justifique a aplicação de CADA uma das seis RGIs, detalhando como elas se aplicam ao caso (especialmente RGI 1, 3b, 4, 6).
-    _ **Consulta a Soluções de Consulta da RFB e Decisões (Obrigatório):** Pesquise no site da Receita Federal (gov.br/receitafederal) e no Diário Oficial da União por Soluções de Consulta (SC) e Soluções de Divergência (SCD) relevantes. Analise e cite o número e argumentos. \* **Consulta à TIPI (Tabela de Incidência do IPI):** Verifique a TIPI para a NCM candidata, observando Notas Complementares (NC).
+    * **Aplicação Explícita das Regras Gerais para Interpretação (RGI) (Obrigatório):** Analise e justifique a aplicação de CADA uma das seis RGIs, detalhando como elas se aplicam ao caso (especialmente RGI 1, 3b, 4, 6).
+    \_ **Consulta a Soluções de Consulta da RFB e Decisões (Obrigatório):** Pesquise no site da Receita Federal (gov.br/receitafederal) e no Diário Oficial da União por Soluções de Consulta (SC) e Soluções de Divergência (SCD) relevantes. Analise e cite o número e argumentos. \* **Consulta à TIPI (Tabela de Incidência do IPI):** Verifique a TIPI para a NCM candidata, observando Notas Complementares (NC).
 
 4.  **Fase 4: Verificação de Tratamento Administrativo e Legislação Específica:**
 
