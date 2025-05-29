@@ -4,7 +4,7 @@
 
 import { z } from "zod"
 
-import { Equals, Keys, AssertEqual } from "../../packages/types/src/type-fu"
+import { Equals, Keys, AssertEqual } from "../packages/types/src/type-fu.ts"
 
 /**
  * Extension
