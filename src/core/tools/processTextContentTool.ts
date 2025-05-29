@@ -1,7 +1,7 @@
 import { ToolUse, AskApproval, PushToolResult, HandleError, ToolResponse } from "../../shared/tools"
 import { Task } from "../../core/task/Task"
 import { ILogger as Logger } from "../../utils/logging/types"
-import { processTextContentParamsSchema, ProcessTextContentParams } from "../../schemas/index_e"
+import { processTextContentParamsSchema, ProcessTextContentParams } from "../../schemas"
 import { fixMarkdown, removeDuplicateLines, summarize, extractKeywords } from "../../utils/textProcessingUtils"
 import { Anthropic } from "@anthropic-ai/sdk" // Necessário para ToolResponse
 

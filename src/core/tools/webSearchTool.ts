@@ -4,7 +4,7 @@ import {
 	WebSearchResult as OriginalWebSearchResult, // Importar original para estender
 	ClineAsk,
 	SearchApiSettings,
-} from "../../schemas/index_e"
+} from "../../schemas"
 import { AskApproval, PushToolResult, HandleError, ToolUse } from "../../shared/tools"
 import { getCurrentLanguage } from "../../i18n" // Importar getCurrentLanguage
 import {

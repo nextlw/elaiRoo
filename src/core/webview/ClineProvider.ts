@@ -22,7 +22,7 @@ import type {
 	TerminalActionPromptType,
 	HistoryItem,
 } from "@roo-code/types"
-import { SearchApiSettings } from "../../schemas/index_e"
+import { SearchApiSettings } from "../../schemas"
 
 import { t } from "../../i18n"
 import { setPanel } from "../../activate/registerCommands"

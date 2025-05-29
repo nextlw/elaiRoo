@@ -1,6 +1,6 @@
 import { ToolUse, AskApproval, ToolResponse } from "../../shared/tools"
 import { Task } from "../../core/task/Task"
-import { extractPageContentParamsSchema, ExtractPageContentParams, ToolName } from "../../schemas/index_e"
+import { extractPageContentParamsSchema, ExtractPageContentParams, ToolName } from "../../schemas"
 import { z } from "zod"
 
 // Definindo uma interface local para a estrutura da ferramenta

@@ -1,6 +1,6 @@
 import { Task } from "../../core/task/Task"
 import { ToolUse } from "../../shared/tools"
-import { extractDocumentContentParamsSchema, ExtractDocumentContentParams } from "../../schemas/index_e"
+import { extractDocumentContentParamsSchema, ExtractDocumentContentParams } from "../../schemas"
 import { logger } from "../../utils/logging"
 import * as fs from "fs/promises"
 import axios from "axios"

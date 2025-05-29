@@ -1,6 +1,6 @@
 import { Task } from "../../core/task/Task"
 import { ToolUse, AskApproval, PushToolResult, HandleError } from "../../shared/tools"
-import { getRepositoryFileContentParamsSchema, GetRepositoryFileContentParams } from "../../schemas/index_e"
+import { getRepositoryFileContentParamsSchema, GetRepositoryFileContentParams } from "../../schemas"
 import { ILogger as Logger } from "../../utils/logging/types"
 
 export async function getRepositoryFileContentTool(

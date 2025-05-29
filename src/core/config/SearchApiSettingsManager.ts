@@ -6,7 +6,7 @@ import {
 	searchApiSettingsSchemaDiscriminated,
 	// baseSearchApiSettingsSchema, // Corrigido: Usado para estender com ID
 	SearchApiProviderName,
-} from "../../schemas/index_e"
+} from "../../schemas"
 import { modes } from "../../shared/modes"
 import { telemetryService } from "../../services/telemetry/TelemetryService"
 
