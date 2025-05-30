@@ -24,6 +24,24 @@
 				"group": "tasks",
 				"order": 1
 			}
+		},
+		{
+			"type": "swift",
+			"request": "launch",
+			"args": [],
+			"cwd": "${workspaceFolder:elaiRoo}/src/services/mcp/mcp-server-macos-use",
+			"name": "Debug mcp-server-macos-use (src/services/mcp/mcp-server-macos-use)",
+			"program": "${workspaceFolder:elaiRoo}/src/services/mcp/mcp-server-macos-use/.build/debug/mcp-server-macos-use",
+			"preLaunchTask": "swift: Build Debug mcp-server-macos-use (src/services/mcp/mcp-server-macos-use)"
+		},
+		{
+			"type": "swift",
+			"request": "launch",
+			"args": [],
+			"cwd": "${workspaceFolder:elaiRoo}/src/services/mcp/mcp-server-macos-use",
+			"name": "Release mcp-server-macos-use (src/services/mcp/mcp-server-macos-use)",
+			"program": "${workspaceFolder:elaiRoo}/src/services/mcp/mcp-server-macos-use/.build/release/mcp-server-macos-use",
+			"preLaunchTask": "swift: Build Release mcp-server-macos-use (src/services/mcp/mcp-server-macos-use)"
 		}
 	]
 }
