@@ -20,5 +20,6 @@
 		"webview-ui/src/i18n",
 		"webview-ui/src/__mocks__/i18n",
 		"webview-ui/src/i18n/locales"
-	]
+	],
+	"postman.settings.dotenv-detection-notification-visibility": false
 }

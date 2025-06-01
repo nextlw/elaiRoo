@@ -189,3 +189,4 @@ const JinaSearchProviderSettings: React.FC<JinaSearchProviderSettingsProps> = ({
 }
 
 export default JinaSearchProviderSettings
+export { JinaSearchProviderSettings as JinaProviderSettings }

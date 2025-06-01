@@ -1,3 +1,5 @@
+import { z } from "zod"
+
 export type McpErrorEntry = {
 	message: string
 	timestamp: number
@@ -22,7 +24,8 @@ export type McpServer = {
 export type McpTool = {
 	name: string
 	description?: string
-	inputSchema?: object
+	inputSchema?: z.ZodSchema | object
+	outputSchema?: z.ZodSchema | object
 	alwaysAllow?: boolean
 }
 

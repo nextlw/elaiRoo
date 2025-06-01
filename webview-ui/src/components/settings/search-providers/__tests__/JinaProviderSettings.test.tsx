@@ -6,9 +6,9 @@ import { z } from "zod"
 
 // Mock VSCodeTextField e outros componentes UI se necessário
 jest.mock("@vscode/webview-ui-toolkit/react", () => ({
-	VSCodeTextField: ({ label, value, onInput, type, "data-testid": dataTestId }: any) => (
+	VSCodeTextField: ({ children, value, onInput, type, "data-testid": dataTestId }: any) => (
 		<div>
-			<label htmlFor={dataTestId}>{label}</label>
+			<label htmlFor={dataTestId}>{children}</label>
 			<input
 				id={dataTestId}
 				type={type || "text"}

@@ -67,7 +67,8 @@
 				{
 					"type": "webview",
 					"id": "roo-cline.SidebarProvider",
-					"name": ""
+					"name": "",
+					"icon": "assets/icons/icon.svg"
 				}
 			]
 		},

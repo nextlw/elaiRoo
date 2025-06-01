@@ -2,7 +2,7 @@ import process from "node:process"
 
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 export default {
-	preset: "ts-jest",
+	preset: "ts-jest/presets/default-esm",
 	testEnvironment: "node",
 	moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
 	transform: {
@@ -24,7 +24,9 @@ export default {
 	testPathIgnorePatterns: [
 		// Skip platform-specific tests based on environment
 		...(process.platform === "win32" ? [".*\\.bash\\.test\\.ts$"] : [".*\\.cmd\\.test\\.ts$"]),
-		// PowerShell tests are conditionally skipped in the test files themselves using the setupFilesAfterEnv
+		// Exclude common directories
+		"/node_modules/",
+		"/dist/",
 	],
 	moduleNameMapper: {
 		"^vscode$": "<rootDir>/__mocks__/vscode.js",

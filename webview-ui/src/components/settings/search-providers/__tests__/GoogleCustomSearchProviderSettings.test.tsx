@@ -6,18 +6,21 @@ import { z } from "zod"
 
 // Mock VSCodeTextField e outros componentes UI se necessário, similar a SettingsView.test.tsx
 jest.mock("@vscode/webview-ui-toolkit/react", () => ({
-	VSCodeTextField: ({ label, value, onInput, "data-testid": dataTestId }: any) => (
-		<div>
-			<label htmlFor={dataTestId}>{label}</label>
-			<input
-				id={dataTestId}
-				type="text"
-				value={value}
-				onChange={(e) => onInput({ target: { value: e.target.value } })}
-				data-testid={dataTestId}
-			/>
-		</div>
-	),
+	VSCodeTextField: ({ children, value, onInput, disabled }: any) => {
+		const id = typeof children === "string" ? children.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() : "input"
+		return (
+			<div>
+				<label htmlFor={id}>{children}</label>
+				<input
+					id={id}
+					type="text"
+					value={value}
+					onChange={(e) => onInput({ target: { value: e.target.value } })}
+					disabled={disabled}
+				/>
+			</div>
+		)
+	},
 	VSCodeCheckbox: ({ children, checked, onChange, "data-testid": dataTestId }: any) => (
 		<label>
 			<input

@@ -1,3 +1,4 @@
+import { EventEmitter } from "events"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
@@ -101,8 +102,17 @@ const McpSettingsSchema = z.object({
 	mcpServers: z.record(ServerConfigSchema),
 })
 
-export class McpHub {
-	private providerRef: WeakRef<ClineProvider>
+export interface McpEvents {
+	"server-added": (server: McpServer) => void
+	"server-removed": (serverName: string) => void
+	"terminal/resize": (data: { terminalId: number; dimensions: { columns: number; rows: number } }) => void
+}
+
+export class McpHub extends EventEmitter {
+	declare emit: <K extends keyof McpEvents>(event: K, ...args: Parameters<McpEvents[K]>) => boolean
+	declare on: <K extends keyof McpEvents>(event: K, listener: McpEvents[K]) => this
+	private static instance: McpHub
+	private providerRef!: WeakRef<ClineProvider>
 	private disposables: vscode.Disposable[] = []
 	private settingsWatcher?: vscode.FileSystemWatcher
 	private fileWatchers: Map<string, FSWatcher[]> = new Map()
@@ -112,13 +122,24 @@ export class McpHub {
 	isConnecting: boolean = false
 	private refCount: number = 0 // Reference counter for active clients
 
-	constructor(provider: ClineProvider) {
+	private constructor(provider: ClineProvider) {
+		super()
 		this.providerRef = new WeakRef(provider)
 		this.watchMcpSettingsFile()
 		this.watchProjectMcpFile()
 		this.setupWorkspaceFoldersWatcher()
 		this.initializeGlobalMcpServers()
 		this.initializeProjectMcpServers()
+	}
+
+	public static getInstance(provider?: ClineProvider): McpHub {
+		if (!McpHub.instance) {
+			if (!provider) {
+				throw new Error("McpHub must be initialized with a provider first")
+			}
+			McpHub.instance = new McpHub(provider)
+		}
+		return McpHub.instance
 	}
 	/**
 	 * Registers a client (e.g., ClineProvider) using this hub.

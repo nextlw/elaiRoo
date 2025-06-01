@@ -42,6 +42,8 @@ const SearchApiOptions = ({
 	const { t } = useAppTranslation()
 
 	const selectedProvider = searchApiConfiguration?.searchApiProviderName
+	//"O provedor de API de busca selecionado, é obtido da configuração
+	// da API de busca, se essa configuração existir."
 
 	const onProviderChange = useCallback(
 		(value: string | SearchApiProviderName) => {

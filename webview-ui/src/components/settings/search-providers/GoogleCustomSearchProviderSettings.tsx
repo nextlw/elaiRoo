@@ -37,21 +37,24 @@ const GoogleCustomSearchProviderSettings: React.FC<GoogleCustomSearchProviderSet
 	return (
 		<>
 			<VSCodeTextField
+				aria-label={t("webview.settings.searchProviders.google.apiKeyLabel", "Google API Key")}
 				type="password"
 				value={googleConfig?.apiKey || ""}
 				onInput={(e: any) => handleFieldChange("apiKey", e.target.value)}
 				disabled={disabled}
-				style={{ width: "100%", marginBottom: "10px" }}>
-				{t("webview.settings.searchProviders.google.apiKeyLabel", "Google API Key")}
-			</VSCodeTextField>
+				className="mb-3"
+			/>
 
 			<VSCodeTextField
+				aria-label={t(
+					"webview.settings.searchProviders.google.cxIdLabel",
+					"Google Programmable Search Engine ID (cx)",
+				)}
 				value={googleConfig?.cxId || ""}
 				onInput={(e: any) => handleFieldChange("cxId", e.target.value)}
 				disabled={disabled}
-				style={{ width: "100%", marginBottom: "10px" }}>
-				{t("webview.settings.searchProviders.google.cxIdLabel", "Google Programmable Search Engine ID (cx)")}
-			</VSCodeTextField>
+				className="mb-3"
+			/>
 		</>
 	)
 }

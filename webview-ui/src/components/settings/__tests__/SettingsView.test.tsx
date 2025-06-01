@@ -39,43 +39,36 @@ jest.mock("../ApiConfigManager", () => ({
 // Mock SearchApiOptions component
 jest.mock("../SearchApiOptions", () => ({
 	__esModule: true,
-	default: jest.fn(({ config, onConfigChange, availableProviders }) => (
+	default: jest.fn(({ searchApiConfiguration, setSearchApiConfigurationField, disabled }) => (
 		<div data-testid="search-api-options">
-			<span>Provider: {config?.provider}</span>
+			<span>Provider: {searchApiConfiguration?.searchApiProviderName}</span>
 			<input
 				type="text"
 				aria-label="API Key"
-				value={config?.settings?.apiKey || ""}
-				onChange={(e) =>
-					onConfigChange({
-						...config,
-						settings: { ...config?.settings, apiKey: e.target.value },
-					})
-				}
+				value={searchApiConfiguration?.apiKey || ""}
+				onChange={(e) => setSearchApiConfigurationField("apiKey", e.target.value)}
+				disabled={disabled}
 			/>
-			{availableProviders && availableProviders.length > 0 && (
-				<select
-					aria-label="Provider select"
-					value={config?.provider}
-					onChange={(e) => {
-						const newProvider = e.target.value
-						const defaultConfig =
-							availableProviders.find(
-								(p: { provider: string; defaultConfig?: any }) => p.provider === newProvider,
-							)?.defaultConfig || {}
-						onConfigChange({
-							name: config?.name || "new-config",
-							provider: newProvider,
-							settings: defaultConfig, // No mock, settings ainda é usado, mas o componente real usaria campos no nível raiz
-						})
-					}}>
-					{availableProviders.map((p: { provider: string; name: string }) => (
-						<option key={p.provider} value={p.provider}>
-							{p.name}
-						</option>
-					))}
-				</select>
+			{/* Adicionar outros campos mockados conforme necessário para o teste */}
+			{searchApiConfiguration?.searchApiProviderName === "google_custom_search" && (
+				<input
+					type="text"
+					aria-label="CX ID"
+					value={searchApiConfiguration?.cxId || ""}
+					onChange={(e) => setSearchApiConfigurationField("cxId", e.target.value)}
+					disabled={disabled}
+				/>
 			)}
+			{/* Mock para o Select de provedores, se necessário para outros testes */}
+			<select
+				aria-label="Provider select"
+				value={searchApiConfiguration?.searchApiProviderName}
+				onChange={(e) => setSearchApiConfigurationField("searchApiProviderName", e.target.value)}
+				disabled={disabled}>
+				{/* Renderizar opções mockadas se necessário */}
+				<option value="jina">Jina AI</option>
+				<option value="google_custom_search">Google Custom Search</option>
+			</select>
 		</div>
 	)),
 }))
@@ -383,6 +376,196 @@ describe("SettingsView - Sound Settings", () => {
 		expect(speedSlider).toHaveValue("1")
 	})
 
+	// --- TESTES DE PAYLOAD PARA TODOS OS PROVIDERS ---
+
+	describe("SettingsView - Search API Configuration (Google Custom Search)", () => {
+		beforeEach(() => {
+			jest.clearAllMocks()
+			const SearchApiOptionsMock = jest.requireMock("../SearchApiOptions").default
+			SearchApiOptionsMock.mockClear()
+		})
+
+		it("envia o payload correto ao salvar alterações", () => {
+			mockPostMessage({
+				currentSearchApiConfigName: "google-config",
+				searchApiConfigurations: [
+					{
+						id: "google-1",
+						name: "google-config",
+						provider: "google_custom_search",
+						searchApiProviderName: "google_custom_search",
+						apiKey: "test-google-key",
+						cxId: "test-cx",
+						isEnabled: true,
+					},
+				],
+				activeSearchApiSettings: {
+					searchApiProviderName: "google_custom_search",
+					isEnabled: true,
+					apiKey: "test-google-key",
+					cxId: "test-cx",
+				},
+			})
+			const { activateTab } = renderSettingsView()
+			activateTab("search-api")
+			const apiKeyInput = screen.getByLabelText("API Key")
+			fireEvent.change(apiKeyInput, { target: { value: "new_google_key" } })
+			const cxIdInput = screen.getByLabelText("CX ID")
+			fireEvent.change(cxIdInput, { target: { value: "new_cx_id" } })
+			const saveButton = screen.getByTestId("save-button")
+			fireEvent.click(saveButton)
+			expect(vscode.postMessage).toHaveBeenCalledWith(
+				expect.objectContaining({
+					type: "upsertSearchApiConfiguration",
+					payload: expect.objectContaining({
+						name: "google-config",
+						provider: "google_custom_search",
+						searchApiProviderName: "google_custom_search",
+						apiKey: "new_google_key",
+						cxId: "new_cx_id",
+						isEnabled: true,
+					}),
+				}),
+			)
+		})
+	})
+
+	describe("SettingsView - Search API Configuration (Serper)", () => {
+		beforeEach(() => {
+			jest.clearAllMocks()
+			const SearchApiOptionsMock = jest.requireMock("../SearchApiOptions").default
+			SearchApiOptionsMock.mockClear()
+		})
+
+		it("envia o payload correto ao salvar alterações", () => {
+			mockPostMessage({
+				currentSearchApiConfigName: "serper-config",
+				searchApiConfigurations: [
+					{
+						id: "serper-1",
+						name: "serper-config",
+						provider: "serper",
+						searchApiProviderName: "serper",
+						apiKey: "test-serper-key",
+						isEnabled: true,
+					},
+				],
+				activeSearchApiSettings: {
+					searchApiProviderName: "serper",
+					isEnabled: true,
+					apiKey: "test-serper-key",
+				},
+			})
+			const { activateTab } = renderSettingsView()
+			activateTab("search-api")
+			const apiKeyInput = screen.getByLabelText("API Key")
+			fireEvent.change(apiKeyInput, { target: { value: "new_serper_key" } })
+			const saveButton = screen.getByTestId("save-button")
+			fireEvent.click(saveButton)
+			expect(vscode.postMessage).toHaveBeenCalledWith(
+				expect.objectContaining({
+					type: "upsertSearchApiConfiguration",
+					payload: expect.objectContaining({
+						name: "serper-config",
+						provider: "serper",
+						searchApiProviderName: "serper",
+						apiKey: "new_serper_key",
+						isEnabled: true,
+					}),
+				}),
+			)
+		})
+	})
+
+	describe("SettingsView - Search API Configuration (Brave Search)", () => {
+		beforeEach(() => {
+			jest.clearAllMocks()
+			const SearchApiOptionsMock = jest.requireMock("../SearchApiOptions").default
+			SearchApiOptionsMock.mockClear()
+		})
+
+		it("envia o payload correto ao salvar alterações", () => {
+			mockPostMessage({
+				currentSearchApiConfigName: "brave-config",
+				searchApiConfigurations: [
+					{
+						id: "brave-1",
+						name: "brave-config",
+						provider: "brave_search",
+						searchApiProviderName: "brave_search",
+						apiKey: "test-brave-key",
+						isEnabled: true,
+					},
+				],
+				activeSearchApiSettings: {
+					searchApiProviderName: "brave_search",
+					isEnabled: true,
+					apiKey: "test-brave-key",
+				},
+			})
+			const { activateTab } = renderSettingsView()
+			activateTab("search-api")
+			const apiKeyInput = screen.getByLabelText("API Key")
+			fireEvent.change(apiKeyInput, { target: { value: "new_brave_key" } })
+			const saveButton = screen.getByTestId("save-button")
+			fireEvent.click(saveButton)
+			expect(vscode.postMessage).toHaveBeenCalledWith(
+				expect.objectContaining({
+					type: "upsertSearchApiConfiguration",
+					payload: expect.objectContaining({
+						name: "brave-config",
+						provider: "brave_search",
+						searchApiProviderName: "brave_search",
+						apiKey: "new_brave_key",
+						isEnabled: true,
+					}),
+				}),
+			)
+		})
+	})
+
+	describe("SettingsView - Search API Configuration (DuckDuckGo Fallback)", () => {
+		beforeEach(() => {
+			jest.clearAllMocks()
+			const SearchApiOptionsMock = jest.requireMock("../SearchApiOptions").default
+			SearchApiOptionsMock.mockClear()
+		})
+
+		it("envia o payload correto ao salvar alterações", () => {
+			mockPostMessage({
+				currentSearchApiConfigName: "ddg-config",
+				searchApiConfigurations: [
+					{
+						id: "ddg-1",
+						name: "ddg-config",
+						provider: "duckduckgo_fallback",
+						searchApiProviderName: "duckduckgo_fallback",
+						isEnabled: true,
+					},
+				],
+				activeSearchApiSettings: {
+					searchApiProviderName: "duckduckgo_fallback",
+					isEnabled: true,
+				},
+			})
+			const { activateTab } = renderSettingsView()
+			activateTab("search-api")
+			const saveButton = screen.getByTestId("save-button")
+			fireEvent.click(saveButton)
+			expect(vscode.postMessage).toHaveBeenCalledWith(
+				expect.objectContaining({
+					type: "upsertSearchApiConfiguration",
+					payload: expect.objectContaining({
+						name: "ddg-config",
+						provider: "duckduckgo_fallback",
+						searchApiProviderName: "duckduckgo_fallback",
+						isEnabled: true,
+					}),
+				}),
+			)
+		})
+	})
+
 	it("shows volume slider when sound is enabled", () => {
 		// Render once and get the activateTab helper
 		const { activateTab } = renderSettingsView()
@@ -666,7 +849,7 @@ describe("SettingsView - Search API Configuration", () => {
 	beforeEach(() => {
 		jest.clearAllMocks()
 		// Limpar o mock de SearchApiOptions para cada teste, se necessário, ou reconfigurá-lo.
-		const SearchApiOptionsMock = require("../SearchApiOptions").default
+		const SearchApiOptionsMock = jest.requireMock("../SearchApiOptions").default
 		SearchApiOptionsMock.mockClear()
 	})
 
@@ -705,12 +888,15 @@ describe("SettingsView - Search API Configuration", () => {
 
 		// Verificar se SearchApiOptions reflete a nova configuração
 		// O mock de SearchApiOptions mostra o provedor e um input para apiKey
-		expect(await screen.findByText("Provider: google_custom_search")).toBeInTheDocument()
+		expect(screen.getByText("Current config: google-config")).toBeInTheDocument()
+		expect(screen.getByTestId("search-api-options")).toHaveTextContent(/Provider:\s*google_custom_search/)
 		const apiKeyInput = screen.getByLabelText("API Key") as HTMLInputElement
 		expect(apiKeyInput.value).toBe("test-google-key")
+		const cxIdInput = await screen.findByLabelText("CX ID")
+		expect((cxIdInput as HTMLInputElement).value).toBe("test-cx")
 	})
 
-	it("sends upsertSearchApiConfiguration message when saving changes in SearchApiOptions", () => {
+	it("sends upsertSearchApiConfiguration message when saving changes in SearchApiOptions (Jina)", () => {
 		const { activateTab } = renderSettingsView()
 		activateTab("search-api")
 
@@ -742,6 +928,46 @@ describe("SettingsView - Search API Configuration", () => {
 					embeddingEndpoint: "https://api.jina.ai/v1/embeddings",
 					embeddingTaskForResult: "retrieval.passage",
 					embeddingDimensions: 1024,
+				}),
+			}),
+		)
+	})
+
+	it("sends upsertSearchApiConfiguration message when saving changes in SearchApiOptions (Google Custom Search)", () => {
+		const { activateTab } = renderSettingsView()
+		// Simular seleção do perfil Google
+		mockPostMessage({
+			currentSearchApiConfigName: "google-config",
+			activeSearchApiSettings: {
+				searchApiProviderName: "google_custom_search",
+				isEnabled: true,
+				apiKey: "test-google-key",
+				cxId: "test-cx",
+			},
+		})
+		activateTab("search-api")
+
+		// Simular mudança no SearchApiOptions (ex: mudar apiKey e cxId)
+		const apiKeyInput = screen.getByLabelText("API Key")
+		fireEvent.change(apiKeyInput, { target: { value: "new_google_key" } })
+		const cxIdInput = screen.getByLabelText("CX ID")
+		fireEvent.change(cxIdInput, { target: { value: "new_cx_id" } })
+
+		// Clicar em Salvar
+		const saveButton = screen.getByTestId("save-button")
+		fireEvent.click(saveButton)
+
+		// Verificar se a mensagem correta foi enviada para o VSCode
+		expect(vscode.postMessage).toHaveBeenCalledWith(
+			expect.objectContaining({
+				type: "upsertSearchApiConfiguration",
+				payload: expect.objectContaining({
+					name: "google-config",
+					provider: "google_custom_search",
+					searchApiProviderName: "google_custom_search",
+					apiKey: "new_google_key",
+					cxId: "new_cx_id",
+					isEnabled: true,
 				}),
 			}),
 		)
