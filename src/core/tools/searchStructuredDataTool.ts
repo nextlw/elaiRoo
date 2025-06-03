@@ -46,7 +46,14 @@ export async function searchStructuredDataTool(
 				}
 				if (params.query) {
 					// Assuming query is a JSONPath expression
-					results = JSONPath({ path: params.query, json: jsonData })
+					const queryOutput = JSONPath({ path: params.query, json: jsonData })
+					if (Array.isArray(queryOutput)) {
+						results = queryOutput
+					} else if (queryOutput !== undefined) {
+						results = [queryOutput]
+					} else {
+						results = [] // Ensure results is an empty array if queryOutput is undefined
+					}
 				} else {
 					results = [jsonData] // Return all content if no query
 				}
@@ -107,11 +114,19 @@ export async function searchStructuredDataTool(
 				if (params.criteria) {
 					const criteriaObj = safeJsonParse(params.criteria) // Use safeJsonParse
 					if (typeof criteriaObj === "object" && criteriaObj !== null && criteriaObj !== undefined) {
-						results = (results.length > 0 ? results : records).filter((record: any) => {
-							return Object.entries(criteriaObj).every(([key, value]) => {
-								return record[key] !== undefined && String(record[key]) === String(value)
-							})
-						})
+						// Ensure 'results' is an array before using .length or .filter
+						const currentResultsArray = Array.isArray(results)
+							? results
+							: results !== null && results !== undefined
+								? [results]
+								: []
+						results = (currentResultsArray.length > 0 ? currentResultsArray : records).filter(
+							(record: any) => {
+								return Object.entries(criteriaObj).every(([key, value]) => {
+									return record[key] !== undefined && String(record[key]) === String(value)
+								})
+							},
+						)
 					} else {
 						console.warn(`Could not parse criteria as JSON object: ${params.criteria}`)
 					}
@@ -122,10 +137,16 @@ export async function searchStructuredDataTool(
 				throw new Error(`Unsupported file_type: ${fileType}`)
 		}
 
-		const resultString = JSON.stringify(results, null, 2)
-		const summary = `Found ${results.length} item(s) in ${params.file_path}.`
+		// Ensure 'results' is always an array before defining ensuredArrayResults
+		if (!Array.isArray(results)) {
+			results = results !== null && results !== undefined ? [results] : []
+		}
+		const ensuredArrayResults = results // Now 'results' is guaranteed to be an array
 
-		if (results.length > 0) {
+		const resultString = JSON.stringify(ensuredArrayResults, null, 2)
+		const summary = `Found ${ensuredArrayResults.length} item(s) in ${params.file_path}.`
+
+		if (ensuredArrayResults.length > 0) {
 			const approvalMessage = `${summary}\nPreview (first 500 chars):\n${resultString.substring(
 				0,
 				500,

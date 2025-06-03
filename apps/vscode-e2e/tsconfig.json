@@ -9,7 +9,8 @@
 		"strict": true,
 		"skipLibCheck": true,
 		"useUnknownInCatchVariables": false,
-		"outDir": "out"
+		"outDir": "out",
+		"typeRoots": ["./node_modules/@types", "./src/types"]
 	},
 	"include": ["src"],
 	"exclude": [".vscode-test", "**/node_modules/**", "out"]

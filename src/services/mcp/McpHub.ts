@@ -34,7 +34,7 @@ import { arePathsEqual } from "../../utils/path"
 import { injectEnv } from "../../utils/config"
 
 export type McpConnection = {
-	server: McpServer
+	server: McpServer & { isSystemCritical?: boolean } // Adicionando a flag opcional
 	client: Client
 	transport: StdioClientTransport | SSEClientTransport
 }
@@ -45,6 +45,7 @@ const BaseConfigSchema = z.object({
 	timeout: z.number().min(1).max(3600).optional().default(60),
 	alwaysAllow: z.array(z.string()).default([]),
 	watchPaths: z.array(z.string()).optional(), // paths to watch for changes and restart server
+	isSystemCritical: z.boolean().optional(), // Adicionado para MCPs críticos do sistema
 })
 
 // Custom error messages for better user feedback
@@ -795,6 +796,11 @@ export class McpHub extends EventEmitter {
 				this.showErrorMessage(`Invalid configuration for MCP server "${name}"`, error)
 				continue
 			}
+			// >>> INÍCIO DA NOVA LÓGICA <<<
+			if (name === "whatsapp") {
+				validatedConfig.disabled = false
+				validatedConfig.isSystemCritical = true
+			}
 
 			if (!currentConnection) {
 				// New server
@@ -988,31 +994,34 @@ export class McpHub extends EventEmitter {
 			}
 
 			const serverSource = connection.server.source || "global"
-			// Update the server config in the appropriate file
+			// Impede a desativação de servidores críticos do sistema
+			if (connection.server.isSystemCritical && disabled) {
+				console.warn(t("mcpHub.whatsapp.disableAttempt", { name: serverName }))
+				return
+			}
+
 			await this.updateServerConfig(serverName, { disabled }, serverSource)
 
-			// Update the connection object
-			if (connection) {
-				try {
-					connection.server.disabled = disabled
+			// Update the connection object's disabled status in memory
+			connection.server.disabled = disabled
 
-					// Only refresh capabilities if connected
-					if (connection.server.status === "connected") {
-						connection.server.tools = await this.fetchToolsList(serverName, serverSource)
-						connection.server.resources = await this.fetchResourcesList(serverName, serverSource)
-						connection.server.resourceTemplates = await this.fetchResourceTemplatesList(
-							serverName,
-							serverSource,
-						)
-					}
-				} catch (error) {
-					console.error(`Failed to refresh capabilities for ${serverName}:`, error)
+			// Attempt to refresh capabilities if the server was connected
+			try {
+				if (connection.server.status === "connected") {
+					connection.server.tools = await this.fetchToolsList(serverName, serverSource)
+					connection.server.resources = await this.fetchResourcesList(serverName, serverSource)
+					connection.server.resourceTemplates = await this.fetchResourceTemplatesList(
+						serverName,
+						serverSource,
+					)
 				}
+			} catch (refreshError) {
+				console.error(`Failed to refresh capabilities for ${serverName} after state toggle:`, refreshError)
 			}
 
 			await this.notifyWebviewOfServerChanges()
 		} catch (error) {
-			this.showErrorMessage(`Failed to update server ${serverName} state`, error)
+			this.showErrorMessage(`Failed to update server ${serverName} state`, error as Error)
 			throw error
 		}
 	}

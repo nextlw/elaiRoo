@@ -18,11 +18,12 @@
 		"noEmit": true,
 		"jsx": "react-jsx",
 		"baseUrl": ".",
+		"typeRoots": ["./node_modules/@types", "./src/types"],
 		"paths": {
 			"@/*": ["./src/*"],
 			"@src/*": ["./src/*"],
 			"@roo/*": ["../src/shared/*"]
 		}
 	},
-	"include": ["src", "../src/shared"]
+	"include": ["src", "../src/shared", "src/types"]
 }
