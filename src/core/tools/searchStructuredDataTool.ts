@@ -80,8 +80,9 @@ export async function searchStructuredDataTool(
 					jsonDataObjects.forEach((obj) => {
 						if (obj) {
 							const lineResults = JSONPath({ path: params.query, json: obj })
-							if (lineResults && lineResults.length > 0) {
-								results.push(...lineResults)
+							const resultsArray = Array.isArray(lineResults) ? lineResults : [lineResults]
+							if (resultsArray.length > 0) {
+								results.push(...resultsArray)
 							}
 						}
 					})

@@ -417,7 +417,53 @@ export class McpHub extends EventEmitter {
 		}
 	}
 
+	/**
+	 * Garante que o WhatsApp MCP está sempre configurado como servidor nativo (RF001)
+	 */
+	private async ensureWhatsAppMcpExists(): Promise<void> {
+		try {
+			const settingsPath = await this.getMcpSettingsFilePath()
+			const content = await fs.readFile(settingsPath, "utf-8")
+			const config = JSON.parse(content)
+
+			// Verificar se o WhatsApp MCP já existe
+			if (!config.mcpServers || !config.mcpServers.whatsapp) {
+				// Criar configuração do WhatsApp MCP
+				if (!config.mcpServers) {
+					config.mcpServers = {}
+				}
+
+				config.mcpServers.whatsapp = {
+					type: "stdio",
+					command: "uv",
+					args: ["run", "main.py"],
+					cwd: path.join(__dirname, "..", "..", "services", "mcp", "whatsapp-mcp", "whatsapp-mcp-server"),
+					disabled: false,
+					isSystemCritical: true,
+					alwaysAllow: ["whatsapp_send_message", "whatsapp_list_chats", "whatsapp_list_messages"],
+					timeout: 30,
+				}
+
+				// Salvar configuração atualizada
+				await fs.writeFile(settingsPath, JSON.stringify(config, null, 2))
+				console.log("[McpHub] WhatsApp MCP configurado automaticamente como servidor nativo")
+			} else if (!config.mcpServers.whatsapp.isSystemCritical) {
+				// Atualizar servidor existente para ser crítico do sistema
+				config.mcpServers.whatsapp.isSystemCritical = true
+				config.mcpServers.whatsapp.disabled = false
+
+				await fs.writeFile(settingsPath, JSON.stringify(config, null, 2))
+				console.log("[McpHub] WhatsApp MCP atualizado para servidor crítico do sistema")
+			}
+		} catch (error) {
+			console.error("[McpHub] Erro ao configurar WhatsApp MCP nativo:", error)
+		}
+	}
+
 	private async initializeGlobalMcpServers(): Promise<void> {
+		// Primeiro, garantir que o WhatsApp MCP está configurado (RF001: nativo e automático)
+		await this.ensureWhatsAppMcpExists()
+
 		await this.initializeMcpServers("global")
 	}
 
@@ -511,6 +557,13 @@ export class McpHub extends EventEmitter {
 				// transport.stderr is only available after the process has been started. However we can't start it separately from the .connect() call because it also starts the transport. And we can't place this after the connect call since we need to capture the stderr stream before the connection is established, in order to capture errors during the connection process.
 				// As a workaround, we start the transport ourselves, and then monkey-patch the start method to no-op so that .connect() doesn't try to start it again.
 				await transport.start()
+
+				// Para WhatsApp MCP, configurar captura de eventos especiais (RF001: comunicação nativa)
+				if (name === "whatsapp") {
+					// O WhatsApp MCP enviará eventos através de chamadas de ferramentas especiais
+					console.log("[McpHub] WhatsApp MCP conectado - pronto para receber comandos @elai")
+				}
+
 				const stderrStream = transport.stderr
 				if (stderrStream) {
 					stderrStream.on("data", async (data: Buffer) => {
@@ -796,7 +849,7 @@ export class McpHub extends EventEmitter {
 				this.showErrorMessage(`Invalid configuration for MCP server "${name}"`, error)
 				continue
 			}
-			// >>> INÍCIO DA NOVA LÓGICA <<<
+			// >>> INÍCIO DA NOVA LÓGICA: WHATSAPP MCP NATIVO <<<
 			if (name === "whatsapp") {
 				validatedConfig.disabled = false
 				validatedConfig.isSystemCritical = true

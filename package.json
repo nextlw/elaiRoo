@@ -317,13 +317,19 @@
 		}
 	},
 	"scripts": {
+		"start:whatsapp-bridge": "cd src/services/mcp/whatsapp-mcp/whatsapp-bridge && go run main.go",
+		"start:whatsapp-all": "concurrently \"npm run start:whatsapp-api\" \"npm run start:whatsapp-mcp\"",
+		"start:whatsapp-api": "cd src/services/mcp/whatsapp-mcp/whatsapp-mcp-server && .venv/bin/python -m uvicorn server:app --port 8001",
+		"start:whatsapp-mcp": "cd src/services/mcp/whatsapp-mcp/whatsapp-mcp-server && .venv/bin/python main.py",
 		"preinstall": "node scripts/bootstrap.mjs",
 		"prepare": "husky",
 		"install": "node scripts/bootstrap.mjs",
 		"install:all": "node scripts/bootstrap.mjs",
 		"lint": "turbo lint --log-order grouped --output-logs new-only",
 		"check-types": "turbo check-types --log-order grouped --output-logs new-only",
-		"test": "turbo test --log-order grouped --output-logs new-only",
+		"test": "jest",
+		"test:e2e": "jest e2e/src/suite/**/*.test.ts",
+		"test:watch": "jest --watch",
 		"format": "turbo format --log-order grouped --output-logs new-only",
 		"bundle": "turbo bundle --log-order grouped --output-logs new-only",
 		"bundle:nightly": "turbo bundle:nightly --log-order grouped --output-logs new-only",
@@ -337,8 +343,8 @@
 	"devDependencies": {
 		"@changesets/cli": "^2.27.10",
 		"@dotenvx/dotenvx": "^1.34.0",
-		"@types/csv-parse": "^1.2.5",
 		"@types/jsonpath-plus": "^5.0.5",
+		"@types/mocha": "^10.0.10",
 		"@types/pdf-parse": "^1.1.5",
 		"@vscode/vsce": "3.3.2",
 		"esbuild": "^0.25.0",
@@ -347,18 +353,23 @@
 		"knip": "^5.44.4",
 		"lint-staged": "^15.2.11",
 		"mkdirp": "^3.0.1",
+		"mocha": "^11.2.2",
 		"only-allow": "^1.2.1",
 		"ovsx": "0.10.2",
 		"prettier": "^3.4.2",
 		"rimraf": "^6.0.1",
+		"ts-node": "^10.9.2",
 		"tsup": "^8.0.0",
 		"tsx": "^4.7.0",
 		"turbo": "^2.5.3",
-		"typescript": "^5.4.5"
+		"typescript": "^5.8.3"
 	},
 	"lint-staged": {
 		"*.{js,jsx,ts,tsx,json,css,md}": [
 			"prettier --write"
 		]
+	},
+	"dependencies": {
+		"csv-parse": "^5.6.0"
 	}
 }

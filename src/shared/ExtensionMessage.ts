@@ -74,10 +74,16 @@ export interface ExtensionMessage {
 		| "listSearchApiConfig"
 		| "currentSearchApiConfigName"
 		| "currentSearchApiConfigName"
+		| "whatsappToolResponse"
 
 	text?: string
 	listSearchApiConfig?: ProviderSettingsEntry[]
 	currentSearchApiConfigName?: string
+
+	// WhatsApp MCP Tool Response
+	toolName?: string
+	result?: any
+	serverName?: string
 
 	action?:
 		| "chatButtonClicked"

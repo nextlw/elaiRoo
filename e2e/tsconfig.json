@@ -1,0 +1,16 @@
+{
+	"extends": "../src/tsconfig.json",
+	"compilerOptions": {
+		"types": ["mocha", "node"],
+		"module": "commonjs",
+		"moduleResolution": "node",
+		"esModuleInterop": true,
+		"baseUrl": ".",
+		"rootDir": "..",
+		"paths": {
+			"../../../src/exports/roo-code": ["../src/exports/roo-code"]
+		}
+	},
+	"include": ["src/**/*", "../src/exports/**/*", "**/*.ts"],
+	"exclude": ["node_modules"]
+}

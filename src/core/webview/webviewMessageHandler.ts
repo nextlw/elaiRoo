@@ -127,6 +127,21 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			// task. This essentially creates a fresh slate for the new task.
 			await provider.initClineWithTask(message.text, message.images)
 			break
+		case "whatsappTaskFromEvent":
+			// Criar nova tarefa a partir de evento do WhatsApp (@elai command)
+			if (message.text) {
+				const cline = await provider.initClineWithTask(message.text, message.images)
+				// Armazenar metadata do WhatsApp na tarefa
+				if (cline) {
+					cline.whatsappMetadata = {
+						senderPhoneNumber: message.sender_phone_number || "",
+						chatJid: message.chat_jid || "",
+						source: message.source || "whatsapp",
+						originalMessage: message.original_message || "",
+					}
+				}
+			}
+			break
 		case "customInstructions":
 			await provider.updateCustomInstructions(message.text)
 			break
@@ -550,6 +565,54 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 						2,
 					)}`,
 				)
+			}
+			break
+		}
+		case "callMcpTool": {
+			try {
+				const result = await provider
+					.getMcpHub()
+					?.callTool(
+						message.serverName!,
+						message.toolName!,
+						message.arguments || {},
+						message.source as "global" | "project",
+					)
+
+				// Log de sucesso
+				provider.log(
+					`[WhatsApp MCP] Ferramenta ${message.toolName} executada com sucesso: ${JSON.stringify(result)}`,
+				)
+
+				// Para o WhatsApp, enviar resposta adequada para atualizar interface
+				if (message.serverName === "whatsapp" && result) {
+					// Enviar resposta para a interface atualizar o status
+					provider.postMessageToWebview({
+						type: "whatsappToolResponse",
+						toolName: message.toolName!,
+						result: result,
+						serverName: message.serverName,
+					})
+				}
+			} catch (error) {
+				provider.log(
+					`[WhatsApp MCP] Falha ao executar ferramenta ${message.toolName} no servidor ${message.serverName}: ${JSON.stringify(
+						error,
+						Object.getOwnPropertyNames(error),
+						2,
+					)}`,
+				)
+
+				// Enviar erro para a interface do WhatsApp
+				if (message.serverName === "whatsapp") {
+					provider.postMessageToWebview({
+						type: "whatsappToolResponse",
+						toolName: message.toolName!,
+						result: null,
+						error: error instanceof Error ? error.message : String(error),
+						serverName: message.serverName,
+					})
+				}
 			}
 			break
 		}

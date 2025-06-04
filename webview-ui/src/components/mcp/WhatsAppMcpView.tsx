@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { VSCodeButton, VSCodeDivider } from "@vscode/webview-ui-toolkit/react"
-
+import { VSCodeButton, VSCodeDivider, VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
 import { McpServer } from "@roo/mcp"
 import { vscode } from "@src/utils/vscode"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
@@ -17,8 +16,27 @@ const WhatsAppMcpView: React.FC<WhatsAppMcpViewProps> = ({ server, alwaysAllowMc
 	)
 	const [qrCode, setQrCode] = useState<string | null>(null)
 	const [isExpanded, setIsExpanded] = useState(false)
-	const [recipient, setRecipient] = useState<string>("")
-	const [chatMessages, setChatMessages] = useState<Array<{ text: string; isSent: boolean; recipient?: string }>>([])
+	const [userPhoneNumber, setUserPhoneNumber] = useState<string>("")
+	const [connectedNumber, setConnectedNumber] = useState<string | null>(null)
+	const [isLoading, setIsLoading] = useState(false)
+
+	// Verificar status inicial quando o componente carrega
+	useEffect(() => {
+		// Verificar status inicial via MCP
+		const checkInitialStatus = () => {
+			vscode.postMessage({
+				type: "callMcpTool",
+				serverName: server.name,
+				toolName: "get_whatsapp_status",
+				arguments: {},
+				source: server.source || "global",
+			})
+		}
+
+		// Verificar status após um pequeno delay para garantir que o MCP está pronto
+		const timer = setTimeout(checkInitialStatus, 1000)
+		return () => clearTimeout(timer)
+	}, [server.name, server.source])
 
 	// Escutar os eventos especiais do WhatsApp
 	useEffect(() => {
@@ -33,38 +51,88 @@ const WhatsAppMcpView: React.FC<WhatsAppMcpViewProps> = ({ server, alwaysAllowMc
 					case "qr_code":
 						setQrCode(message.data.qr_code)
 						setConnectionStatus("connecting")
+						setIsLoading(false)
 						break
 
 					case "connection_status":
 						setConnectionStatus(message.data.status)
-						// Se conectado, limpar o QR code
+						setIsLoading(false)
+
+						// Se conectado, buscar o número conectado
 						if (message.data.status === "connected") {
 							setQrCode(null)
+							if (message.data.phone_number) {
+								setConnectedNumber(message.data.phone_number)
+							}
+						} else if (message.data.status === "disconnected") {
+							setConnectedNumber(null)
 						}
 						break
+				}
+			}
 
-					case "message_received": {
-						// <-- Adicione chaves aqui para criar um escopo
-						// Formatar a mensagem recebida para mostrar no terminal
-						const sender =
-							message.data.sender_phone_number === undefined ||
-							message.data.sender_phone_number === null ||
-							message.data.sender_phone_number === ""
-								? "Desconhecido"
-								: message.data.sender_phone_number
+			// Handler para resposta de ferramentas WhatsApp MCP
+			if (message && message.type === "whatsappToolResponse" && message.serverName === "whatsapp") {
+				console.log("Resposta WhatsApp MCP:", message)
+				setIsLoading(false)
 
-						const content = message.data.message_content ?? "" // <-- Esta linha parece estar faltando
-
-						// Adiciona a mensagem ao chat
-						setChatMessages((prev) => [
-							...prev,
-							{
-								text: `[${sender}] ${content}`,
-								isSent: false,
-							},
-						])
-						break
+				if (message.toolName === "start_whatsapp_bridge") {
+					if (message.result && message.result.isError) {
+						// Erro na execução da ferramenta
+						console.error("Erro ao iniciar ponte:", message.result.content[0].text)
+						setConnectionStatus("disconnected")
+						alert("Erro ao iniciar WhatsApp: " + message.result.content[0].text)
+					} else if (message.result && message.result.content) {
+						try {
+							const resultData = JSON.parse(message.result.content[0].text)
+							if (resultData.success) {
+								// Ponte iniciada com sucesso, aguardar QR code ou status
+								if (resultData.status === "already_running") {
+									setConnectionStatus("connected")
+								} else {
+									setConnectionStatus("connecting")
+								}
+							} else {
+								setConnectionStatus("disconnected")
+								alert("Erro: " + resultData.message)
+							}
+						} catch (e) {
+							console.error("Erro ao processar resposta:", e)
+							setConnectionStatus("disconnected")
+						}
 					}
+				} else if (message.toolName === "stop_whatsapp_bridge") {
+					if (message.result && message.result.content) {
+						try {
+							const resultData = JSON.parse(message.result.content[0].text)
+							if (resultData.success) {
+								setConnectionStatus("disconnected")
+								setQrCode(null)
+								setConnectedNumber(null)
+							}
+						} catch (e) {
+							console.error("Erro ao processar resposta:", e)
+						}
+					}
+				} else if (message.toolName === "get_whatsapp_status") {
+					if (message.result && message.result.content) {
+						try {
+							const resultData = JSON.parse(message.result.content[0].text)
+							console.log("Status atual do WhatsApp:", resultData)
+							if (resultData.success) {
+								setConnectionStatus(resultData.status === "connected" ? "connected" : "disconnected")
+							}
+						} catch (e) {
+							console.error("Erro ao processar status:", e)
+						}
+					}
+				}
+
+				if (message.error) {
+					console.error("Erro na ferramenta WhatsApp:", message.error)
+					setConnectionStatus("disconnected")
+					setIsLoading(false)
+					alert("Erro na comunicação: " + message.error)
 				}
 			}
 		}
@@ -82,51 +150,44 @@ const WhatsAppMcpView: React.FC<WhatsAppMcpViewProps> = ({ server, alwaysAllowMc
 		setIsExpanded(!isExpanded)
 	}
 
-	const handleRestart = () => {
-		// Alterar status para connecting
+	const handleConnect = () => {
+		setIsLoading(true)
 		setConnectionStatus("connecting")
-		setQrCode(null) // Limpa o QR code atual
+		setQrCode(null)
 
+		// Chama a ferramenta MCP para iniciar a ponte Go
+		// Note: A função não precisa de parâmetros, o número é informativo apenas
 		vscode.postMessage({
-			type: "restartMcpServer",
-			text: server.name,
+			type: "callMcpTool",
+			serverName: server.name,
+			toolName: "start_whatsapp_bridge",
+			arguments: {},
 			source: server.source || "global",
 		})
 	}
 
-	const handleSendMessage = (text: string) => {
-		if (!recipient.trim()) {
-			// Exibe mensagem de erro se não houver destinatário
-			setChatMessages((prev) => [
-				...prev,
-				{
-					text: "Erro: Informe um número de telefone válido primeiro!",
-					isSent: false,
-				},
-			])
-			return
-		}
+	const handleDisconnect = () => {
+		setIsLoading(true)
+		setConnectionStatus("disconnected")
+		setQrCode(null)
+		setConnectedNumber(null)
 
-		// Adiciona a mensagem enviada ao chat local
-		setChatMessages((prev) => [
-			...prev,
-			{
-				text,
-				isSent: true,
-				recipient: recipient,
-			},
-		])
-
-		// Envia para o backend via postMessage usando o tipo 'terminalOperation' e o campo 'values' para enviar comandos MCP
+		// Chama a ferramenta MCP para parar a ponte Go
 		vscode.postMessage({
-			type: "terminalOperation",
-			values: {
-				action: "executeMcpTool",
-				tool: "whatsapp_send_message",
-				args: { recipient: recipient, message: text },
-				server: server.name,
-			},
+			type: "callMcpTool",
+			serverName: server.name,
+			toolName: "stop_whatsapp_bridge",
+			arguments: {},
+			source: server.source || "global",
 		})
+	}
+
+	const handleToggleConnection = () => {
+		if (connectionStatus === "connected" || connectionStatus === "connecting") {
+			handleDisconnect()
+		} else {
+			handleConnect()
+		}
 	}
 
 	// Status do WhatsApp com cores específicas
@@ -183,16 +244,12 @@ const WhatsAppMcpView: React.FC<WhatsAppMcpViewProps> = ({ server, alwaysAllowMc
 						backgroundColor: "#25D366",
 						borderRadius: "50%",
 					}}>
-					<span className="codicon codicon-comment-discussion" style={{ color: "#fff" }}></span>
+					<span className="codicon codicon-comment-discussion text-white"></span>
 				</div>
 
 				<div style={{ flexGrow: 1 }}>
 					<div style={{ fontWeight: "bold" }}>{server.name}</div>
-					<div
-						style={{
-							fontSize: "12px",
-							color: "var(--vscode-descriptionForeground)",
-						}}>
+					<div style={{ fontSize: "12px", color: "var(--vscode-descriptionForeground)" }}>
 						<span
 							style={{
 								display: "inline-block",
@@ -203,6 +260,9 @@ const WhatsAppMcpView: React.FC<WhatsAppMcpViewProps> = ({ server, alwaysAllowMc
 								marginRight: "6px",
 							}}></span>
 						{getStatusText()}
+						{connectedNumber && (
+							<span style={{ marginLeft: "8px", fontWeight: "bold" }}>({connectedNumber})</span>
+						)}
 					</div>
 				</div>
 
@@ -216,8 +276,8 @@ const WhatsAppMcpView: React.FC<WhatsAppMcpViewProps> = ({ server, alwaysAllowMc
 							borderRadius: "10px",
 							border: "1px solid var(--vscode-checkbox-border)",
 							position: "relative",
-							opacity: 0.5, // Mostra desabilitado
-							cursor: "not-allowed", // Cursor indicando que não pode ser alterado
+							opacity: 0.5,
+							cursor: "not-allowed",
 						}}>
 						<div
 							style={{
@@ -245,192 +305,154 @@ const WhatsAppMcpView: React.FC<WhatsAppMcpViewProps> = ({ server, alwaysAllowMc
 				</div>
 			</div>
 
-			{/* Conteúdo expandido */}
+			{/* Conteúdo expandido - Configuração */}
 			{isExpanded && (
 				<>
 					<VSCodeDivider />
-					<div
-						style={{
-							padding: "10px",
-							backgroundColor: "var(--vscode-editor-background)",
-						}}>
-						{/* Status de conexão */}
+					<div style={{ padding: "16px", backgroundColor: "var(--vscode-editor-background)" }}>
+						{/* Configuração do Número */}
+						<div style={{ marginBottom: "16px" }}>
+							<div style={{ fontWeight: "bold", marginBottom: "8px" }}>
+								Configuração da Conta WhatsApp
+							</div>
+
+							{connectionStatus === "disconnected" && (
+								<div style={{ marginBottom: "12px" }}>
+									<label
+										style={{
+											display: "block",
+											fontSize: "12px",
+											marginBottom: "4px",
+											color: "var(--vscode-descriptionForeground)",
+										}}>
+										Seu número de telefone (opcional - apenas para referência):
+									</label>
+									<VSCodeTextField
+										value={userPhoneNumber}
+										onInput={(e: any) => setUserPhoneNumber(e.target.value)}
+										placeholder="Exemplo: +5511999999999"
+										style={{ width: "100%" }}
+									/>
+									<div
+										style={{
+											fontSize: "11px",
+											color: "var(--vscode-descriptionForeground)",
+											marginTop: "4px",
+											fontStyle: "italic",
+										}}>
+										Este campo é opcional. A autenticação será feita via QR code.
+									</div>
+								</div>
+							)}
+
+							{connectedNumber && connectionStatus === "connected" && (
+								<div
+									style={{
+										padding: "8px 12px",
+										backgroundColor: "var(--vscode-button-secondaryBackground)",
+										borderRadius: "4px",
+										marginBottom: "12px",
+									}}>
+									<strong>Conectado como:</strong> {connectedNumber}
+								</div>
+							)}
+						</div>
+
+						{/* Status de conexão e botão */}
 						<div
 							style={{
-								marginBottom: "10px",
+								marginBottom: "16px",
 								display: "flex",
 								justifyContent: "space-between",
 								alignItems: "center",
 							}}>
 							<div>
-								<strong>{t("whatsapp:connectionStatus")}:</strong> {getStatusText()}
+								<strong>Status:</strong> {getStatusText()}
+								{isLoading && " (processando...)"}
 							</div>
-							<VSCodeButton appearance="secondary" onClick={handleRestart}>
-								{connectionStatus === "connecting" ? t("whatsapp:connecting") : t("whatsapp:reconnect")}
+							<VSCodeButton appearance="secondary" onClick={handleToggleConnection} disabled={isLoading}>
+								{isLoading
+									? "Processando..."
+									: connectionStatus === "connected" || connectionStatus === "connecting"
+										? "Desconectar"
+										: "Conectar"}
 							</VSCodeButton>
 						</div>
 
-						{/* QR Code (mostra apenas quando em modo de conexão) */}
+						{/* QR Code para autenticação */}
 						{connectionStatus === "connecting" && qrCode && (
 							<div
 								style={{
-									marginBottom: "15px",
+									marginBottom: "16px",
 									display: "flex",
 									flexDirection: "column",
 									alignItems: "center",
+									padding: "16px",
+									backgroundColor: "var(--vscode-textCodeBlock-background)",
+									borderRadius: "8px",
 								}}>
-								<strong style={{ marginBottom: "10px" }}>{t("whatsapp:scanQrCode")}</strong>
 								<div
 									style={{
-										padding: "10px",
+										fontWeight: "bold",
+										marginBottom: "12px",
+										textAlign: "center",
+									}}>
+									Escaneie o QR Code com o WhatsApp
+								</div>
+								<div
+									style={{
+										padding: "12px",
 										backgroundColor: "white",
-										borderRadius: "4px",
+										borderRadius: "8px",
+										boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
 									}}>
 									<img
 										src={`data:image/png;base64,${qrCode}`}
-										alt="QR Code"
-										style={{ width: "200px", height: "200px" }}
+										alt="QR Code para autenticação no WhatsApp: 1. Abra o aplicativo, 2. Acesse Dispositivos conectados, 3. Toque em Conectar um dispositivo, 4. Escaneie este código"
+										role="img"
+										aria-label="Código QR para conexão do WhatsApp contendo instruções passo a passo"
+										style={{ width: "200px", height: "200px", display: "block" }}
 									/>
+								</div>
+								<div
+									style={{
+										fontSize: "12px",
+										color: "var(--vscode-descriptionForeground)",
+										marginTop: "8px",
+										textAlign: "center",
+										lineHeight: "1.4",
+									}}>
+									1. Abra o WhatsApp no seu celular
+									<br />
+									2. Vá em Configurações → Dispositivos conectados
+									<br />
+									3. Toque em &ldquo;Conectar um dispositivo&quot;
+									<br />
+									4. Escaneie este QR code
 								</div>
 							</div>
 						)}
 
-						{/* Terminal de chat */}
-						<div>
-							<strong>{t("whatsapp:chatTerminal")}</strong>
-							<div
-								style={{
-									maxHeight: "150px",
-									overflowY: "auto",
-									marginTop: "5px",
-									padding: "8px",
-									backgroundColor: "var(--vscode-textCodeBlock-background)",
-									borderRadius: "4px",
-									fontFamily: "var(--vscode-editor-font-family)",
-									fontSize: "var(--vscode-editor-font-size)",
-								}}>
-								{chatMessages.length === 0 ? (
-									<div style={{ color: "var(--vscode-descriptionForeground)", fontStyle: "italic" }}>
-										{t("whatsapp:noChatMessages")}
-									</div>
-								) : (
-									chatMessages.map((msg, index) => (
-										<div
-											key={index}
-											style={{
-												marginBottom: "4px",
-												textAlign: msg.isSent ? "right" : "left",
-											}}>
-											<span
-												style={{
-													display: "inline-block",
-													padding: "4px 8px",
-													borderRadius: "4px",
-													backgroundColor: msg.isSent
-														? "var(--vscode-button-background)"
-														: "var(--vscode-editor-inactiveSelectionBackground)",
-													color: msg.isSent
-														? "var(--vscode-button-foreground)"
-														: "var(--vscode-editor-foreground)",
-													maxWidth: "80%",
-													wordBreak: "break-word",
-												}}>
-												{msg.text}
-											</span>
-										</div>
-									))
-								)}
-							</div>
-
-							{/* Campo de destinatário */}
-							<div
-								style={{
-									marginTop: "10px",
-									display: "flex",
-									gap: "10px",
-									alignItems: "center",
-								}}>
-								<label
-									style={{
-										fontSize: "12px",
-										minWidth: "70px",
-									}}>
-									Destinatário:
-								</label>
-								<input
-									type="text"
-									value={recipient}
-									onChange={(e) => setRecipient(e.target.value)}
-									placeholder="Ex: 5511999998888"
-									disabled={connectionStatus !== "connected"}
-									style={{
-										backgroundColor: "var(--vscode-input-background)",
-										color: "var(--vscode-input-foreground)",
-										border: "1px solid var(--vscode-input-border)",
-										borderRadius: "4px",
-										padding: "4px 8px",
-										flexGrow: 1,
-										opacity: connectionStatus === "connected" ? 1 : 0.6,
-									}}
-								/>
-							</div>
-
-							{/* Entrada de mensagem */}
-							<div
-								style={{
-									marginTop: "10px",
-									display: "flex",
-									gap: "10px",
-								}}>
-								<input
-									type="text"
-									id="messageInput"
-									disabled={connectionStatus !== "connected" || !recipient.trim()}
-									placeholder={
-										connectionStatus !== "connected"
-											? "Conecte-se primeiro para enviar mensagens"
-											: !recipient.trim()
-												? "Informe um destinatário primeiro"
-												: "Digite sua mensagem..."
-									}
-									style={{
-										backgroundColor: "var(--vscode-input-background)",
-										color: "var(--vscode-input-foreground)",
-										border: "1px solid var(--vscode-input-border)",
-										borderRadius: "4px",
-										padding: "4px 8px",
-										flexGrow: 1,
-										opacity: connectionStatus === "connected" && recipient.trim() ? 1 : 0.6,
-									}}
-									onKeyPress={(e) => {
-										if (e.key === "Enter" && (e.target as HTMLInputElement).value.trim() !== "") {
-											handleSendMessage((e.target as HTMLInputElement).value)
-											;(e.target as HTMLInputElement).value = ""
-										}
-									}}
-								/>
-								<VSCodeButton
-									appearance="secondary"
-									disabled={connectionStatus !== "connected" || !recipient.trim()}
-									onClick={() => {
-										const input = document.getElementById("messageInput") as HTMLInputElement
-										if (input && input.value.trim() !== "") {
-											handleSendMessage(input.value)
-											input.value = ""
-										}
-									}}>
-									Enviar
-								</VSCodeButton>
-							</div>
-							<div
-								style={{
-									marginTop: "5px",
-									fontSize: "11px",
-									color: "var(--vscode-descriptionForeground)",
-									fontStyle: "italic",
-								}}>
-								{t("whatsapp:commandHelp")}
-							</div>
+						{/* Informações sobre o uso */}
+						<div
+							style={{
+								fontSize: "11px",
+								color: "var(--vscode-descriptionForeground)",
+								padding: "12px",
+								backgroundColor: "var(--vscode-textCodeBlock-background)",
+								borderRadius: "4px",
+								lineHeight: "1.4",
+							}}>
+							<strong>Como funciona:</strong>
+							<br />
+							• Após conectar, você pode usar comandos @elai no WhatsApp
+							<br />
+							• @elai [tarefa] - cria uma nova tarefa no ElaiRoo
+							<br />
+							• @elaifim - finaliza a tarefa ativa
+							<br />
+							• @elainow [texto] - adiciona à tarefa ativa
+							<br />• As respostas aparecerão no chat normal do ElaiRoo
 						</div>
 					</div>
 				</>

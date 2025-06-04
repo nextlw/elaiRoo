@@ -30,6 +30,8 @@ export interface WebviewMessage {
 		| "alwaysAllowExecute"
 		| "webviewDidLaunch"
 		| "newTask"
+		| "whatsappTaskFromEvent"
+		| "callMcpTool"
 		| "askResponse"
 		| "terminalOperation"
 		| "clearTask"
@@ -170,6 +172,7 @@ export interface WebviewMessage {
 	name?: string // Usado por upsert/delete/activate SearchApiConfiguration e outros
 	searchApiConfiguration?: SearchApiSettings // Para upsertSearchApiConfiguration
 	activate?: boolean // Para upsertSearchApiConfiguration
+	arguments?: Record<string, any> // Para callMcpTool
 	modeConfig?: ModeConfig
 	timeout?: number
 	payload?: WebViewMessagePayload
@@ -179,6 +182,11 @@ export interface WebviewMessage {
 	hasSystemPromptOverride?: boolean
 	terminalOperation?: "continue" | "abort"
 	historyPreviewCollapsed?: boolean
+	// Campos específicos para WhatsApp
+	sender_phone_number?: string
+	chat_jid?: string
+	original_message?: string
+	message_timestamp?: string
 }
 
 export const checkoutDiffPayloadSchema = z.object({
