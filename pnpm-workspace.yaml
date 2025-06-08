@@ -1,5 +1,15 @@
 packages:
-    - "src" # Should be apps/vscode
-    - "webview-ui" # Should be apps/vscode-webview
-    - "apps/*"
-    - "packages/*"
+  - src
+  - webview-ui
+  - apps/*
+  - packages/*
+
+ignoredBuiltDependencies:
+  - '@tailwindcss/oxide'
+  - '@vscode/vsce-sign'
+  - better-sqlite3
+  - core-js
+  - esbuild
+  - keytar
+  - puppeteer-chromium-resolver
+  - sharp

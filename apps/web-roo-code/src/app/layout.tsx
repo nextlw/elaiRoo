@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 
 import { Providers } from "@/components/providers"
+import { PostHogProvider } from "@/components/providers/posthog-provider"
 
 import Shell from "./shell"
 
@@ -56,9 +57,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 					<link itemProp="url" href="https://roocode.com" />
 					<meta itemProp="name" content="Roo Code" />
 				</div>
-				<Providers>
-					<Shell>{children}</Shell>
-				</Providers>
+				<PostHogProvider>
+					<Providers>
+						<Shell>{children}</Shell>
+					</Providers>
+				</PostHogProvider>
 			</body>
 		</html>
 	)

@@ -7,6 +7,13 @@ settings:
 importers:
 
   .:
+    dependencies:
+      posthog-js:
+        specifier: ^1.249.4
+        version: 1.249.4
+      posthog-node:
+        specifier: ^4.7.0
+        version: 4.17.2
     devDependencies:
       '@changesets/cli':
         specifier: ^2.27.10
@@ -280,8 +287,11 @@ importers:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       posthog-js:
-        specifier: ^1.248.1
+        specifier: ^1.249.2
         version: 1.249.2
+      posthog-node:
+        specifier: ^4.17.2
+        version: 4.17.2
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -8885,6 +8895,17 @@ packages:
 
   posthog-js@1.249.2:
     resolution: {integrity: sha512-OMXCO/IfcJBjYTuebVynMbp8Kq329yKEQSCAnkqLmi8W2Bt5bi7S5xxMwDM3Pm7818Uh0C40XMG3rAtYozId6Q==}
+    peerDependencies:
+      '@rrweb/types': 2.0.0-alpha.17
+      rrweb-snapshot: 2.0.0-alpha.17
+    peerDependenciesMeta:
+      '@rrweb/types':
+        optional: true
+      rrweb-snapshot:
+        optional: true
+
+  posthog-js@1.249.4:
+    resolution: {integrity: sha512-Qq4cxDZ1P9BkwguuoVNTiLGQiET9vrzwjYWLS3DduKhRXqEzERLl9tOq2X8ZNPbo+D207+FILdWg/dTKUItfDg==}
     peerDependencies:
       '@rrweb/types': 2.0.0-alpha.17
       rrweb-snapshot: 2.0.0-alpha.17
@@ -20031,6 +20052,13 @@ snapshots:
       web-vitals: 4.2.4
 
   posthog-js@1.249.2:
+    dependencies:
+      core-js: 3.42.0
+      fflate: 0.4.8
+      preact: 10.26.6
+      web-vitals: 4.2.4
+
+  posthog-js@1.249.4:
     dependencies:
       core-js: 3.42.0
       fflate: 0.4.8
