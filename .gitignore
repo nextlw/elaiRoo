@@ -44,3 +44,10 @@ logs
 .qodo/
 .vercel
 .roo/mcp.json
+packages/evals/.env.test
+packages/evals/.env.development
+apps/web-evals/.env
+packages/evals/.env.test
+packages/evals/.env.test
+packages/evals/.env.development
+apps/web-evals/.env
