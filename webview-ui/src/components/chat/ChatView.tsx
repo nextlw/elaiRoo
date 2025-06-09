@@ -1353,6 +1353,15 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 						buttonsDisabled={sendingDisabled}
 						handleCondenseContext={handleCondenseContext}
 						onClose={handleTaskCloseButtonClick}
+						hasParentTask={!!(currentTaskItem as any)?.parentId}
+						onNavigateToParent={() => {
+							if ((currentTaskItem as any)?.parentId) {
+								vscode.postMessage({
+									type: "showTaskWithId",
+									text: (currentTaskItem as any).parentId,
+								})
+							}
+						}}
 					/>
 
 					{hasSystemPromptOverride && (
@@ -1383,7 +1392,9 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 						</div>
 					)}
 					<div
-						className={` w-full flex flex-col gap-4 m-auto ${isExpanded && tasks.length > 0 ? "mt-0" : ""} px-3.5 min-[370px]:px-10 pt-5 transition-all duration-300`}>
+						className={` w-full flex flex-col gap-4 m-auto ${
+							isExpanded && tasks.length > 0 ? "mt-0" : ""
+						} px-3.5 min-[370px]:px-10 pt-5 transition-all duration-300`}>
 						<RooHero />
 						{telemetrySetting === "unset" && <TelemetryBanner />}
 						{/* Show the task history preview if expanded and tasks exist */}

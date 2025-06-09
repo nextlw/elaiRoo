@@ -11,8 +11,9 @@
 		"contextWindow": "Context Length:",
 		"closeAndStart": "Close task and start a new one",
 		"export": "Export task history",
-		"share": "Share task",
-		"delete": "Delete Task (Shift + Click to skip confirmation)"
+		"delete": "Delete Task (Shift + Click to skip confirmation)",
+		"navigateToParent": "Navigate to parent task",
+		"share": "Share task"
 	},
 	"unpin": "Unpin",
 	"pin": "Pin",

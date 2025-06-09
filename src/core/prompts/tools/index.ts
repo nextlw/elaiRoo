@@ -21,6 +21,13 @@ import { getUseMcpToolDescription } from "./use-mcp-tool"
 import { getAccessMcpResourceDescription } from "./access-mcp-resource"
 import { getSwitchModeDescription } from "./switch-mode"
 import { getNewTaskDescription } from "./new-task"
+import { getWebSearchDescription } from "./web-search"
+import { getExtractPageContentDescription } from "./extract-page-content"
+import { getExtractDocumentContentDescription } from "./extract-document-content"
+import { getSearchStructuredDataDescription } from "./search-structured-data"
+import { getGetRepositoryFileContentDescription } from "./get-repository-file-content"
+import { getProcessTextContentDescription } from "./process-text-content"
+import { getSearchCodeRepositoriesDescription } from "./search-code-repositories"
 import { getCodebaseSearchDescription } from "./codebase-search"
 import { CodeIndexManager } from "../../../services/code-index/manager"
 
@@ -45,6 +52,14 @@ const toolDescriptionMap: Record<string, (args: ToolArgs) => string | undefined>
 	search_and_replace: (args) => getSearchAndReplaceDescription(args),
 	apply_diff: (args) =>
 		args.diffStrategy ? args.diffStrategy.getToolDescription({ cwd: args.cwd, toolOptions: args.toolOptions }) : "",
+	web_search: (args) => getWebSearchDescription(args),
+	extract_page_content: (args) => getExtractPageContentDescription(args),
+	extract_document_content: (args) => getExtractDocumentContentDescription(args),
+	search_structured_data: (args) => getSearchStructuredDataDescription(args),
+
+	search_code_repositories: (args) => getSearchCodeRepositoriesDescription(args),
+	get_repository_file_content: (args) => getGetRepositoryFileContentDescription(args),
+	process_text_content: (args) => getProcessTextContentDescription(args),
 }
 
 export function getToolDescriptionsForMode(

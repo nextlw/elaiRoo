@@ -24,6 +24,7 @@
 		"providers": "Fournisseurs",
 		"autoApprove": "Auto-approbation",
 		"browser": "Accès ordinateur",
+		"search-api": "API de Recherche",
 		"checkpoints": "Points de contrôle",
 		"notifications": "Notifications",
 		"contextManagement": "Contexte",

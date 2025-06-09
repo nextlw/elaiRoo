@@ -138,7 +138,9 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 			await git.add(".")
 		} catch (error) {
 			this.log(
-				`[${this.constructor.name}#stageAll] failed to add files to git: ${error instanceof Error ? error.message : String(error)}`,
+				`[${this.constructor.name}#stageAll] failed to add files to git: ${
+					error instanceof Error ? error.message : String(error)
+				}`,
 			)
 		} finally {
 			await this.renameNestedGitRepos(false)
@@ -185,17 +187,23 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 					await fs.rename(currentPath, newPath)
 
 					this.log(
-						`[${this.constructor.name}#renameNestedGitRepos] ${disable ? "disabled" : "enabled"} nested git repo ${currentPath}`,
+						`[${this.constructor.name}#renameNestedGitRepos] ${
+							disable ? "disabled" : "enabled"
+						} nested git repo ${currentPath}`,
 					)
 				} catch (error) {
 					this.log(
-						`[${this.constructor.name}#renameNestedGitRepos] failed to ${disable ? "disable" : "enable"} nested git repo ${currentPath}: ${error instanceof Error ? error.message : String(error)}`,
+						`[${this.constructor.name}#renameNestedGitRepos] failed to ${
+							disable ? "disable" : "enable"
+						} nested git repo ${currentPath}: ${error instanceof Error ? error.message : String(error)}`,
 					)
 				}
 			}
 		} catch (error) {
 			this.log(
-				`[${this.constructor.name}#renameNestedGitRepos] failed to ${disable ? "disable" : "enable"} nested git repos: ${error instanceof Error ? error.message : String(error)}`,
+				`[${this.constructor.name}#renameNestedGitRepos] failed to ${
+					disable ? "disable" : "enable"
+				} nested git repos: ${error instanceof Error ? error.message : String(error)}`,
 			)
 		}
 	}
@@ -206,7 +214,9 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 				this.shadowGitConfigWorktree = (await git.getConfig("core.worktree")).value || undefined
 			} catch (error) {
 				this.log(
-					`[${this.constructor.name}#getShadowGitConfigWorktree] failed to get core.worktree: ${error instanceof Error ? error.message : String(error)}`,
+					`[${this.constructor.name}#getShadowGitConfigWorktree] failed to get core.worktree: ${
+						error instanceof Error ? error.message : String(error)
+					}`,
 				)
 			}
 		}
@@ -417,7 +427,9 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 				return true
 			} catch (error) {
 				console.error(
-					`[${this.constructor.name}#deleteBranch] failed to delete branch ${branchName}: ${error instanceof Error ? error.message : String(error)}`,
+					`[${this.constructor.name}#deleteBranch] failed to delete branch ${branchName}: ${
+						error instanceof Error ? error.message : String(error)
+					}`,
 				)
 
 				return false

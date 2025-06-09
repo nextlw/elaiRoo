@@ -31,6 +31,7 @@ import McpToolRow from "./McpToolRow"
 import McpResourceRow from "./McpResourceRow"
 import McpEnabledToggle from "./McpEnabledToggle"
 import { McpErrorRow } from "./McpErrorRow"
+import WhatsAppMcpView from "./WhatsAppMcpView"
 
 type McpViewProps = {
 	onDone: () => void
@@ -108,13 +109,34 @@ const McpView = ({ onDone }: McpViewProps) => {
 						{/* Server List */}
 						{servers.length > 0 && (
 							<div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-								{servers.map((server) => (
-									<ServerRow
-										key={`${server.name}-${server.source || "global"}`}
-										server={server}
-										alwaysAllowMcp={alwaysAllowMcp}
-									/>
-								))}
+								{/* Ordena os servidores para garantir que o WhatsApp esteja sempre primeiro */}
+								{servers
+									.sort((a, b) => {
+										// WhatsApp sempre no topo
+										if (a.name.toLowerCase().includes("whatsapp")) return -1
+										if (b.name.toLowerCase().includes("whatsapp")) return 1
+										return 0
+									})
+									.map((server) => {
+										// Usa o componente especial para o WhatsApp
+										if (server.name.toLowerCase().includes("whatsapp")) {
+											return (
+												<WhatsAppMcpView
+													key={`${server.name}-${server.source || "global"}`}
+													server={server}
+													alwaysAllowMcp={alwaysAllowMcp}
+												/>
+											)
+										} else {
+											return (
+												<ServerRow
+													key={`${server.name}-${server.source || "global"}`}
+													server={server}
+													alwaysAllowMcp={alwaysAllowMcp}
+												/>
+											)
+										}
+									})}
 							</div>
 						)}
 

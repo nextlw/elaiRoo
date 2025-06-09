@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import type { ProviderSettings, PromptComponent, ModeConfig } from "@roo-code/types"
+import type { ProviderSettings, PromptComponent, ModeConfig, SearchApiSettings } from "@roo-code/types"
 
 import { Mode } from "./modes"
 
@@ -30,6 +30,8 @@ export interface WebviewMessage {
 		| "alwaysAllowExecute"
 		| "webviewDidLaunch"
 		| "newTask"
+		| "whatsappTaskFromEvent"
+		| "callMcpTool"
 		| "askResponse"
 		| "terminalOperation"
 		| "clearTask"
@@ -149,12 +151,17 @@ export interface WebviewMessage {
 		| "indexingStatusUpdate"
 		| "indexCleared"
 		| "codebaseIndexConfig"
+		// Novos tipos para Search API Configuration
+		| "currentSearchApiConfigName"
+		| "upsertSearchApiConfiguration"
+		| "deleteSearchApiConfiguration"
+		| "activateSearchApiConfiguration"
 	text?: string
 	disabled?: boolean
 	askResponse?: ClineAskResponse
 	apiConfiguration?: ProviderSettings
 	images?: string[]
-	bool?: boolean
+	bool?: boolean // Usado por message.activate se não definirmos activate separadamente
 	value?: number
 	commands?: string[]
 	audioType?: AudioType
@@ -168,7 +175,11 @@ export interface WebviewMessage {
 	values?: Record<string, any>
 	query?: string
 	setting?: string
-	slug?: string
+	slug?: string // Usado por deleteCustomMode
+	name?: string // Usado por upsert/delete/activate SearchApiConfiguration e outros
+	searchApiConfiguration?: SearchApiSettings // Para upsertSearchApiConfiguration
+	activate?: boolean // Para upsertSearchApiConfiguration
+	arguments?: Record<string, any> // Para callMcpTool
 	modeConfig?: ModeConfig
 	timeout?: number
 	payload?: WebViewMessagePayload
@@ -178,6 +189,11 @@ export interface WebviewMessage {
 	hasSystemPromptOverride?: boolean
 	terminalOperation?: "continue" | "abort"
 	historyPreviewCollapsed?: boolean
+	// Campos específicos para WhatsApp
+	sender_phone_number?: string
+	chat_jid?: string
+	original_message?: string
+	message_timestamp?: string
 }
 
 export const checkoutDiffPayloadSchema = z.object({

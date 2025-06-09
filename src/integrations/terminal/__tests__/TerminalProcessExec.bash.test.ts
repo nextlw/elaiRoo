@@ -386,7 +386,9 @@ describe("TerminalProcess with Bash Command Output", () => {
 		)
 
 		console.log(
-			`'yes "${"A".repeat(76)}" | head -n ${TEST_LINES}' execution time: ${executionTimeUs} microseconds (${executionTimeUs / 1000} milliseconds)`,
+			`'yes "${"A".repeat(76)}" | head -n ${TEST_LINES}' execution time: ${executionTimeUs} microseconds (${
+				executionTimeUs / 1000
+			} milliseconds)`,
 		)
 
 		// Display a truncated output sample (first 3 lines and last 3 lines)

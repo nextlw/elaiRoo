@@ -12,7 +12,8 @@
 		"export": "Exportar histórico de tarefas",
 		"delete": "Excluir tarefa (Shift + Clique para pular confirmação)",
 		"condenseContext": "Condensar contexto de forma inteligente",
-		"share": "Compartilhar tarefa"
+		"share": "Compartilhar tarefa",
+		"navigateToParent": "Voltar para tarefa pai"
 	},
 	"unpin": "Desfixar",
 	"pin": "Fixar",

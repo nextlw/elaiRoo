@@ -990,7 +990,9 @@ const ModesView = ({ onDone }: ModesViewProps) => {
 							className="flex items-center text-xs text-vscode-foreground hover:text-vscode-textLink-foreground focus:outline-none"
 							aria-expanded={isSystemPromptDisclosureOpen}>
 							<span
-								className={`codicon codicon-${isSystemPromptDisclosureOpen ? "chevron-down" : "chevron-right"} mr-1`}></span>
+								className={`codicon codicon-${
+									isSystemPromptDisclosureOpen ? "chevron-down" : "chevron-right"
+								} mr-1`}></span>
 							<span>{t("prompts:advancedSystemPrompt.title")}</span>
 						</button>
 

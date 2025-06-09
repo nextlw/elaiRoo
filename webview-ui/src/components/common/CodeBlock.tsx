@@ -245,7 +245,9 @@ const CodeBlock = memo(
 
 		// Syntax highlighting with cached Shiki instance.
 		useEffect(() => {
-			const fallback = `<pre style="padding: 0; margin: 0;"><code class="hljs language-${currentLanguage || "txt"}">${source || ""}</code></pre>`
+			const fallback = `<pre style="padding: 0; margin: 0;"><code class="hljs language-${
+				currentLanguage || "txt"
+			}">${source || ""}</code></pre>`
 
 			const highlight = async () => {
 				// Show plain text if language needs to be loaded.

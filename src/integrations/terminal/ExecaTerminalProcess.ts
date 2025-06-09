@@ -86,7 +86,9 @@ export class ExecaTerminalProcess extends BaseTerminalProcess {
 					await Promise.race([subprocess, kill])
 				} catch (error) {
 					console.log(
-						`[ExecaTerminalProcess] subprocess termination error: ${error instanceof Error ? error.message : String(error)}`,
+						`[ExecaTerminalProcess] subprocess termination error: ${
+							error instanceof Error ? error.message : String(error)
+						}`,
 					)
 				}
 
@@ -102,7 +104,9 @@ export class ExecaTerminalProcess extends BaseTerminalProcess {
 				this.emit("shell_execution_complete", { exitCode: error.exitCode ?? 0, signalName: error.signal })
 			} else {
 				console.error(
-					`[ExecaTerminalProcess] shell execution error: ${error instanceof Error ? error.message : String(error)}`,
+					`[ExecaTerminalProcess] shell execution error: ${
+						error instanceof Error ? error.message : String(error)
+					}`,
 				)
 				this.emit("shell_execution_complete", { exitCode: 1 })
 			}
@@ -134,7 +138,9 @@ export class ExecaTerminalProcess extends BaseTerminalProcess {
 							process.kill(pid, "SIGINT")
 						} catch (e) {
 							console.warn(
-								`[ExecaTerminalProcess] Failed to send SIGINT to child PID ${pid}: ${e instanceof Error ? e.message : String(e)}`,
+								`[ExecaTerminalProcess] Failed to send SIGINT to child PID ${pid}: ${
+									e instanceof Error ? e.message : String(e)
+								}`,
 							)
 							// Optionally try SIGTERM or SIGKILL on failure, depending on desired behavior.
 						}
@@ -150,7 +156,9 @@ export class ExecaTerminalProcess extends BaseTerminalProcess {
 				process.kill(this.pid, "SIGINT")
 			} catch (e) {
 				console.warn(
-					`[ExecaTerminalProcess] Failed to send SIGINT to main PID ${this.pid}: ${e instanceof Error ? e.message : String(e)}`,
+					`[ExecaTerminalProcess] Failed to send SIGINT to main PID ${this.pid}: ${
+						e instanceof Error ? e.message : String(e)
+					}`,
 				)
 			}
 		}

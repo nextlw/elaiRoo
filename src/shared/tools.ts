@@ -163,6 +163,7 @@ export interface SearchAndReplaceToolUse extends ToolUse {
 
 // Define tool group configuration
 export type ToolGroupConfig = {
+	name?: string // Added for display purposes
 	tools: readonly string[]
 	alwaysAvailable?: boolean // Whether this group is always available and shouldn't show in prompts view
 }
@@ -185,8 +186,17 @@ export const TOOL_DISPLAY_NAMES: Record<ToolName, string> = {
 	new_task: "create new task",
 	insert_content: "insert content",
 	search_and_replace: "search and replace",
+	web_search: "web search",
+	extract_page_content: "extract page content",
+	extract_document_content: "extract document content",
+	search_structured_data: "search structured data",
+	search_code_repositories: "search code repositories",
+	get_repository_file_content: "get repository file content",
+	process_text_content: "Process Text Content",
 	codebase_search: "codebase search",
 } as const
+
+export type { ToolGroup, ClineAsk }
 
 // Define available tool groups.
 export const TOOL_GROUPS: Record<ToolGroup, ToolGroupConfig> = {
@@ -216,6 +226,26 @@ export const TOOL_GROUPS: Record<ToolGroup, ToolGroupConfig> = {
 		tools: ["switch_mode", "new_task"],
 		alwaysAvailable: true,
 	},
+	ask: {
+		tools: ["ask_followup_question"],
+		alwaysAvailable: true, // Based on ALWAYS_AVAILABLE_TOOLS
+	},
+	completion: {
+		tools: ["attempt_completion"],
+		alwaysAvailable: true, // Based on ALWAYS_AVAILABLE_TOOLS
+	},
+	deepSearchTools: {
+		name: "Deep Search Tools",
+		tools: [
+			"web_search",
+			"extract_page_content",
+			"extract_document_content",
+			"search_structured_data",
+			"search_code_repositories",
+			"get_repository_file_content",
+			"process_text_content",
+		],
+	},
 }
 
 // Tools that are always available to all modes.
@@ -224,6 +254,26 @@ export const ALWAYS_AVAILABLE_TOOLS: ToolName[] = [
 	"attempt_completion",
 	"switch_mode",
 	"new_task",
+	"search_files",
+	"list_files",
+	"list_code_definition_names",
+	"read_file",
+	"fetch_instructions",
+	"write_to_file",
+	"apply_diff",
+	"insert_content",
+	"search_and_replace",
+	"execute_command",
+	"use_mcp_tool",
+	"access_mcp_resource",
+	"browser_action",
+	"web_search",
+	"extract_page_content",
+	"extract_document_content",
+	"search_structured_data",
+	"search_code_repositories",
+	"get_repository_file_content",
+	"process_text_content",
 ] as const
 
 export type DiffResult =

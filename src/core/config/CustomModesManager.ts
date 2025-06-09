@@ -87,7 +87,9 @@ export class CustomModesManager {
 			// Add source to each mode
 			return result.data.customModes.map((mode) => ({ ...mode, source }))
 		} catch (error) {
-			const errorMsg = `Failed to load modes from ${filePath}: ${error instanceof Error ? error.message : String(error)}`
+			const errorMsg = `Failed to load modes from ${filePath}: ${
+				error instanceof Error ? error.message : String(error)
+			}`
 			console.error(`[CustomModesManager] ${errorMsg}`)
 			return []
 		}

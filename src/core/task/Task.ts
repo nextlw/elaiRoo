@@ -124,6 +124,16 @@ export class Task extends EventEmitter<ClineEvents> {
 	readonly taskNumber: number
 	readonly workspacePath: string
 
+	// WhatsApp integration metadata
+	whatsappMetadata?: {
+		senderPhoneNumber: string
+		chatJid: string
+		source: string
+		originalMessage?: string
+	}
+	private whatsappLastSent: number = 0
+	private whatsappMessageBuffer: string = ""
+
 	providerRef: WeakRef<ClineProvider>
 	private readonly globalStoragePath: string
 	abort: boolean = false
@@ -590,6 +600,16 @@ export class Task extends EventEmitter<ClineEvents> {
 			throw new Error(`[RooCode#say] task ${this.taskId}.${this.instanceId} aborted`)
 		}
 
+		// Se esta tarefa veio do WhatsApp e é uma resposta de texto do assistente, enviar para WhatsApp
+		if (this.whatsappMetadata && type === "text" && text && !partial) {
+			this.sendResponseToWhatsApp(text)
+		}
+
+		// Se é resultado de completion (tarefa finalizada) e veio do WhatsApp, enviar notificação
+		if (this.whatsappMetadata && type === "completion_result" && text && !partial) {
+			this.sendResponseToWhatsApp(`✅ Tarefa finalizada!\n\n${text}`, true)
+		}
+
 		if (partial !== undefined) {
 			const lastMessage = this.clineMessages.at(-1)
 
@@ -685,6 +705,51 @@ export class Task extends EventEmitter<ClineEvents> {
 			} without value for required parameter '${paramName}'. Retrying...`,
 		)
 		return formatResponse.toolError(formatResponse.missingToolParameterError(paramName))
+	}
+
+	// WhatsApp Integration
+	private async sendResponseToWhatsApp(text: string, forceImmediate: boolean = false) {
+		if (!this.whatsappMetadata) {
+			return
+		}
+
+		// Evitar mensagens muito curtas (menos de 20 caracteres) ou muito frequentes
+		const now = Date.now()
+		const timeSinceLastSent = now - this.whatsappLastSent
+		const MIN_INTERVAL = 3000 // 3 segundos entre mensagens
+		const MIN_LENGTH = 20 // Mínimo 20 caracteres
+
+		if (!forceImmediate && (text.length < MIN_LENGTH || timeSinceLastSent < MIN_INTERVAL)) {
+			// Acumular na buffer se for muito pequena ou muito frequente
+			this.whatsappMessageBuffer += (this.whatsappMessageBuffer ? "\n\n" : "") + text
+			return
+		}
+
+		// Usar buffer acumulada se houver
+		const messageToSend = this.whatsappMessageBuffer ? this.whatsappMessageBuffer + "\n\n" + text : text
+		this.whatsappMessageBuffer = ""
+
+		try {
+			// Enviar a resposta para o WhatsApp via MCP
+			const mcpHub = this.providerRef.deref()?.getMcpHub()
+			if (mcpHub) {
+				await mcpHub.callTool(
+					"whatsapp",
+					"send_message",
+					{
+						recipient: this.whatsappMetadata.senderPhoneNumber,
+						message: messageToSend,
+					},
+					"global",
+				)
+				this.whatsappLastSent = now
+				console.log(
+					`[WhatsApp] Resposta enviada para ${this.whatsappMetadata.senderPhoneNumber}: ${messageToSend.substring(0, 50)}...`,
+				)
+			}
+		} catch (error) {
+			console.error(`[WhatsApp] Erro ao enviar resposta: ${error}`)
+		}
 	}
 
 	// Start / Abort / Resume

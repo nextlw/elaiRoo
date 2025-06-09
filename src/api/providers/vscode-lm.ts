@@ -70,7 +70,9 @@ export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHan
 			this.dispose()
 
 			throw new Error(
-				`Roo Code <Language Model API>: Failed to initialize handler: ${error instanceof Error ? error.message : "Unknown error"}`,
+				`Roo Code <Language Model API>: Failed to initialize handler: ${
+					error instanceof Error ? error.message : "Unknown error"
+				}`,
 			)
 		}
 	}

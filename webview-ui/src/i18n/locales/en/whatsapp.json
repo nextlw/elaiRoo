@@ -1,0 +1,17 @@
+{
+	"status": {
+		"connected": "Connected",
+		"connecting": "Connecting...",
+		"disconnected": "Disconnected"
+	},
+	"connectionStatus": "Connection Status",
+	"systemCritical": "CRITICAL",
+	"scanQrCode": "Scan this QR Code in your WhatsApp",
+	"connecting": "Connecting...",
+	"reconnect": "Reconnect",
+	"chatTerminal": "Chat Terminal",
+	"noChatMessages": "No messages yet. Messages will appear here when someone sends you a WhatsApp message.",
+	"messageInputDisabled": "Direct messaging not enabled in this version",
+	"send": "Send",
+	"commandHelp": "Use @elai, @elaifim or @elainow in WhatsApp chats to interact"
+}

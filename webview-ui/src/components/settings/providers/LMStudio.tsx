@@ -120,7 +120,7 @@ export const LMStudio = ({ apiConfiguration, setApiConfigurationField }: LMStudi
 							</VSCodeRadioGroup>
 							{lmStudioModels.length === 0 && (
 								<div
-									className="text-sm rounded-xs p-2"
+									className="text-sm rounded-lg p-2"
 									style={{
 										backgroundColor: "var(--vscode-inputValidation-infoBackground)",
 										border: "1px solid var(--vscode-inputValidation-infoBorder)",

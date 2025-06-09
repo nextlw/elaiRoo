@@ -4,14 +4,331 @@
 	"engines": {
 		"node": "20.19.2"
 	},
+	"author": {
+		"name": "Roo Code"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/RooVetGit/Roo-Code"
+	},
+	"homepage": "https://github.com/RooVetGit/Roo-Code",
+	"categories": [
+		"AI",
+		"Chat",
+		"Programming Languages",
+		"Education",
+		"Snippets",
+		"Testing"
+	],
+	"keywords": [
+		"cline",
+		"claude",
+		"dev",
+		"mcp",
+		"openrouter",
+		"coding",
+		"agent",
+		"autonomous",
+		"chatgpt",
+		"sonnet",
+		"ai",
+		"llama",
+		"roo code",
+		"roocode"
+	],
+	"activationEvents": [
+		"onLanguage",
+		"onStartupFinished"
+	],
+	"main": "./dist/extension.js",
+	"contributes": {
+		"submenus": [
+			{
+				"id": "roo-code.contextMenu",
+				"label": "%views.contextMenu.label%"
+			},
+			{
+				"id": "roo-code.terminalMenu",
+				"label": "%views.terminalMenu.label%"
+			}
+		],
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "roo-cline-ActivityBar",
+					"title": "%views.activitybar.title%",
+					"icon": "assets/icons/icon.svg"
+				}
+			]
+		},
+		"views": {
+			"roo-cline-ActivityBar": [
+				{
+					"type": "webview",
+					"id": "roo-cline.SidebarProvider",
+					"name": "",
+					"icon": "assets/icons/icon.svg"
+				}
+			]
+		},
+		"commands": [
+			{
+				"command": "roo-cline.plusButtonClicked",
+				"title": "%command.newTask.title%",
+				"icon": "$(add)"
+			},
+			{
+				"command": "roo-cline.mcpButtonClicked",
+				"title": "%command.mcpServers.title%",
+				"icon": "$(server)"
+			},
+			{
+				"command": "roo-cline.promptsButtonClicked",
+				"title": "%command.prompts.title%",
+				"icon": "$(notebook)"
+			},
+			{
+				"command": "roo-cline.historyButtonClicked",
+				"title": "%command.history.title%",
+				"icon": "$(history)"
+			},
+			{
+				"command": "roo-cline.popoutButtonClicked",
+				"title": "%command.openInEditor.title%",
+				"icon": "$(link-external)"
+			},
+			{
+				"command": "roo-cline.settingsButtonClicked",
+				"title": "%command.settings.title%",
+				"icon": "$(settings-gear)"
+			},
+			{
+				"command": "roo-cline.openInNewTab",
+				"title": "%command.openInNewTab.title%",
+				"category": "%configuration.title%"
+			},
+			{
+				"command": "roo-cline.explainCode",
+				"title": "%command.explainCode.title%",
+				"category": "%configuration.title%"
+			},
+			{
+				"command": "roo-cline.fixCode",
+				"title": "%command.fixCode.title%",
+				"category": "%configuration.title%"
+			},
+			{
+				"command": "roo-cline.improveCode",
+				"title": "%command.improveCode.title%",
+				"category": "%configuration.title%"
+			},
+			{
+				"command": "roo-cline.addToContext",
+				"title": "%command.addToContext.title%",
+				"category": "%configuration.title%"
+			},
+			{
+				"command": "roo-cline.newTask",
+				"title": "%command.newTask.title%",
+				"category": "%configuration.title%"
+			},
+			{
+				"command": "roo-cline.terminalAddToContext",
+				"title": "%command.terminal.addToContext.title%",
+				"category": "Terminal"
+			},
+			{
+				"command": "roo-cline.terminalFixCommand",
+				"title": "%command.terminal.fixCommand.title%",
+				"category": "Terminal"
+			},
+			{
+				"command": "roo-cline.terminalExplainCommand",
+				"title": "%command.terminal.explainCommand.title%",
+				"category": "Terminal"
+			},
+			{
+				"command": "roo-cline.setCustomStoragePath",
+				"title": "%command.setCustomStoragePath.title%",
+				"category": "%configuration.title%"
+			},
+			{
+				"command": "roo-cline.focusInput",
+				"title": "%command.focusInput.title%",
+				"category": "%configuration.title%"
+			},
+			{
+				"command": "roo.acceptInput",
+				"title": "%command.acceptInput.title%",
+				"category": "%configuration.title%"
+			}
+		],
+		"menus": {
+			"editor/context": [
+				{
+					"submenu": "roo-code.contextMenu",
+					"group": "navigation"
+				}
+			],
+			"roo-code.contextMenu": [
+				{
+					"command": "roo-cline.addToContext",
+					"group": "1_actions@1"
+				},
+				{
+					"command": "roo-cline.explainCode",
+					"group": "1_actions@2"
+				},
+				{
+					"command": "roo-cline.improveCode",
+					"group": "1_actions@3"
+				}
+			],
+			"terminal/context": [
+				{
+					"submenu": "roo-code.terminalMenu",
+					"group": "navigation"
+				}
+			],
+			"roo-code.terminalMenu": [
+				{
+					"command": "roo-cline.terminalAddToContext",
+					"group": "1_actions@1"
+				},
+				{
+					"command": "roo-cline.terminalFixCommand",
+					"group": "1_actions@2"
+				},
+				{
+					"command": "roo-cline.terminalExplainCommand",
+					"group": "1_actions@3"
+				}
+			],
+			"view/title": [
+				{
+					"command": "roo-cline.plusButtonClicked",
+					"group": "navigation@1",
+					"when": "view == roo-cline.SidebarProvider"
+				},
+				{
+					"command": "roo-cline.promptsButtonClicked",
+					"group": "navigation@2",
+					"when": "view == roo-cline.SidebarProvider"
+				},
+				{
+					"command": "roo-cline.mcpButtonClicked",
+					"group": "navigation@3",
+					"when": "view == roo-cline.SidebarProvider"
+				},
+				{
+					"command": "roo-cline.historyButtonClicked",
+					"group": "navigation@4",
+					"when": "view == roo-cline.SidebarProvider"
+				},
+				{
+					"command": "roo-cline.popoutButtonClicked",
+					"group": "navigation@5",
+					"when": "view == roo-cline.SidebarProvider"
+				},
+				{
+					"command": "roo-cline.settingsButtonClicked",
+					"group": "navigation@6",
+					"when": "view == roo-cline.SidebarProvider"
+				}
+			],
+			"editor/title": [
+				{
+					"command": "roo-cline.plusButtonClicked",
+					"group": "navigation@1",
+					"when": "activeWebviewPanelId == roo-cline.TabPanelProvider"
+				},
+				{
+					"command": "roo-cline.promptsButtonClicked",
+					"group": "navigation@2",
+					"when": "activeWebviewPanelId == roo-cline.TabPanelProvider"
+				},
+				{
+					"command": "roo-cline.mcpButtonClicked",
+					"group": "navigation@3",
+					"when": "activeWebviewPanelId == roo-cline.TabPanelProvider"
+				},
+				{
+					"command": "roo-cline.historyButtonClicked",
+					"group": "navigation@4",
+					"when": "activeWebviewPanelId == roo-cline.TabPanelProvider"
+				},
+				{
+					"command": "roo-cline.popoutButtonClicked",
+					"group": "navigation@5",
+					"when": "activeWebviewPanelId == roo-cline.TabPanelProvider"
+				},
+				{
+					"command": "roo-cline.settingsButtonClicked",
+					"group": "navigation@6",
+					"when": "activeWebviewPanelId == roo-cline.TabPanelProvider"
+				}
+			]
+		},
+		"configuration": {
+			"title": "%configuration.title%",
+			"properties": {
+				"roo-cline.allowedCommands": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [
+						"npm test",
+						"npm install",
+						"tsc",
+						"git log",
+						"git diff",
+						"git show"
+					],
+					"description": "%commands.allowedCommands.description%"
+				},
+				"roo-cline.vsCodeLmModelSelector": {
+					"type": "object",
+					"properties": {
+						"vendor": {
+							"type": "string",
+							"description": "%settings.vsCodeLmModelSelector.vendor.description%"
+						},
+						"family": {
+							"type": "string",
+							"description": "%settings.vsCodeLmModelSelector.family.description%"
+						}
+					},
+					"description": "%settings.vsCodeLmModelSelector.description%"
+				},
+				"roo-cline.customStoragePath": {
+					"type": "string",
+					"default": "",
+					"description": "%settings.customStoragePath.description%"
+				},
+				"roo-cline.searchApiProfiles": {
+					"type": "object",
+					"description": "Stores the search API profiles for Roo Cline.",
+					"default": {},
+					"scope": "application"
+				}
+			}
+		}
+	},
 	"scripts": {
+		"start:whatsapp-bridge": "cd src/services/mcp/whatsapp-mcp/whatsapp-bridge && go run main.go",
+		"start:whatsapp-all": "concurrently \"npm run start:whatsapp-api\" \"npm run start:whatsapp-mcp\"",
+		"start:whatsapp-api": "cd src/services/mcp/whatsapp-mcp/whatsapp-mcp-server && .venv/bin/python -m uvicorn server:app --port 8001",
+		"start:whatsapp-mcp": "cd src/services/mcp/whatsapp-mcp/whatsapp-mcp-server && .venv/bin/python main.py",
 		"preinstall": "node scripts/bootstrap.mjs",
 		"prepare": "husky",
 		"install": "node scripts/bootstrap.mjs",
 		"install:all": "node scripts/bootstrap.mjs",
 		"lint": "turbo lint --log-order grouped --output-logs new-only",
 		"check-types": "turbo check-types --log-order grouped --output-logs new-only",
-		"test": "turbo test --log-order grouped --output-logs new-only",
+		"test": "jest",
+		"test:e2e": "jest e2e/src/suite/**/*.test.ts",
+		"test:watch": "jest --watch",
 		"format": "turbo format --log-order grouped --output-logs new-only",
 		"build": "turbo build --log-order grouped --output-logs new-only",
 		"bundle": "turbo bundle --log-order grouped --output-logs new-only",
@@ -27,6 +344,9 @@
 	"devDependencies": {
 		"@changesets/cli": "^2.27.10",
 		"@dotenvx/dotenvx": "^1.34.0",
+		"@types/jsonpath-plus": "^5.0.5",
+		"@types/mocha": "^10.0.10",
+		"@types/pdf-parse": "^1.1.5",
 		"@vscode/vsce": "3.3.2",
 		"esbuild": "^0.25.0",
 		"eslint": "^9.27.0",
@@ -34,12 +354,16 @@
 		"knip": "^5.44.4",
 		"lint-staged": "^16.0.0",
 		"mkdirp": "^3.0.1",
+		"mocha": "^11.2.2",
 		"only-allow": "^1.2.1",
 		"ovsx": "0.10.4",
 		"prettier": "^3.4.2",
 		"rimraf": "^6.0.1",
+		"ts-node": "^10.9.2",
+		"tsup": "^8.0.0",
+		"tsx": "^4.7.0",
 		"turbo": "^2.5.3",
-		"typescript": "^5.4.5"
+		"typescript": "^5.8.3"
 	},
 	"lint-staged": {
 		"*.{js,jsx,ts,tsx,json,css,md}": [
@@ -48,6 +372,7 @@
 	},
 	"dependencies": {
 		"posthog-js": "^1.249.4",
-		"posthog-node": "^4.7.0"
+		"posthog-node": "^4.7.0",
+		"csv-parse": "^5.6.0"
 	}
 }

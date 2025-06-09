@@ -28,7 +28,7 @@ export class McpServerManager {
 
 		// If initialization is in progress, wait for it
 		if (this.initializationPromise) {
-			return this.initializationPromise
+			return this.initializationPromise as Promise<McpHub>
 		}
 
 		// Create a new initialization promise
@@ -36,7 +36,7 @@ export class McpServerManager {
 			try {
 				// Double-check instance in case it was created while we were waiting
 				if (!this.instance) {
-					this.instance = new McpHub(provider)
+					this.instance = McpHub.getInstance(provider)
 					// Store a unique identifier in global state to track the primary instance
 					await context.globalState.update(this.GLOBAL_STATE_KEY, Date.now().toString())
 				}
@@ -47,7 +47,7 @@ export class McpServerManager {
 			}
 		})()
 
-		return this.initializationPromise
+		return this.initializationPromise as Promise<McpHub>
 	}
 
 	/**

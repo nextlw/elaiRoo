@@ -40,6 +40,7 @@ export interface ExtensionMessage {
 		| "enhancedPrompt"
 		| "commitSearchResults"
 		| "listApiConfig"
+		| "listSearchApiConfig"
 		| "routerModels"
 		| "openAiModels"
 		| "ollamaModels"
@@ -73,7 +74,20 @@ export interface ExtensionMessage {
 		| "indexingStatusUpdate"
 		| "indexCleared"
 		| "codebaseIndexConfig"
+		| "listSearchApiConfig"
+		| "currentSearchApiConfigName"
+		| "currentSearchApiConfigName"
+		| "whatsappToolResponse"
+
 	text?: string
+	listSearchApiConfig?: ProviderSettingsEntry[]
+	currentSearchApiConfigName?: string
+
+	// WhatsApp MCP Tool Response
+	toolName?: string
+	result?: any
+	serverName?: string
+
 	action?:
 		| "chatButtonClicked"
 		| "mcpButtonClicked"
@@ -179,6 +193,10 @@ export type ExtensionState = Pick<
 	| "enhancementApiConfigId"
 	| "condensingApiConfigId"
 	| "customCondensingPrompt"
+	// Search API settings
+	| "currentSearchApiConfigName"
+	| "searchApiConfigurations"
+	| "activeSearchApiSettings"
 	| "codebaseIndexConfig"
 	| "codebaseIndexModels"
 > & {
@@ -225,6 +243,11 @@ export type ExtensionState = Pick<
 
 	autoCondenseContext: boolean
 	autoCondenseContextPercent: number
+
+	// Search API settings
+	currentSearchApiConfigName?: string
+	searchApiConfigurations?: ProviderSettingsEntry[]
+	activeSearchApiSettings?: ProviderSettings
 }
 
 export interface ClineSayTool {

@@ -65,10 +65,44 @@ export class API extends EventEmitter<RooCodeEvents> implements RooCodeAPI {
 
 			ipc.on(IpcMessageType.TaskCommand, async (_clientId, { commandName, data }) => {
 				switch (commandName) {
-					case TaskCommandName.StartNewTask:
-						this.log(`[API] StartNewTask -> ${data.text}, ${JSON.stringify(data.configuration)}`)
-						await this.startNewTask(data)
+					case TaskCommandName.StartNewTask: {
+						const ipcData = data // Renomear para clareza
+						this.log(`[API] StartNewTask -> ${ipcData.text}, ${JSON.stringify(ipcData.configuration)}`)
+
+						const paramsForStartNewTask: {
+							configuration?: RooCodeSettings
+							text?: string
+							images?: string[]
+							newTab?: boolean
+						} = {
+							text: ipcData.text,
+							images: ipcData.images,
+							newTab: ipcData.newTab,
+							configuration: undefined,
+						}
+
+						if (ipcData.configuration) {
+							const clonedConfig = { ...ipcData.configuration }
+
+							if (clonedConfig.activeSearchApiSettings) {
+								const activeSearch = clonedConfig.activeSearchApiSettings
+								const resolvedIsEnabled =
+									typeof activeSearch.isEnabled === "undefined"
+										? true // Alinhar com o preprocess/default do schema (true)
+										: activeSearch.isEnabled
+
+								// Recriar activeSearchApiSettings para garantir o tipo correto para isEnabled
+								// É necessário fazer o cast para o tipo específico da união ou um tipo base comum
+								// que tenha isEnabled como boolean, ou usar 'as any' se for muito complexo.
+								// A maneira mais simples aqui é modificar e depois fazer o cast do objeto pai.
+								;(clonedConfig.activeSearchApiSettings as any).isEnabled = resolvedIsEnabled
+							}
+							paramsForStartNewTask.configuration = clonedConfig as RooCodeSettings
+						}
+
+						await this.startNewTask(paramsForStartNewTask)
 						break
+					}
 					case TaskCommandName.CancelTask:
 						this.log(`[API] CancelTask -> ${data}`)
 						await this.cancelTask(data)
@@ -98,7 +132,7 @@ export class API extends EventEmitter<RooCodeEvents> implements RooCodeAPI {
 		images,
 		newTab,
 	}: {
-		configuration: RooCodeSettings
+		configuration?: RooCodeSettings
 		text?: string
 		images?: string[]
 		newTab?: boolean
@@ -222,7 +256,11 @@ export class API extends EventEmitter<RooCodeEvents> implements RooCodeAPI {
 				this.taskMap.delete(cline.taskId)
 
 				await this.fileLog(
-					`[${new Date().toISOString()}] taskCompleted -> ${cline.taskId} | ${JSON.stringify(tokenUsage, null, 2)} | ${JSON.stringify(toolUsage, null, 2)}\n`,
+					`[${new Date().toISOString()}] taskCompleted -> ${cline.taskId} | ${JSON.stringify(
+						tokenUsage,
+						null,
+						2,
+					)} | ${JSON.stringify(toolUsage, null, 2)}\n`,
 				)
 			})
 

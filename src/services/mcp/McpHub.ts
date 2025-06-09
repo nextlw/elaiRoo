@@ -1,3 +1,4 @@
+import { EventEmitter } from "events"
 import { safeWriteJson } from "../../utils/safeWriteJson"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StdioClientTransport, getDefaultEnvironment } from "@modelcontextprotocol/sdk/client/stdio.js"
@@ -35,7 +36,7 @@ import { arePathsEqual } from "../../utils/path"
 import { injectEnv } from "../../utils/config"
 
 export type McpConnection = {
-	server: McpServer
+	server: McpServer & { isSystemCritical?: boolean } // Adicionando a flag opcional
 	client: Client
 	transport: StdioClientTransport | SSEClientTransport | StreamableHTTPClientTransport
 }
@@ -46,6 +47,7 @@ const BaseConfigSchema = z.object({
 	timeout: z.number().min(1).max(3600).optional().default(60),
 	alwaysAllow: z.array(z.string()).default([]),
 	watchPaths: z.array(z.string()).optional(), // paths to watch for changes and restart server
+	isSystemCritical: z.boolean().optional(), // Adicionado para MCPs críticos do sistema
 })
 
 // Custom error messages for better user feedback
@@ -123,8 +125,17 @@ const McpSettingsSchema = z.object({
 	mcpServers: z.record(ServerConfigSchema),
 })
 
-export class McpHub {
-	private providerRef: WeakRef<ClineProvider>
+export interface McpEvents {
+	"server-added": (server: McpServer) => void
+	"server-removed": (serverName: string) => void
+	"terminal/resize": (data: { terminalId: number; dimensions: { columns: number; rows: number } }) => void
+}
+
+export class McpHub extends EventEmitter {
+	declare emit: <K extends keyof McpEvents>(event: K, ...args: Parameters<McpEvents[K]>) => boolean
+	declare on: <K extends keyof McpEvents>(event: K, listener: McpEvents[K]) => this
+	private static instance: McpHub
+	private providerRef!: WeakRef<ClineProvider>
 	private disposables: vscode.Disposable[] = []
 	private settingsWatcher?: vscode.FileSystemWatcher
 	private fileWatchers: Map<string, FSWatcher[]> = new Map()
@@ -135,13 +146,24 @@ export class McpHub {
 	private refCount: number = 0 // Reference counter for active clients
 	private configChangeDebounceTimers: Map<string, NodeJS.Timeout> = new Map()
 
-	constructor(provider: ClineProvider) {
+	private constructor(provider: ClineProvider) {
+		super()
 		this.providerRef = new WeakRef(provider)
 		this.watchMcpSettingsFile()
 		this.watchProjectMcpFile().catch(console.error)
 		this.setupWorkspaceFoldersWatcher()
 		this.initializeGlobalMcpServers()
 		this.initializeProjectMcpServers()
+	}
+
+	public static getInstance(provider?: ClineProvider): McpHub {
+		if (!McpHub.instance) {
+			if (!provider) {
+				throw new Error("McpHub must be initialized with a provider first")
+			}
+			McpHub.instance = new McpHub(provider)
+		}
+		return McpHub.instance
 	}
 	/**
 	 * Registers a client (e.g., ClineProvider) using this hub.
@@ -532,7 +554,53 @@ export class McpHub {
 		}
 	}
 
+	/**
+	 * Garante que o WhatsApp MCP está sempre configurado como servidor nativo (RF001)
+	 */
+	private async ensureWhatsAppMcpExists(): Promise<void> {
+		try {
+			const settingsPath = await this.getMcpSettingsFilePath()
+			const content = await fs.readFile(settingsPath, "utf-8")
+			const config = JSON.parse(content)
+
+			// Verificar se o WhatsApp MCP já existe
+			if (!config.mcpServers || !config.mcpServers.whatsapp) {
+				// Criar configuração do WhatsApp MCP
+				if (!config.mcpServers) {
+					config.mcpServers = {}
+				}
+
+				config.mcpServers.whatsapp = {
+					type: "stdio",
+					command: "uv",
+					args: ["run", "main.py"],
+					cwd: path.join(__dirname, "..", "..", "services", "mcp", "whatsapp-mcp", "whatsapp-mcp-server"),
+					disabled: false,
+					isSystemCritical: true,
+					alwaysAllow: ["whatsapp_send_message", "whatsapp_list_chats", "whatsapp_list_messages"],
+					timeout: 30,
+				}
+
+				// Salvar configuração atualizada
+				await fs.writeFile(settingsPath, JSON.stringify(config, null, 2))
+				console.log("[McpHub] WhatsApp MCP configurado automaticamente como servidor nativo")
+			} else if (!config.mcpServers.whatsapp.isSystemCritical) {
+				// Atualizar servidor existente para ser crítico do sistema
+				config.mcpServers.whatsapp.isSystemCritical = true
+				config.mcpServers.whatsapp.disabled = false
+
+				await fs.writeFile(settingsPath, JSON.stringify(config, null, 2))
+				console.log("[McpHub] WhatsApp MCP atualizado para servidor crítico do sistema")
+			}
+		} catch (error) {
+			console.error("[McpHub] Erro ao configurar WhatsApp MCP nativo:", error)
+		}
+	}
+
 	private async initializeGlobalMcpServers(): Promise<void> {
+		// Primeiro, garantir que o WhatsApp MCP está configurado (RF001: nativo e automático)
+		await this.ensureWhatsAppMcpExists()
+
 		await this.initializeMcpServers("global")
 	}
 
@@ -617,6 +685,13 @@ export class McpHub {
 				// transport.stderr is only available after the process has been started. However we can't start it separately from the .connect() call because it also starts the transport. And we can't place this after the connect call since we need to capture the stderr stream before the connection is established, in order to capture errors during the connection process.
 				// As a workaround, we start the transport ourselves, and then monkey-patch the start method to no-op so that .connect() doesn't try to start it again.
 				await transport.start()
+
+				// Para WhatsApp MCP, configurar captura de eventos especiais (RF001: comunicação nativa)
+				if (name === "whatsapp") {
+					// O WhatsApp MCP enviará eventos através de chamadas de ferramentas especiais
+					console.log("[McpHub] WhatsApp MCP conectado - pronto para receber comandos @elai")
+				}
+
 				const stderrStream = transport.stderr
 				if (stderrStream) {
 					stderrStream.on("data", async (data: Buffer) => {
@@ -954,6 +1029,11 @@ export class McpHub {
 				this.showErrorMessage(`Invalid configuration for MCP server "${name}"`, error)
 				continue
 			}
+			// >>> INÍCIO DA NOVA LÓGICA: WHATSAPP MCP NATIVO <<<
+			if (name === "whatsapp") {
+				validatedConfig.disabled = false
+				validatedConfig.isSystemCritical = true
+			}
 
 			if (!currentConnection) {
 				// New server
@@ -1246,31 +1326,34 @@ export class McpHub {
 			}
 
 			const serverSource = connection.server.source || "global"
-			// Update the server config in the appropriate file
+			// Impede a desativação de servidores críticos do sistema
+			if (connection.server.isSystemCritical && disabled) {
+				console.warn(t("mcpHub.whatsapp.disableAttempt", { name: serverName }))
+				return
+			}
+
 			await this.updateServerConfig(serverName, { disabled }, serverSource)
 
-			// Update the connection object
-			if (connection) {
-				try {
-					connection.server.disabled = disabled
+			// Update the connection object's disabled status in memory
+			connection.server.disabled = disabled
 
-					// Only refresh capabilities if connected
-					if (connection.server.status === "connected") {
-						connection.server.tools = await this.fetchToolsList(serverName, serverSource)
-						connection.server.resources = await this.fetchResourcesList(serverName, serverSource)
-						connection.server.resourceTemplates = await this.fetchResourceTemplatesList(
-							serverName,
-							serverSource,
-						)
-					}
-				} catch (error) {
-					console.error(`Failed to refresh capabilities for ${serverName}:`, error)
+			// Attempt to refresh capabilities if the server was connected
+			try {
+				if (connection.server.status === "connected") {
+					connection.server.tools = await this.fetchToolsList(serverName, serverSource)
+					connection.server.resources = await this.fetchResourcesList(serverName, serverSource)
+					connection.server.resourceTemplates = await this.fetchResourceTemplatesList(
+						serverName,
+						serverSource,
+					)
 				}
+			} catch (refreshError) {
+				console.error(`Failed to refresh capabilities for ${serverName} after state toggle:`, refreshError)
 			}
 
 			await this.notifyWebviewOfServerChanges()
 		} catch (error) {
-			this.showErrorMessage(`Failed to update server ${serverName} state`, error)
+			this.showErrorMessage(`Failed to update server ${serverName} state`, error as Error)
 			throw error
 		}
 	}
@@ -1462,7 +1545,9 @@ export class McpHub {
 		const connection = this.findConnection(serverName, source)
 		if (!connection) {
 			throw new Error(
-				`No connection found for server: ${serverName}${source ? ` with source ${source}` : ""}. Please make sure to use MCP servers available under 'Connected MCP Servers'.`,
+				`No connection found for server: ${serverName}${
+					source ? ` with source ${source}` : ""
+				}. Please make sure to use MCP servers available under 'Connected MCP Servers'.`,
 			)
 		}
 		if (connection.server.disabled) {

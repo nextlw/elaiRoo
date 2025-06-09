@@ -83,10 +83,14 @@ const runBenchmark = () => {
 	const namePadding = maxNameLength + 2
 
 	console.log(
-		`| ${"Test Case".padEnd(namePadding)} | V1 Time (ms) | V2 Time (ms) | V1/V2 Ratio | V1 Heap (bytes) | V2 Heap (bytes) |`,
+		`| ${"Test Case".padEnd(
+			namePadding,
+		)} | V1 Time (ms) | V2 Time (ms) | V1/V2 Ratio | V1 Heap (bytes) | V2 Heap (bytes) |`,
 	)
 	console.log(
-		`| ${"-".repeat(namePadding)} | ------------ | ------------ | ----------- | ---------------- | ---------------- |`,
+		`| ${"-".repeat(
+			namePadding,
+		)} | ------------ | ------------ | ----------- | ---------------- | ---------------- |`,
 	)
 
 	for (const testCase of testCases) {

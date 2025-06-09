@@ -1,8 +1,9 @@
 import { EventEmitter } from "events"
-
+import { McpHub } from "../../services/mcp/McpHub"
 import type { RooTerminalProcess, RooTerminalProcessEvents, ExitCodeDetails } from "./types"
 
 export abstract class BaseTerminalProcess extends EventEmitter<RooTerminalProcessEvents> implements RooTerminalProcess {
+	protected mcpHub!: McpHub
 	public command: string = ""
 
 	public isHot: boolean = false

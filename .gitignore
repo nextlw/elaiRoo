@@ -29,7 +29,8 @@ docs/_site/
 .env
 .env.*
 !.env.*.sample
-
+.vscode/PythonImportHelper-v2-Completion.json
+.vscode/sessions.json
 # Logging
 logs
 
@@ -42,6 +43,9 @@ logs
 # IntelliJ and Qodo plugin folders
 .idea/
 .qodo/
+docs/roo-code-settings.json
+Tasks/
+deep/
 .vercel
 .roo/mcp.json
 packages/evals/.env.test

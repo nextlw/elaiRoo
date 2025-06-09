@@ -1,0 +1,17 @@
+{
+	"status": {
+		"connected": "Conectado",
+		"connecting": "Conectando...",
+		"disconnected": "Desconectado"
+	},
+	"connectionStatus": "Status da Conexão",
+	"systemCritical": "CRÍTICO",
+	"scanQrCode": "Escaneie o QR Code no seu WhatsApp",
+	"connecting": "Conectando...",
+	"reconnect": "Reconectar",
+	"chatTerminal": "Terminal de Chat",
+	"noChatMessages": "Nenhuma mensagem ainda. As mensagens chegarão aqui quando alguém te enviar uma mensagem no WhatsApp.",
+	"messageInputDisabled": "Enviar mensagens diretamente não está habilitado nesta versão",
+	"send": "Enviar",
+	"commandHelp": "Use @elai, @elaifim ou @elainow nos chats do WhatsApp para interagir"
+}

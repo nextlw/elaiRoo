@@ -48,7 +48,9 @@ export async function migrateSettings(
 					outputChannel.appendLine(`Renamed ${migration.oldName} to ${migration.newName}`)
 				} else {
 					outputChannel.appendLine(
-						`Skipping migration of ${migration.oldName} to ${migration.newName}: ${oldFileExists ? "new file already exists" : "old file not found"}`,
+						`Skipping migration of ${migration.oldName} to ${migration.newName}: ${
+							oldFileExists ? "new file already exists" : "old file not found"
+						}`,
 					)
 				}
 			}

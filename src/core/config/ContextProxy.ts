@@ -14,6 +14,11 @@ import {
 	providerSettingsSchema,
 	globalSettingsSchema,
 	isSecretStateKey,
+	SearchApiSettings,
+	searchApiSettingsSchemaDiscriminated,
+	SEARCH_API_SECRET_STATE_KEYS,
+	SEARCH_API_GLOBAL_STATE_KEYS,
+	SearchApiProviderNameSchema, // Para obter a lista de nomes de provedores
 } from "@roo-code/types"
 import { TelemetryService } from "@roo-code/telemetry"
 
@@ -212,6 +217,101 @@ export class ContextProxy {
 	}
 
 	/**
+	 * SearchApiSettings
+	 */
+
+	public getSearchApiSettings(): SearchApiSettings | undefined {
+		const rawData: Record<string, any> = {}
+
+		for (const key of SEARCH_API_GLOBAL_STATE_KEYS) {
+			const value = this.getValue(key as RooCodeSettingsKey)
+			if (value !== undefined) {
+				rawData[key] = value
+			}
+		}
+		for (const key of SEARCH_API_SECRET_STATE_KEYS) {
+			const value = this.getValue(key as RooCodeSettingsKey)
+			if (value !== undefined) {
+				rawData[key] = value
+			}
+		}
+
+		const possibleProviderNames = SearchApiProviderNameSchema.options
+
+		for (const providerName of possibleProviderNames) {
+			const candidateSettings: any = { searchApiProviderName: providerName }
+			let hasKeysForThisProvider = false
+
+			for (const storedKey in rawData) {
+				if (storedKey.startsWith(providerName + ".")) {
+					hasKeysForThisProvider = true
+					const propName = storedKey.substring(providerName.length + 1)
+					candidateSettings[propName] = rawData[storedKey]
+				}
+			}
+
+			// Se não houver chaves para este provedor nos dados brutos, pule.
+			// Exceto se o único campo for searchApiProviderName e isEnabled (que pode ser default)
+			// Um provedor pode ser válido apenas com `searchApiProviderName` e `isEnabled` (default true)
+			// Ex: duckduckgo_fallback
+			const isPotentiallyValid =
+				hasKeysForThisProvider ||
+				Object.keys(candidateSettings).length === 1 || // Apenas searchApiProviderName
+				(Object.keys(candidateSettings).length === 2 && "isEnabled" in candidateSettings)
+
+			if (isPotentiallyValid) {
+				const parsed = searchApiSettingsSchemaDiscriminated.safeParse(candidateSettings)
+				if (parsed.success) {
+					// O schema base tem isEnabled.optional().default(true)
+					// Então, se isEnabled não estiver em candidateSettings, parsed.data.isEnabled será true.
+					if (parsed.data.isEnabled !== false) {
+						return parsed.data
+					}
+				} else {
+					// Log an error only if we had specific keys for this provider, to avoid noise
+					if (hasKeysForThisProvider) {
+						logger.warn(`Failed to parse SearchApiSettings for ${providerName}: ${parsed.error.message}`)
+					}
+				}
+			}
+		}
+		return undefined
+	}
+
+	public async setSearchApiSettings(values: SearchApiSettings | undefined): Promise<void> {
+		// 1. Clear all existing search API settings keys
+		const allKnownSearchApiKeys = [...SEARCH_API_GLOBAL_STATE_KEYS, ...SEARCH_API_SECRET_STATE_KEYS]
+		for (const key of allKnownSearchApiKeys) {
+			await this.setValue(key as RooCodeSettingsKey, undefined)
+		}
+
+		if (values === undefined) {
+			// If values is undefined, we've cleared the settings and there's nothing more to do.
+			return
+		}
+
+		// 2. Save the new settings
+		const providerName = values.searchApiProviderName
+		const { searchApiProviderName: _searchApiProviderName, ...providerSpecificValues } = values
+
+		for (const [propKeyInSchema, propValue] of Object.entries(providerSpecificValues)) {
+			const fullStorageKey = `${providerName}.${propKeyInSchema}`
+
+			if (allKnownSearchApiKeys.includes(fullStorageKey as any)) {
+				// setValue(key, undefined) effectively deletes the key
+				await this.setValue(fullStorageKey as RooCodeSettingsKey, propValue)
+			}
+		}
+
+		// Ensure 'isEnabled' is explicitly set, respecting schema default if not provided in 'values'
+		const isEnabledFullKey = `${providerName}.isEnabled`
+		if (SEARCH_API_GLOBAL_STATE_KEYS.includes(isEnabledFullKey as any)) {
+			const valueToStoreForIsEnabled = values.isEnabled === undefined ? true : values.isEnabled
+			await this.setValue(isEnabledFullKey as RooCodeSettingsKey, valueToStoreForIsEnabled)
+		}
+	}
+
+	/**
 	 * RooCodeSettings
 	 */
 
@@ -220,13 +320,37 @@ export class ContextProxy {
 	}
 
 	public getValue<K extends RooCodeSettingsKey>(key: K): RooCodeSettings[K] {
-		return isSecretStateKey(key)
+		// Ensure that the key is treated as a valid RooCodeSettingsKey,
+		// even if it's one of the dynamically constructed search API keys.
+		const knownSecret = isSecretStateKey(key) || SEARCH_API_SECRET_STATE_KEYS.includes(key as any)
+		const knownGlobal = GLOBAL_STATE_KEYS.includes(key as any) || SEARCH_API_GLOBAL_STATE_KEYS.includes(key as any)
+
+		if (knownSecret) {
+			return this.getSecret(key as SecretStateKey) as RooCodeSettings[K]
+		}
+		if (knownGlobal) {
+			return this.getGlobalState(key as GlobalStateKey) as RooCodeSettings[K]
+		}
+		// Fallback for keys not strictly in GlobalState/SecretState (e.g. _activeSearchApiProviderName if we were using it)
+		// However, for SEARCH_API keys, they should be covered by the above.
+		// If a key is not in any list, it might be an issue or an ad-hoc key.
+		// For now, assume keys passed to getValue are resolvable by the existing logic or are new search keys.
+		// The casts `as RooCodeSettingsKey` imply these keys are conceptually part of the broader settings.
+		return isSecretStateKey(key) // Default logic if not caught by extended checks
 			? (this.getSecret(key) as RooCodeSettings[K])
 			: (this.getGlobalState(key) as RooCodeSettings[K])
 	}
 
 	public getValues(): RooCodeSettings {
-		return { ...this.getAllGlobalState(), ...this.getAllSecretState() }
+		const searchApiSettings = this.getSearchApiSettings()
+		const searchApiValues: Record<string, any> = {}
+		if (searchApiSettings) {
+			const providerName = searchApiSettings.searchApiProviderName
+			for (const [key, value] of Object.entries(searchApiSettings)) {
+				searchApiValues[`${providerName}.${key}`] = value
+			}
+		}
+		return { ...this.getAllGlobalState(), ...this.getAllSecretState(), ...searchApiValues }
 	}
 
 	public async setValues(values: RooCodeSettings) {

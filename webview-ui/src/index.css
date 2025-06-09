@@ -1,16 +1,16 @@
 /**
- * Normally we'd import tailwind with the following:
+ * Normalmente, importaríamos o tailwind com o seguinte:
  *
  * @import "tailwindcss";
  *
- * However, we need to customize the preflight styles since the extension's
- * current UI assumes there's no CSS resetting or normalization.
+ * No entanto, precisamos personalizar os estilos de preflight, pois a interface do usuário
+ * atual da extensão pressupõe que não há redefinição ou normalização de CSS.
  *
- * We're excluding tailwind's default preflight and importing our own, which
- * is based on the original:
+ * Estamos excluindo o preflight padrão do tailwind e importando o nosso próprio, que
+ * é baseado no original:
  * https://github.com/tailwindlabs/tailwindcss/blob/main/packages/tailwindcss/preflight.css
  *
- * Reference: https://tailwindcss.com/docs/preflight
+ * Referência: https://tailwindcss.com/docs/preflight
  */
 
 @layer theme, base, components, utilities;
@@ -58,7 +58,7 @@
 	--radius-sm: calc(var(--radius) - 4px);
 
 	/**
-	 * Allow VSCode colors to be used with Tailwind.
+	 * Permite que as cores do VSCode sejam usadas com o Tailwind.
 	 */
 
 	--color-vscode-foreground: var(--vscode-foreground);
@@ -85,7 +85,7 @@
 	--color-vscode-input-border: var(
 		--vscode-input-border,
 		transparent
-	); /* Some themes don't have a border color, so we can fallback to transparent */
+	); /* Alguns temas não têm uma cor de borda, então podemos usar transparente como fallback */
 
 	--color-vscode-focusBorder: var(--vscode-focusBorder);
 
@@ -148,7 +148,10 @@
 		--accent-foreground: var(--vscode-list-hoverForeground);
 		--destructive: var(--vscode-errorForeground);
 		--destructive-foreground: var(--vscode-button-foreground);
-		--border: var(--vscode-input-border, transparent); /* --border gets theme value or transparent fallback */
+		--border: var(
+			--vscode-input-border,
+			transparent
+		); /* --border recebe o valor do tema ou transparente como fallback */
 		--input: var(--vscode-input-background);
 		--ring: var(--vscode-input-border);
 		--chart-1: var(--vscode-charts-red);
@@ -156,11 +159,11 @@
 		--chart-3: var(--vscode-charts-yellow);
 		--chart-4: var(--vscode-charts-orange);
 		--chart-5: var(--vscode-charts-green);
-		--radius: 0.5rem;
+		--radius: 8px;
 	}
 
-	/* Higher specififty than VSCode's theme and root. */
-	/* Used for baseline theme overrides, but avoid using for styling. */
+	/* Especificidade maior que o tema e o root do VSCode. */
+	/* Usado para substituições de tema de linha de base, mas evite usar para estilização. */
 
 	body {
 		--vscode-input-border: var(--border);
@@ -168,7 +171,7 @@
 }
 
 @layer components {
-	/* Border Styles */
+	/* Estilos de Borda */
 	.border,
 	.border-r,
 	.border-l,
@@ -179,30 +182,30 @@
 		border-color: var(--border);
 	}
 
-	/* Code Block Styles */
+	/* Estilos de Bloco de Código */
 	pre,
 	code {
 		background-color: var(--vscode-textCodeBlock-background);
 	}
 
-	/* Search result highlighting */
+	/* Destaque de resultado de pesquisa */
 	.history-item-highlight {
 		@apply underline;
 	}
 }
 
-/* Form Element Focus States */
+/* Estados de Foco de Elemento de Formulário */
 
 textarea:focus {
 	outline: 1.5px solid var(--vscode-focusBorder, #007fd4);
 }
 
 .focus\:outline-0 {
-	outline: 0 !important; /* Allow tailwind to override the `textarea:focus` rule */
+	outline: 0 !important; /* Permite que o tailwind substitua a regra `textarea:focus` */
 }
 
 /**
- * Use vscode native scrollbar styles
+ * Usa estilos de barra de rolagem nativos do vscode
  * https://github.com/gitkraken/vscode-gitlens/blob/b1d71d4844523e8b2ef16f9e007068e91f46fd88/src/webviews/apps/home/home.scss
  */
 
@@ -258,7 +261,7 @@ body:focus-within .code-block-scrollable {
 }
 
 /**
- * Fix VSCode ignoring webkit scrollbar modifiers
+ * Corrige o VSCode ignorando modificadores de barra de rolagem webkit
  * https://github.com/microsoft/vscode/issues/213045
  */
 @supports selector(::-webkit-scrollbar) {
@@ -268,7 +271,7 @@ body:focus-within .code-block-scrollable {
 }
 
 /**
- * The above scrollbar styling uses some transparent background color magic to accomplish its animation. However this doesn't play nicely with SyntaxHighlighter, so we need to set a background color for the code blocks' horizontal scrollbar. This actually has the unintended consequence of always showing the scrollbar which I prefer since it makes it more obvious that there is more content to scroll to.
+ * A estilização da barra de rolagem acima usa alguma mágica de cor de fundo transparente para realizar sua animação. No entanto, isso não funciona bem com o SyntaxHighlighter, então precisamos definir uma cor de fundo para a barra de rolagem horizontal dos blocos de código. Isso realmente tem a consequência não intencional de sempre mostrar a barra de rolagem, o que eu prefiro, pois torna mais óbvio que há mais conteúdo para rolar.
  */
 
 .code-block-scrollable::-webkit-scrollbar-track {
@@ -295,20 +298,20 @@ body:focus-within .code-block-scrollable {
 }
 
 /**
- * Add a way to hide scrollbars.
+ * Adiciona uma maneira de ocultar as barras de rolagem.
  */
 
 .scrollbar-hide {
-	-ms-overflow-style: none; /* IE and Edge */
+	-ms-overflow-style: none; /* IE e Edge */
 	scrollbar-width: none; /* Firefox */
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-	display: none; /* Chrome, Safari and Opera */
+	display: none; /* Chrome, Safari e Opera */
 }
 
 /**
- * Dropdown label
+ * Rótulo do menu suspenso
  * https://github.com/microsoft/vscode-webview-ui-toolkit/tree/main/src/dropdown#with-label
  */
 
@@ -329,13 +332,13 @@ body:focus-within .code-block-scrollable {
 	margin-bottom: 2px;
 }
 
-/* Fix dropdown double scrollbar overflow */
+/* Corrige o estouro da barra de rolagem dupla do menu suspenso */
 
 #api-provider > div > ul {
 	overflow: unset;
 }
 
-/* Fix scrollbar in dropdown */
+/* Corrige a barra de rolagem no menu suspenso */
 
 vscode-dropdown::part(listbox) {
 	border-color: var(--vscode-scrollbarSlider-background);
@@ -343,7 +346,7 @@ vscode-dropdown::part(listbox) {
 	scrollbar-color: var(--vscode-scrollbarSlider-background) transparent;
 }
 
-/* Faded icon buttons in textfields */
+/* Botões de ícone esmaecidos em campos de texto */
 .input-icon-button {
 	cursor: pointer;
 	opacity: 0.65;
@@ -362,28 +365,28 @@ vscode-dropdown::part(listbox) {
 	opacity: 0.4;
 }
 
-/* Context mentions */
+/* Menções de contexto */
 
 .mention-context-textarea-highlight {
 	background-color: color-mix(in srgb, var(--vscode-badge-foreground) 30%, transparent);
-	border-radius: 3px;
+	border-radius: 4px;
 	box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--vscode-badge-foreground) 30%, transparent);
 	color: transparent;
 }
 
 .mention-context-highlight {
 	background-color: color-mix(in srgb, var(--vscode-badge-foreground) 30%, transparent);
-	border-radius: 3px;
+	border-radius: 4px;
 }
 
 .mention-context-highlight-with-shadow {
 	background-color: color-mix(in srgb, var(--vscode-badge-foreground) 30%, transparent);
-	border-radius: 3px;
+	border-radius: 4px;
 	box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--vscode-badge-foreground) 30%, transparent);
 }
 
 /**
- * vscrui Overrides / Hacks
+ * Substituições / Hacks do vscrui
  */
 
 .vscrui-checkbox__listbox > ul {
@@ -396,7 +399,7 @@ vscode-dropdown::part(listbox) {
 }
 
 /**
- * @shadcn/ui Overrides / Hacks
+ * Substituições / Hacks do @shadcn/ui
  */
 
 input[cmdk-input]:focus {
@@ -412,7 +415,7 @@ input[cmdk-input]:focus {
 }
 
 /*
- * Use geometric precision for codicons to avoid blurriness 
+ * Usa precisão geométrica para codicons para evitar desfoque
  */
 
 .codicon[class*="codicon-"] {
@@ -420,7 +423,7 @@ input[cmdk-input]:focus {
 }
 
 /*
- * Fix the color of <a> in ChatView
+ * Corrige a cor de <a> no ChatView
  */
 
 a:focus {

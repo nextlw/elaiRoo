@@ -130,6 +130,21 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			// task. This essentially creates a fresh slate for the new task.
 			await provider.initClineWithTask(message.text, message.images)
 			break
+		case "whatsappTaskFromEvent":
+			// Criar nova tarefa a partir de evento do WhatsApp (@elai command)
+			if (message.text) {
+				const cline = await provider.initClineWithTask(message.text, message.images)
+				// Armazenar metadata do WhatsApp na tarefa
+				if (cline) {
+					cline.whatsappMetadata = {
+						senderPhoneNumber: message.sender_phone_number || "",
+						chatJid: message.chat_jid || "",
+						source: message.source || "whatsapp",
+						originalMessage: message.original_message || "",
+					}
+				}
+			}
+			break
 		case "customInstructions":
 			await provider.updateCustomInstructions(message.text)
 			break
@@ -531,7 +546,11 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				await provider.getMcpHub()?.restartConnection(message.text!, message.source as "global" | "project")
 			} catch (error) {
 				provider.log(
-					`Failed to retry connection for ${message.text}: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`,
+					`Failed to retry connection for ${message.text}: ${JSON.stringify(
+						error,
+						Object.getOwnPropertyNames(error),
+						2,
+					)}`,
 				)
 			}
 			break
@@ -548,7 +567,11 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 					)
 			} catch (error) {
 				provider.log(
-					`Failed to toggle auto-approve for tool ${message.toolName}: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`,
+					`Failed to toggle auto-approve for tool ${message.toolName}: ${JSON.stringify(
+						error,
+						Object.getOwnPropertyNames(error),
+						2,
+					)}`,
 				)
 			}
 			break
@@ -564,8 +587,60 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 					)
 			} catch (error) {
 				provider.log(
-					`Failed to toggle MCP server ${message.serverName}: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`,
+					`Failed to toggle MCP server ${message.serverName}: ${JSON.stringify(
+						error,
+						Object.getOwnPropertyNames(error),
+						2,
+					)}`,
 				)
+			}
+			break
+		}
+		case "callMcpTool": {
+			try {
+				const result = await provider
+					.getMcpHub()
+					?.callTool(
+						message.serverName!,
+						message.toolName!,
+						message.arguments || {},
+						message.source as "global" | "project",
+					)
+
+				// Log de sucesso
+				provider.log(
+					`[WhatsApp MCP] Ferramenta ${message.toolName} executada com sucesso: ${JSON.stringify(result)}`,
+				)
+
+				// Para o WhatsApp, enviar resposta adequada para atualizar interface
+				if (message.serverName === "whatsapp" && result) {
+					// Enviar resposta para a interface atualizar o status
+					provider.postMessageToWebview({
+						type: "whatsappToolResponse",
+						toolName: message.toolName!,
+						result: result,
+						serverName: message.serverName,
+					})
+				}
+			} catch (error) {
+				provider.log(
+					`[WhatsApp MCP] Falha ao executar ferramenta ${message.toolName} no servidor ${message.serverName}: ${JSON.stringify(
+						error,
+						Object.getOwnPropertyNames(error),
+						2,
+					)}`,
+				)
+
+				// Enviar erro para a interface do WhatsApp
+				if (message.serverName === "whatsapp") {
+					provider.postMessageToWebview({
+						type: "whatsappToolResponse",
+						toolName: message.toolName!,
+						result: null,
+						error: error instanceof Error ? error.message : String(error),
+						serverName: message.serverName,
+					})
+				}
 			}
 			break
 		}
@@ -1031,11 +1106,11 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 		case "enhancePrompt":
 			if (message.text) {
 				try {
-					const { apiConfiguration, customSupportPrompts, listApiConfigMeta, enhancementApiConfigId } =
-						await provider.getState()
+					const { apiConfiguration, customSupportPrompts, enhancementApiConfigId } = await provider.getState()
 
 					// Try to get enhancement config first, fall back to current config.
 					let configToUse: ProviderSettings = apiConfiguration
+					const listApiConfigMeta = getGlobalState("listApiConfigMeta") ?? []
 
 					if (enhancementApiConfigId && !!listApiConfigMeta.find(({ id }) => id === enhancementApiConfigId)) {
 						const { name: _, ...providerSettings } = await provider.providerSettingsManager.getProfile({
@@ -1221,7 +1296,11 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 					await provider.activateProviderProfile({ id: message.text })
 				} catch (error) {
 					provider.log(
-						`Error load api configuration by ID: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`,
+						`Error load api configuration by ID: ${JSON.stringify(
+							error,
+							Object.getOwnPropertyNames(error),
+							2,
+						)}`,
 					)
 					vscode.window.showErrorMessage(t("common:errors.load_api_config"))
 				}
@@ -1274,6 +1353,24 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				vscode.window.showErrorMessage(t("common:errors.list_api_config"))
 			}
 			break
+
+		// Search API Configuration messages
+		case "upsertSearchApiConfiguration":
+			if (message.name && message.searchApiConfiguration) {
+				await provider.upsertSearchApiProfile(message.name, message.searchApiConfiguration, message.activate)
+			}
+			break
+		case "deleteSearchApiConfiguration":
+			if (message.name) {
+				await provider.deleteSearchApiProfile(message.name)
+			}
+			break
+		case "activateSearchApiConfiguration":
+			if (message.name) {
+				await provider.activateSearchApiProfile(message.name)
+			}
+			break
+
 		case "updateExperimental": {
 			if (!message.values) {
 				break
@@ -1301,7 +1398,11 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 						)
 				} catch (error) {
 					provider.log(
-						`Failed to update timeout for ${message.serverName}: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`,
+						`Failed to update timeout for ${message.serverName}: ${JSON.stringify(
+							error,
+							Object.getOwnPropertyNames(error),
+							2,
+						)}`,
 					)
 					vscode.window.showErrorMessage(t("common:errors.update_server_timeout"))
 				}

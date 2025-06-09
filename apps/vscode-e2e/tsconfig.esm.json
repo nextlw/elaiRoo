@@ -1,7 +1,9 @@
 {
 	"extends": "@roo-code/config-typescript/base.json",
 	"compilerOptions": {
-		"outDir": "out"
+		"outDir": "out",
+		"typeRoots": ["./node_modules/@types", "./src/types"],
+		"types": ["node", "mocha"]
 	},
 	"include": ["src"],
 	"exclude": ["node_modules"]

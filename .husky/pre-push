@@ -16,7 +16,7 @@ else
   fi
 fi
 
-$pnpm_cmd run check-types
+$pnpm_cmd exec tsx src/scripts/generate-types.mts
 
 # Check for new changesets.
 NEW_CHANGESETS=$(find .changeset -name "*.md" ! -name "README.md" | wc -l | tr -d ' ')

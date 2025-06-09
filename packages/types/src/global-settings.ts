@@ -14,12 +14,21 @@ import { telemetrySettingsSchema } from "./telemetry.js"
 import { modeConfigSchema } from "./mode.js"
 import { customModePromptsSchema, customSupportPromptsSchema } from "./mode.js"
 import { languagesSchema } from "./vscode.js"
+import {
+	SearchApiSettingsMetaSchema,
+	searchApiSettingsSchemaDiscriminated,
+	type SearchApiSettings,
+	type SearchApiSettingsMeta,
+} from "./search-api-settings.js"
 
 /**
  * GlobalSettings
  */
 
 export const globalSettingsSchema = z.object({
+	currentSearchApiConfigName: z.string().optional(),
+	searchApiConfigurations: z.array(SearchApiSettingsMetaSchema).optional(),
+	activeSearchApiSettings: searchApiSettingsSchemaDiscriminated.optional(),
 	currentApiConfigName: z.string().optional(),
 	listApiConfigMeta: z.array(providerSettingsEntrySchema).optional(),
 	pinnedApiConfigs: z.record(z.string(), z.boolean()).optional(),
@@ -107,6 +116,9 @@ export const globalSettingsSchema = z.object({
 export type GlobalSettings = z.infer<typeof globalSettingsSchema>
 
 export const GLOBAL_SETTINGS_KEYS = keysOf<GlobalSettings>()([
+	"currentSearchApiConfigName",
+	"searchApiConfigurations",
+	"activeSearchApiSettings",
 	"currentApiConfigName",
 	"listApiConfigMeta",
 	"pinnedApiConfigs",
@@ -264,6 +276,10 @@ export const GLOBAL_STATE_KEYS = [...GLOBAL_SETTINGS_KEYS, ...PROVIDER_SETTINGS_
 
 export const isGlobalStateKey = (key: string): key is Keys<GlobalState> =>
 	GLOBAL_STATE_KEYS.includes(key as Keys<GlobalState>)
+
+// Reexportar os tipos para que fiquem disponíveis através de @roo-code/types
+// que são consumidos por WebviewMessage.ts
+export type { SearchApiSettings, SearchApiSettingsMeta }
 
 /**
  * Evals

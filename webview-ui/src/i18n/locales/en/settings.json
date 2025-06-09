@@ -31,7 +31,8 @@
 		"prompts": "Prompts",
 		"experimental": "Experimental",
 		"language": "Language",
-		"about": "About Roo Code"
+		"about": "About Roo Code",
+		"search-api": "Search API Configuration"
 	},
 	"prompts": {
 		"description": "Configure support prompts that are used for quick actions like enhancing prompts, explaining code, and fixing issues. These prompts help Roo provide better assistance for common development tasks."
@@ -300,6 +301,41 @@
 			"low": "Low"
 		},
 		"setReasoningLevel": "Enable Reasoning Effort"
+	},
+	"searchApiOptions": {
+		"apiProviderLabel": "API Provider"
+	},
+	"searchApi": {
+		"placeholderDescription": "Select or create a search API configuration profile to manage its settings. Current profile: {{configName}}",
+		"currentSettingsTitle": "Current Profile Settings (JSON)"
+	},
+	"searchProviders": {
+		"jina": {
+			"name": "Jina",
+			"apiKeyLabel": "API Key",
+			"apiKeyDescription": "Enter your Jina API Key."
+		},
+		"google": {
+			"name": "Google Custom Search",
+			"apiKeyLabel": "API Key",
+			"apiKeyDescription": "Enter your Google Custom Search API Key.",
+			"customSearchEngineIdLabel": "Custom Search Engine ID",
+			"customSearchEngineIdDescription": "Enter your Google Custom Search Engine ID (cx)."
+		},
+		"serper": {
+			"name": "Serper",
+			"apiKeyLabel": "API Key",
+			"apiKeyDescription": "Enter your Serper API Key."
+		},
+		"brave": {
+			"name": "Brave Search",
+			"apiKeyLabel": "API Key",
+			"apiKeyDescription": "Enter your Brave Search API Key."
+		},
+		"duckDuckGo": {
+			"name": "DuckDuckGo Fallback",
+			"description": "DuckDuckGo is used as a fallback when other search providers are not configured or fail."
+		}
 	},
 	"browser": {
 		"enable": {

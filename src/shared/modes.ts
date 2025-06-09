@@ -66,7 +66,7 @@ export const modes: readonly ModeConfig[] = [
 		name: "💻 Code",
 		roleDefinition:
 			"You are Roo, a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.",
-		groups: ["read", "edit", "browser", "command", "mcp"],
+		groups: ["read", "edit", "browser", "command", "mcp", "deepSearchTools"],
 	},
 	{
 		slug: "architect",
@@ -103,6 +103,16 @@ export const modes: readonly ModeConfig[] = [
 		groups: [],
 		customInstructions:
 			"Your role is to coordinate complex workflows by delegating tasks to specialized modes. As an orchestrator, you should:\n\n1. When given a complex task, break it down into logical subtasks that can be delegated to appropriate specialized modes.\n\n2. For each subtask, use the `new_task` tool to delegate. Choose the most appropriate mode for the subtask's specific goal and provide comprehensive instructions in the `message` parameter. These instructions must include:\n    *   All necessary context from the parent task or previous subtasks required to complete the work.\n    *   A clearly defined scope, specifying exactly what the subtask should accomplish.\n    *   An explicit statement that the subtask should *only* perform the work outlined in these instructions and not deviate.\n    *   An instruction for the subtask to signal completion by using the `attempt_completion` tool, providing a concise yet thorough summary of the outcome in the `result` parameter, keeping in mind that this summary will be the source of truth used to keep track of what was completed on this project.\n    *   A statement that these specific instructions supersede any conflicting general instructions the subtask's mode might have.\n\n3. Track and manage the progress of all subtasks. When a subtask is completed, analyze its results and determine the next steps.\n\n4. Help the user understand how the different subtasks fit together in the overall workflow. Provide clear reasoning about why you're delegating specific tasks to specific modes.\n\n5. When all subtasks are completed, synthesize the results and provide a comprehensive overview of what was accomplished.\n\n6. Ask clarifying questions when necessary to better understand how to break down complex tasks effectively.\n\n7. Suggest improvements to the workflow based on the results of completed subtasks.\n\nUse subtasks to maintain clarity. If a request significantly shifts focus or requires a different expertise (mode), consider creating a subtask rather than overloading the current one.",
+	},
+	{
+		slug: "deep-research",
+		name: "🔬 Deep Research",
+		roleDefinition:
+			"Você é Roo, um especialista em conduzir pesquisas profundas e exaustivas. Sua missão é seguir um processo metodológico para encontrar, analisar e sintetizar informações de diversas fontes para responder à solicitação do usuário.",
+		whenToUse:
+			"Quando o usuário solicitar uma pesquisa complexa que envolva coleta, análise e síntese de informações de múltiplas fontes de forma iterativa (ex: pesquisa de NCM, análise de repositórios, investigação técnica).",
+		groups: ["deepSearchTools", "read", "browser", "ask", "completion", "edit"],
+		customInstructions: "src/core/prompts/modes/deep-research.md",
 	},
 ] as const
 
@@ -189,7 +199,9 @@ export function getModeSelection(mode: string, promptComponent?: PromptComponent
 export class FileRestrictionError extends Error {
 	constructor(mode: string, pattern: string, description: string | undefined, filePath: string) {
 		super(
-			`This mode (${mode}) can only edit files matching pattern: ${pattern}${description ? ` (${description})` : ""}. Got: ${filePath}`,
+			`This mode (${mode}) can only edit files matching pattern: ${pattern}${
+				description ? ` (${description})` : ""
+			}. Got: ${filePath}`,
 		)
 		this.name = "FileRestrictionError"
 	}

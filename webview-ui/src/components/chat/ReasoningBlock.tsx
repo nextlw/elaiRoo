@@ -71,7 +71,7 @@ export const ReasoningBlock = ({ content, elapsed, isCollapsed = false, onToggle
 	}, [thought, prevThought])
 
 	return (
-		<div className="bg-vscode-editor-background border border-vscode-border rounded-xs overflow-hidden">
+		<div className="bg-vscode-editor-background border border-vscode-border rounded-lg overflow-hidden">
 			<div
 				className="flex items-center justify-between gap-1 px-3 py-2 cursor-pointer text-muted-foreground"
 				onClick={onToggleCollapse}>

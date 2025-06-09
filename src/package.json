@@ -330,6 +330,12 @@
 					"default": "",
 					"description": "%settings.customStoragePath.description%"
 				},
+				"roo-cline.searchApiProfiles": {
+					"type": "object",
+					"description": "Stores the search API profiles for Roo Cline.",
+					"default": {},
+					"scope": "application"
+				},
 				"roo-cline.rooCodeCloudEnabled": {
 					"type": "boolean",
 					"default": false,
@@ -409,6 +415,7 @@
 		"simple-git": "^3.27.0",
 		"sound-play": "^1.1.0",
 		"stream-json": "^1.8.0",
+		"spawn-rx": "^5.1.2",
 		"string-similarity": "^4.0.4",
 		"strip-ansi": "^7.1.0",
 		"strip-bom": "^5.0.0",

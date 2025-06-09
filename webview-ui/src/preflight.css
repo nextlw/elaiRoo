@@ -1,7 +1,7 @@
 /*
-  1. Prevent padding and border from affecting element width. (https://github.com/mozdevs/cssremedy/issues/4)
-  2. Remove default margins and padding
-  3. Reset all borders.
+  1. Impede que o preenchimento e a borda afetem a largura do elemento. (https://github.com/mozdevs/cssremedy/issues/4)
+  2. Remove margens e preenchimentos padrão
+  3. Redefine todas as bordas.
 */
 
 *,
@@ -16,13 +16,13 @@
 }
 
 /*
-  1. Use a consistent sensible line-height in all browsers.
-  2. Prevent adjustments of font size after orientation changes in iOS.
-  3. Use a more readable tab size.
-  4. Use the user's configured `sans` font-family by default.
-  5. Use the user's configured `sans` font-feature-settings by default.
-  6. Use the user's configured `sans` font-variation-settings by default.
-  7. Disable tap highlights on iOS.
+  1. Usa uma altura de linha consistente e sensível em todos os navegadores.
+  2. Impede ajustes no tamanho da fonte após mudanças de orientação no iOS.
+  3. Usa um tamanho de tabulação mais legível.
+  4. Usa a família de fontes `sans` configurada pelo usuário por padrão.
+  5. Usa as configurações de recursos de fonte `sans` configuradas pelo usuário por padrão.
+  6. Usa as configurações de variação de fonte `sans` configuradas pelo usuário por padrão.
+  7. Desativa os destaques de toque no iOS.
 */
 
 html,
@@ -46,7 +46,7 @@ html,
 }
 
 /*
-  Inherit line-height from `html` so users can set them as a class directly on the `html` element.
+  Herda a altura da linha de `html` para que os usuários possam defini-la como uma classe diretamente no elemento `html`.
 */
 
 body {
@@ -54,9 +54,9 @@ body {
 }
 
 /*
-  1. Add the correct height in Firefox.
-  2. Correct the inheritance of border color in Firefox. (https://bugzilla.mozilla.org/show_bug.cgi?id=190655)
-  3. Reset the default border style to a 1px solid border.
+  1. Adiciona a altura correta no Firefox.
+  2. Corrige a herança da cor da borda no Firefox. (https://bugzilla.mozilla.org/show_bug.cgi?id=190655)
+  3. Redefine o estilo de borda padrão para uma borda sólida de 1px.
 */
 
 hr {
@@ -66,7 +66,7 @@ hr {
 }
 
 /*
-  Add the correct text decoration in Chrome, Edge, and Safari.
+  Adiciona a decoração de texto correta no Chrome, Edge e Safari.
 */
 
 abbr:where([title]) {
@@ -75,7 +75,7 @@ abbr:where([title]) {
 }
 
 /*
-  Remove the default font size and weight for headings.
+  Remove o tamanho e o peso da fonte padrão para cabeçalhos.
 */
 
 /* h1,
@@ -89,7 +89,7 @@ h6 {
 } */
 
 /*
-  Reset links to optimize for opt-in styling instead of opt-out.
+  Redefine os links para otimizar para estilização opt-in em vez de opt-out.
 */
 
 a {
@@ -99,7 +99,7 @@ a {
 }
 
 /*
-  Add the correct font weight in Edge and Safari.
+  Adiciona o peso de fonte correto no Edge e Safari.
 */
 
 b,
@@ -108,10 +108,10 @@ strong {
 }
 
 /*
-  1. Use the user's configured `mono` font-family by default.
-  2. Use the user's configured `mono` font-feature-settings by default.
-  3. Use the user's configured `mono` font-variation-settings by default.
-  4. Correct the odd `em` font sizing in all browsers.
+  1. Usa a família de fontes `mono` configurada pelo usuário por padrão.
+  2. Usa as configurações de recursos de fonte `mono` configuradas pelo usuário por padrão.
+  3. Usa as configurações de variação de fonte `mono` configuradas pelo usuário por padrão.
+  4. Corrige o dimensionamento ímpar da fonte `em` em todos os navegadores.
 */
 
 code,
@@ -135,7 +135,7 @@ pre {
 }
 
 /*
-  Add the correct font size in all browsers.
+  Adiciona o tamanho de fonte correto em todos os navegadores.
 */
 
 small {
@@ -143,7 +143,7 @@ small {
 }
 
 /*
-  Prevent `sub` and `sup` elements from affecting the line height in all browsers.
+  Impede que os elementos `sub` e `sup` afetem a altura da linha em todos os navegadores.
 */
 
 sub,
@@ -163,9 +163,9 @@ sup {
 }
 
 /*
-  1. Remove text indentation from table contents in Chrome and Safari. (https://bugs.chromium.org/p/chromium/issues/detail?id=999088, https://bugs.webkit.org/show_bug.cgi?id=201297)
-  2. Correct table border color inheritance in all Chrome and Safari. (https://bugs.chromium.org/p/chromium/issues/detail?id=935729, https://bugs.webkit.org/show_bug.cgi?id=195016)
-  3. Remove gaps between table borders by default.
+  1. Remove a indentação do texto do conteúdo da tabela no Chrome e Safari. (https://bugs.chromium.org/p/chromium/issues/detail?id=999088, https://bugs.webkit.org/show_bug.cgi?id=201297)
+  2. Corrige a herança da cor da borda da tabela no Chrome e Safari. (https://bugs.chromium.org/p/chromium/issues/detail?id=935729, https://bugs.webkit.org/show_bug.cgi?id=195016)
+  3. Remove as lacunas entre as bordas da tabela por padrão.
 */
 
 table {
@@ -175,7 +175,7 @@ table {
 }
 
 /*
-  Use the modern Firefox focus style for all focusable elements.
+  Usa o estilo de foco moderno do Firefox para todos os elementos focáveis.
 */
 
 :-moz-focusring {
@@ -183,7 +183,7 @@ table {
 }
 
 /*
-  Add the correct vertical alignment in Chrome and Firefox.
+  Adiciona o alinhamento vertical correto no Chrome e Firefox.
 */
 
 progress {
@@ -191,7 +191,7 @@ progress {
 }
 
 /*
-  Add the correct display in Chrome and Safari.
+  Adiciona a exibição correta no Chrome e Safari.
 */
 
 summary {
@@ -199,7 +199,7 @@ summary {
 }
 
 /*
-  Make lists unstyled by default.
+  Torna as listas não estilizadas por padrão.
 */
 
 ol,
@@ -209,9 +209,9 @@ menu {
 }
 
 /*
-  1. Make replaced elements `display: block` by default. (https://github.com/mozdevs/cssremedy/issues/14)
-  2. Add `vertical-align: middle` to align replaced elements more sensibly by default. (https://github.com/jensimmons/cssremedy/issues/14#issuecomment-634934210)
-      This can trigger a poorly considered lint error in some tools but is included by design.
+  1. Torna os elementos substituídos `display: block` por padrão. (https://github.com/mozdevs/cssremedy/issues/14)
+  2. Adiciona `vertical-align: middle` para alinhar os elementos substituídos de forma mais sensata por padrão. (https://github.com/jensimmons/cssremedy/issues/14#issuecomment-634934210)
+      Isso pode acionar um erro de lint mal considerado em algumas ferramentas, mas está incluído por design.
 */
 
 img,
@@ -227,7 +227,7 @@ object {
 }
 
 /*
-  Constrain images and videos to the parent width and preserve their intrinsic aspect ratio. (https://github.com/mozdevs/cssremedy/issues/14)
+  Restringe imagens e vídeos à largura do pai e preserva sua proporção intrínseca. (https://github.com/mozdevs/cssremedy/issues/14)
 */
 
 img,
@@ -237,10 +237,10 @@ video {
 }
 
 /*
-  1. Inherit font styles in all browsers.
-  2. Remove border radius in all browsers.
-  3. Remove background color in all browsers.
-  4. Ensure consistent opacity for disabled states in all browsers.
+  1. Herda estilos de fonte em todos os navegadores.
+  2. Remove o raio da borda em todos os navegadores.
+  3. Remove a cor de fundo em todos os navegadores.
+  4. Garante opacidade consistente para estados desabilitados em todos os navegadores.
 */
 
 button,
@@ -254,13 +254,13 @@ textarea,
 	font-variation-settings: inherit; /* 1 */
 	letter-spacing: inherit; /* 1 */
 	color: inherit; /* 1 */
-	border-radius: 0; /* 2 */
+	/* border-radius: 0; 2 */
 	background-color: transparent; /* 3 */
 	opacity: 1; /* 4 */
 }
 
 /*
-  Restore default font weight.
+  Restaura o peso da fonte padrão.
 */
 
 :where(select:is([multiple], [size])) optgroup {
@@ -268,15 +268,15 @@ textarea,
 }
 
 /*
-  Restore indentation.
+  Restaura a indentação.
 */
 
 :where(select:is([multiple], [size])) optgroup option {
-	padding-inline-start: 20px;
+	padding-inline-start: 24px;
 }
 
 /*
-  Restore space after button.
+  Restaura o espaço após o botão.
 */
 
 ::file-selector-button {
@@ -284,8 +284,8 @@ textarea,
 }
 
 /*
-  1. Reset the default placeholder opacity in Firefox. (https://github.com/tailwindlabs/tailwindcss/issues/3300)
-  2. Set the default placeholder color to a semi-transparent version of the current text color.
+  1. Redefine a opacidade padrão do placeholder no Firefox. (https://github.com/tailwindlabs/tailwindcss/issues/3300)
+  2. Define a cor padrão do placeholder para uma versão semitransparente da cor do texto atual.
 */
 
 ::placeholder {
@@ -294,7 +294,7 @@ textarea,
 }
 
 /*
-  Prevent resizing textareas horizontally by default.
+  Impede o redimensionamento horizontal de textareas por padrão.
 */
 
 textarea {
@@ -302,7 +302,7 @@ textarea {
 }
 
 /*
-  Remove the inner padding in Chrome and Safari on macOS.
+  Remove o preenchimento interno no Chrome e Safari no macOS.
 */
 
 ::-webkit-search-decoration {
@@ -310,8 +310,8 @@ textarea {
 }
 
 /*
-  1. Ensure date/time inputs have the same height when empty in iOS Safari.
-  2. Ensure text alignment can be changed on date/time inputs in iOS Safari.
+  1. Garante que as entradas de data/hora tenham a mesma altura quando vazias no iOS Safari.
+  2. Garante que o alinhamento do texto possa ser alterado nas entradas de data/hora no iOS Safari.
 */
 
 ::-webkit-date-and-time-value {
@@ -320,7 +320,7 @@ textarea {
 }
 
 /*
-  Prevent height from changing on date/time inputs in macOS Safari when the input is set to `display: block`.
+  Impede que a altura mude nas entradas de data/hora no macOS Safari quando a entrada é definida como `display: block`.
 */
 
 ::-webkit-datetime-edit {
@@ -328,7 +328,7 @@ textarea {
 }
 
 /*
-  Remove excess padding from pseudo-elements in date/time inputs to ensure consistent height across browsers.
+  Remove o preenchimento excessivo de pseudo-elementos em entradas de data/hora para garantir altura consistente em todos os navegadores.
 */
 
 ::-webkit-datetime-edit-fields-wrapper {
@@ -348,7 +348,7 @@ textarea {
 }
 
 /*
-  Remove the additional `:invalid` styles in Firefox. (https://github.com/mozilla/gecko-dev/blob/2f9eacd9d3d995c937b4251a5557d95d494c9be1/layout/style/res/forms.css#L728-L737)
+  Remove os estilos `:invalid` adicionais no Firefox. (https://github.com/mozilla/gecko-dev/blob/2f9eacd9d3d995c937b4251a5557d95d494c9be1/layout/style/res/forms.css#L728-L737)
 */
 
 :-moz-ui-invalid {
@@ -356,7 +356,7 @@ textarea {
 }
 
 /*
-  Correct the inability to style the border radius in iOS Safari.
+  Corrige a incapacidade de estilizar o raio da borda no iOS Safari.
 */
 
 button,
@@ -366,7 +366,7 @@ input:where([type="button"], [type="reset"], [type="submit"]),
 }
 
 /*
-  Correct the cursor style of increment and decrement buttons in Safari.
+  Corrige o estilo do cursor dos botões de incremento e decremento no Safari.
 */
 
 ::-webkit-inner-spin-button,
@@ -375,7 +375,7 @@ input:where([type="button"], [type="reset"], [type="submit"]),
 }
 
 /*
-  Make elements with the HTML hidden attribute stay hidden by default.
+  Faz com que os elementos com o atributo HTML hidden permaneçam ocultos por padrão.
 */
 
 [hidden]:where(:not([hidden="until-found"])) {
