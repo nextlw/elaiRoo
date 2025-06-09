@@ -22,5 +22,9 @@
 		"typeRoots": ["./node_modules/@types", "./types"]
 	},
 	"include": ["**/*", "types"],
-	"exclude": ["node_modules"]
+	"exclude": ["node_modules"],
+	"references": [
+		// Nova seção adicionada aqui!
+		{ "path": "../packages/telemetry" }
+	]
 }
