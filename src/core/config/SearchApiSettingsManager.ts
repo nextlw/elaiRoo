@@ -8,8 +8,7 @@ import {
 	SearchApiProviderName,
 } from "../../schemas"
 import { modes } from "../../shared/modes"
-import { telemetryService } from "../../services/telemetry/TelemetryService"
-
+import { TelemetryService } from "../../../packages/telemetry/src/TelemetryService"
 // Schema para SearchApiSettings com um ID opcional, usado internamente
 // Este schema garante que qualquer configuração armazenada já passou pela validação discriminada
 // e, portanto, inclui 'searchApiProviderName', além de um 'id' opcional.
@@ -150,14 +149,17 @@ export class SearchApiSettingsManager {
 					"[SearchApiSettingsManager] Failed to parse SearchApiProfiles from secrets, resetting to default:",
 					parsed.error,
 				)
-				telemetryService.captureSchemaValidationError({ schemaName: "SearchApiProfiles", error: parsed.error })
+				TelemetryService.instance.captureSchemaValidationError({
+					schemaName: "SearchApiProfiles",
+					error: parsed.error,
+				})
 				// Retorna uma cópia profunda do default em caso de erro de parse
 				return JSON.parse(JSON.stringify(this.defaultSearchApiProfiles))
 			}
 		} catch (error) {
 			console.error("Error loading SearchApiProfiles, resetting to default:", error)
 			if (error instanceof ZodError) {
-				telemetryService.captureSchemaValidationError({ schemaName: "SearchApiProfiles", error })
+				TelemetryService.instance.captureSchemaValidationError({ schemaName: "SearchApiProfiles", error })
 			} else {
 				// telemetryService.captureException(error as Error); // Método não existe
 				console.error("Unhandled error during SearchApiProfiles load:", error)
@@ -184,7 +186,7 @@ export class SearchApiSettingsManager {
 		} catch (error) {
 			console.error("Failed to save SearchApiProfiles to VS Code settings:", error)
 			if (error instanceof ZodError) {
-				telemetryService.captureSchemaValidationError({ schemaName: "SearchApiProfilesOnSave", error })
+				TelemetryService.instance.captureSchemaValidationError({ schemaName: "SearchApiProfilesOnSave", error })
 			} else {
 				console.error("Unhandled error during SearchApiProfiles save to VS Code settings:", error)
 			}
@@ -209,7 +211,7 @@ export class SearchApiSettingsManager {
 			} catch (error) {
 				console.error(`Failed to validate or save profile '${name}':`, error)
 				if (error instanceof ZodError) {
-					telemetryService.captureSchemaValidationError({
+					TelemetryService.instance.captureSchemaValidationError({
 						schemaName: "SearchApiSettingsDiscriminatedOnSave",
 						error,
 					})
@@ -488,9 +490,11 @@ export class SearchApiSettingsManager {
 			} catch (error) {
 				console.error("Failed to import search API profiles due to validation error:", error)
 				if (error instanceof ZodError) {
-					telemetryService.captureSchemaValidationError({ schemaName: "SearchApiProfilesOnImport", error })
+					TelemetryService.instance.captureSchemaValidationError({
+						schemaName: "SearchApiProfilesOnImport",
+						error,
+					})
 				} else {
-					// telemetryService.captureException(error as Error); // Método não existe
 					console.error("Unhandled error during SearchApiProfiles import:", error)
 				}
 				throw new Error(
