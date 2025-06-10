@@ -1,8 +1,11 @@
 {
 	"extends": "@roo-code/config-typescript/vscode-library.json",
 	"compilerOptions": {
-		// Adicionamos compilerOptions aqui para "composite"
-		"composite": true
+		"composite": true,
+		"declaration": true,
+		"incremental": true, // Forçando como true
+		"outDir": "dist",
+		"rootDir": "src"
 	},
 	"include": ["src"],
 	"exclude": ["node_modules"]

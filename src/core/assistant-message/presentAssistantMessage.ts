@@ -93,7 +93,7 @@ export async function presentAssistantMessage(cline: Task) {
 				// parsing is only for opening tags).
 				// Tthis is done with the xml parsing below now, but keeping
 				// here for reference.
-				// content = content.replace(/<\/?t(?:h(?:i(?:n(?:k(?:i(?:n(?:g)?)?)?$/, "")
+				// content = content.replace(/<\/?t(?:h(?:i(?:n(?:k(?:i(?:n(?:g)?)?)?)?$/, "")
 				//
 				// Remove all instances of <thinking> (with optional line break
 				// after) and </thinking> (with optional line break before).
@@ -205,7 +205,7 @@ export async function presentAssistantMessage(cline: Task) {
 					case "get_repository_file_content":
 						return `[${block.name} for path '${block.params.path ?? "N/A"}']`
 					case "process_text_content":
-						return `[${block.name} for operation '${block.params.operations ?? "N/A"}']`
+						return `[${block.name} for '${block.params.query ?? "N/A"}']`
 					default:
 						const exhaustiveCheck: never = block.name
 						return `[${block.name}]`
