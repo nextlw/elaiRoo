@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      chai:
+        specifier: ^5.2.0
+        version: 5.2.0
       csv-parse:
         specifier: ^5.6.0
         version: 5.6.0
@@ -1137,6 +1140,9 @@ importers:
       '@testing-library/user-event':
         specifier: ^14.6.1
         version: 14.6.1(@testing-library/dom@10.4.0)
+      '@types/chai':
+        specifier: ^5.2.2
+        version: 5.2.2
       '@types/jest':
         specifier: ^29.0.0
         version: 29.5.14
@@ -1161,6 +1167,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^4.3.4
         version: 4.4.1(vite@6.3.5(@types/node@18.19.100)(jiti@2.4.2)(lightningcss@1.30.1)(tsx@4.19.4)(yaml@2.8.0))
+      chai:
+        specifier: ^5.2.0
+        version: 5.2.0
       identity-obj-proxy:
         specifier: ^3.0.0
         version: 3.0.0

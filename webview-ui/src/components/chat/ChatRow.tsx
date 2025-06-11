@@ -26,6 +26,7 @@ import { ReasoningBlock } from "./ReasoningBlock"
 import Thumbnails from "../common/Thumbnails"
 import McpResourceRow from "../mcp/McpResourceRow"
 import McpToolRow from "../mcp/McpToolRow"
+import { WebSearchResultsBlock } from "./WebSearchResultsBlock"
 
 import { Mention } from "./Mention"
 import { CheckpointSaved } from "./checkpoints/CheckpointSaved"
@@ -387,6 +388,26 @@ export const ChatRowContent = ({
 						/>
 					</>
 				)
+			case "web_search": {
+				let results: Array<{ url: string; title: string; snippet: string }> = []
+				try {
+					if (tool.content) {
+						results = JSON.parse(tool.content)
+					}
+				} catch (e) {
+					console.error("Failed to parse web search results", e)
+				}
+
+				return (
+					<>
+						<div style={headerStyle}>
+							{toolIcon("search")}
+							<span style={{ fontWeight: "bold" }}>{t("chat:web_search.resultsTitle")}</span>
+						</div>
+						<WebSearchResultsBlock results={results} />
+					</>
+				)
+			}
 			case "codebaseSearch": {
 				return (
 					<div style={headerStyle}>
@@ -654,6 +675,7 @@ export const ChatRowContent = ({
 								marginTop: "8px",
 								overflow: "hidden",
 								marginBottom: "8px",
+								borderRadius: "0px",
 							}}>
 							<div
 								style={{
@@ -689,6 +711,7 @@ export const ChatRowContent = ({
 								marginTop: "8px",
 								overflow: "hidden",
 								marginBottom: "8px",
+								borderRadius: "0px",
 							}}>
 							<div
 								style={{
@@ -1165,10 +1188,10 @@ export const ChatRowContent = ({
 											/>
 										</div>
 										{useMcpServer.arguments && useMcpServer.arguments !== "{}" && (
-											<div style={{ marginTop: "8px" }}>
+											<div style={{ margin: "8px" }}>
 												<div
 													style={{
-														marginBottom: "4px",
+														marginBottom: "16px",
 														opacity: 0.8,
 														fontSize: "12px",
 														textTransform: "uppercase",

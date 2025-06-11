@@ -78,6 +78,7 @@ export interface ExtensionMessage {
 		| "currentSearchApiConfigName"
 		| "currentSearchApiConfigName"
 		| "whatsappToolResponse"
+		| "web_search"
 
 	text?: string
 	listSearchApiConfig?: ProviderSettingsEntry[]
@@ -267,6 +268,19 @@ export interface ClineSayTool {
 		| "finishTask"
 		| "searchAndReplace"
 		| "insertContent"
+		| "web_search"
+		| "extractPageContent"
+		| "extractDocumentContent"
+		| "searchStructuredData"
+		| "searchCodeRepositories"
+		| "getRepositoryFileContent"
+		| "processTextContent"
+		| "executeCommand"
+		| "useMcpTool"
+		| "accessMcpResource"
+		| "browserAction"
+		| "whatsappToolResponse"
+
 	path?: string
 	diff?: string
 	content?: string

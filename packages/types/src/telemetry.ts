@@ -33,6 +33,7 @@ export enum TelemetryEventName {
 
 	CONTEXT_CONDENSED = "Context Condensed",
 	SLIDING_WINDOW_TRUNCATION = "Sliding Window Truncation",
+	WEB_SEARCH = "Web Search",
 
 	CODE_ACTION_USED = "Code Action Used",
 	PROMPT_ENHANCED = "Prompt Enhanced",
@@ -112,6 +113,7 @@ export const rooCodeTelemetryEventSchema = z.discriminatedUnion("type", [
 			TelemetryEventName.CONSECUTIVE_MISTAKE_ERROR,
 			TelemetryEventName.CONTEXT_CONDENSED,
 			TelemetryEventName.SLIDING_WINDOW_TRUNCATION,
+			TelemetryEventName.WEB_SEARCH,
 		]),
 		properties: telemetryPropertiesSchema,
 	}),

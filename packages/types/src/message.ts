@@ -17,6 +17,7 @@ export const clineAsks = [
 	"browser_action_launch",
 	"use_mcp_server",
 	"auto_approval_max_req_reached",
+	"web_search",
 ] as const
 
 export const clineAskSchema = z.enum(clineAsks)
@@ -52,6 +53,8 @@ export const clineSays = [
 	"condense_context",
 	"condense_context_error",
 	"codebase_search_result",
+	"web_search_result",
+	"web_search",
 ] as const
 
 export const clineSaySchema = z.enum(clineSays)
@@ -83,6 +86,30 @@ export const contextCondenseSchema = z.object({
 export type ContextCondense = z.infer<typeof contextCondenseSchema>
 
 /**
+ * WebSearchResult
+ */
+
+export const webSearchResultSchema = z.object({
+	url: z.string(),
+	title: z.string(),
+	snippet: z.string(),
+	score: z.number().optional(),
+	boosts: z.record(z.string(), z.number()).optional(),
+})
+
+export type WebSearchResult = z.infer<typeof webSearchResultSchema>
+
+/**
+ * web_search
+ */
+
+export const webSearchSchema = z.object({
+	results: z.array(webSearchResultSchema),
+})
+
+export type web_search = z.infer<typeof webSearchSchema>
+
+/**
  * ClineMessage
  */
 
@@ -99,6 +126,7 @@ export const clineMessageSchema = z.object({
 	checkpoint: z.record(z.string(), z.unknown()).optional(),
 	progressStatus: toolProgressStatusSchema.optional(),
 	contextCondense: contextCondenseSchema.optional(),
+	webSearchResults: webSearchSchema.optional(),
 })
 
 export type ClineMessage = z.infer<typeof clineMessageSchema>

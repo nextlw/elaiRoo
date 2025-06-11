@@ -50,6 +50,7 @@ export const commandIds = [
 
 	"focusInput",
 	"acceptInput",
+	"web_search",
 ] as const
 
 export type CommandId = (typeof commandIds)[number]
