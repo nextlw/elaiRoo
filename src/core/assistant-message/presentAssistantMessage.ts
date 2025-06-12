@@ -25,6 +25,9 @@ import { switchModeTool } from "../tools/switchModeTool"
 import { attemptCompletionTool } from "../tools/attemptCompletionTool"
 import { newTaskTool } from "../tools/newTaskTool"
 
+// Deep Search Tools
+import { webSearchTool } from "../tools/webSearchTool"
+
 import { checkpointSave } from "../checkpoints"
 
 import { formatResponse } from "../prompts/responses"
@@ -481,6 +484,26 @@ export async function presentAssistantMessage(cline: Task) {
 						removeClosingTag,
 						toolDescription,
 						askFinishSubTaskApproval,
+					)
+					break
+				case "web_search":
+					// Debug logging before web_search execution
+					console.log(`[DEBUG] web_search about to execute:`)
+					console.log(`[DEBUG] block.name: ${block.name}`)
+					console.log(`[DEBUG] block.params:`, JSON.stringify(block.params, null, 2))
+					console.log(`[DEBUG] block.partial: ${block.partial}`)
+					console.log(`[DEBUG] Full block:`, JSON.stringify(block, null, 2))
+
+					await webSearchTool(cline, block, { askApproval, pushToolResult, handleError })
+					break
+				case "extract_page_content":
+				case "extract_document_content":
+				case "search_structured_data":
+				case "search_code_repositories":
+				case "get_repository_file_content":
+				case "process_text_content":
+					pushToolResult(
+						`Ferramenta ${block.name} ainda não está totalmente implementada no sistema de execução. Use outras ferramentas disponíveis.`,
 					)
 					break
 			}

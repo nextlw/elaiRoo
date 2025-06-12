@@ -279,5 +279,11 @@
 		"deny": {
 			"title": "Negar tudo"
 		}
+	},
+	"web_search": {
+		"resultsTitle": "Resultados da busca na web",
+		"deepResearchTitle": "Busca Profunda com Deep Research",
+		"deepResearchResults": "Resultados da Busca Profunda",
+		"toggleDetails": "Alternar detalhes técnicos"
 	}
 }

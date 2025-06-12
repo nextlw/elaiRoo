@@ -5,16 +5,30 @@ export function getWebSearchDescription(args: ToolArgs): string {
 	return `## web_search
 Realiza uma busca na web usando um motor de busca. Retorna uma lista de resultados, cada um contendo título, link e um breve snippet. Pode usar APIs de busca específicas (como Jina, Serper, Brave) se configuradas pelo usuário e se a lógica da ferramenta suportar, ou recorrer a uma busca genérica em motores como DuckDuckGo/Google.
 
-Parameters:
-- query: (required): The search term or question to be used in the search engine API (ex: "Qual a capital da França?") ${args.cwd}.
-- engine?: (optional): The preferred search engine (ex: "google", "duckduckgo", "brave", "jina", "serper"). If omitted or not configured/supported by the tool, a fallback (DuckDuckGo) will be used.
-- num_results?: (optional, default: 5, according to the tool's logic): The maximum number of results to be returned.
+⚠️ MANDATORY XML FORMAT - EVERY PARAMETER MUST BE IN XML TAGS:
 
-Usage:
 <web_search>
-  <query>Qual a capital da França?</query>
-  <engine>jina</engine>
-  <num_results>3</num_results>
+<query>your search terms here</query>
+<engine>jina</engine>
+<num_results>10</num_results>
+</web_search>
+
+Parameters:
+- query: (REQUIRED) Search terms - MUST be inside <query></query> tags
+- engine: (optional) Search engine - MUST be inside <engine></engine> tags
+- num_results: (optional) Number of results - MUST be inside <num_results></num_results> tags
+
+🚫 WRONG - This will cause "query parameter undefined" error:
+<web_search>
+comunicação SSE     ← Missing <query> tags
+jina               ← Missing <engine> tags
+</web_search>
+
+✅ CORRECT - Each parameter has its own XML tags:
+<web_search>
+<query>comunicação SSE Server-Sent Events</query>
+<engine>jina</engine>
+<num_results>15</num_results>
 </web_search>
 
 Guidelines for the model's behavior mode when using web_search:

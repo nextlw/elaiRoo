@@ -15,6 +15,22 @@ Tool uses are formatted using XML-style tags. The tool name itself becomes the X
 ...
 </actual_tool_name>
 
+🚨 CRITICAL XML RULE: Every parameter value MUST be inside proper XML tags. DO NOT put raw text directly inside tool tags.
+
+❌ WRONG (causes "parameter undefined" errors):
+<web_search>
+search terms without tags    ← This will fail
+jina                        ← This will fail
+<num_results>10</num_results>
+</web_search>
+
+✅ CORRECT (each parameter has its own tags):
+<web_search>
+<query>search terms without tags</query>
+<engine>jina</engine>
+<num_results>10</num_results>
+</web_search>
+
 For example, to use the new_task tool:
 
 <new_task>

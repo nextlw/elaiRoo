@@ -39,17 +39,32 @@ export class SearchApiSettingsManager {
 	private readonly defaultConfigId = this.generateId()
 
 	private readonly defaultModeSearchApiConfigs: Record<string, string> = Object.fromEntries(
-		modes.map((mode) => [mode.slug, this.defaultConfigId]),
+		modes.map((mode) => [mode.slug, this.defaultConfigId]), // This will be the Jina config ID
 	)
 
 	private readonly defaultSearchApiProfiles: SearchApiProfiles = {
-		currentSearchApiConfigName: "default",
+		currentSearchApiConfigName: "jina",
 		searchApiConfigs: {
-			default: {
+			jina: {
 				id: this.defaultConfigId,
-				searchApiProviderName: "duckduckgo_fallback", // Provider padrão
-				isEnabled: true, // Herdado de baseSearchApiSettingsSchema
-			} as SearchApiSettingsWithId, // Cast para garantir que o default seja válido
+				searchApiProviderName: "jina",
+				isEnabled: true,
+				apiKey: "jina_cf9ea209bc9c4304acdb46536a8de134inoM3wimxNP77Cu0CegxfHUeC0Dp",
+				searchEndpoint: "https://s.jina.ai/search",
+				enableReranking: true,
+				rerankModel: "jina-reranker-v2-base-multilingual",
+				rerankEndpoint: "https://s.jina.ai/rerank",
+				enableResultEmbeddings: true,
+				embeddingModel: "jina-embeddings-v3",
+				embeddingEndpoint: "https://s.jina.ai/embed",
+				embeddingTaskForResult: "retrieval.passage",
+				embeddingDimensions: 1024,
+			} as SearchApiSettingsWithId,
+			duckduckgo_fallback: {
+				id: this.generateId(),
+				searchApiProviderName: "duckduckgo_fallback",
+				isEnabled: true,
+			} as SearchApiSettingsWithId,
 		},
 		modeSearchApiConfigs: this.defaultModeSearchApiConfigs,
 	}
@@ -132,10 +147,22 @@ export class SearchApiSettingsManager {
 			const config = vscode.workspace.getConfiguration("roo-cline")
 			// Mudança: obter diretamente como objeto, não como string
 			const content = config.get<SearchApiProfiles>("searchApiProfiles")
+
+			console.log("[SearchApiSettingsManager] Raw content from config:", JSON.stringify(content, null, 2))
+			const jinaConfig = this.defaultSearchApiProfiles.searchApiConfigs.jina
+			console.log(
+				"[SearchApiSettingsManager] Expected Jina config should have apiKey:",
+				jinaConfig && "apiKey" in jinaConfig && jinaConfig.apiKey ? "YES" : "NO",
+			)
+
 			if (!content) {
-				// Retorna uma cópia profunda do default para evitar mutações acidentais
-				return JSON.parse(JSON.stringify(this.defaultSearchApiProfiles))
+				console.log("[SearchApiSettingsManager] No content found, using default profiles")
+				// Salva o padrão imediatamente para garantir que ele esteja presente
+				const defaultProfiles = JSON.parse(JSON.stringify(this.defaultSearchApiProfiles))
+				await this.saveProfilesInternal(defaultProfiles)
+				return defaultProfiles
 			}
+
 			// Usar safeParse para lidar com dados potencialmente malformados
 			const parsed = searchApiProfilesSchema.safeParse(content)
 			if (parsed.success) {
@@ -146,15 +173,18 @@ export class SearchApiSettingsManager {
 				return parsed.data
 			} else {
 				console.error(
-					"[SearchApiSettingsManager] Failed to parse SearchApiProfiles from secrets, resetting to default:",
+					"[SearchApiSettingsManager] Failed to parse SearchApiProfiles from config, resetting to default:",
 					parsed.error,
 				)
+				console.error("[SearchApiSettingsManager] Invalid content was:", JSON.stringify(content, null, 2))
 				TelemetryService.instance.captureSchemaValidationError({
 					schemaName: "SearchApiProfiles",
 					error: parsed.error,
 				})
-				// Retorna uma cópia profunda do default em caso de erro de parse
-				return JSON.parse(JSON.stringify(this.defaultSearchApiProfiles))
+				// Salva o padrão e retorna uma cópia profunda
+				const defaultProfiles = JSON.parse(JSON.stringify(this.defaultSearchApiProfiles))
+				await this.saveProfilesInternal(defaultProfiles)
+				return defaultProfiles
 			}
 		} catch (error) {
 			console.error("Error loading SearchApiProfiles, resetting to default:", error)
@@ -164,7 +194,10 @@ export class SearchApiSettingsManager {
 				// telemetryService.captureException(error as Error); // Método não existe
 				console.error("Unhandled error during SearchApiProfiles load:", error)
 			}
-			return JSON.parse(JSON.stringify(this.defaultSearchApiProfiles))
+			// Salva o padrão e retorna uma cópia profunda
+			const defaultProfiles = JSON.parse(JSON.stringify(this.defaultSearchApiProfiles))
+			await this.saveProfilesInternal(defaultProfiles)
+			return defaultProfiles
 		}
 	}
 
@@ -511,6 +544,17 @@ export class SearchApiSettingsManager {
 			await config.update("searchApiProfiles", undefined, vscode.ConfigurationTarget.Global)
 			// Opcionalmente, reinicializar para os padrões imediatamente
 			await this.initialize()
+		})
+	}
+
+	/**
+	 * Force initialize with Jina as default - useful for debugging
+	 */
+	public async forceJinaInitialization(): Promise<void> {
+		return this.lock(async () => {
+			console.log("[SearchApiSettingsManager] Force initializing with Jina settings")
+			await this.saveProfilesInternal(this.defaultSearchApiProfiles)
+			console.log("[SearchApiSettingsManager] Jina configuration saved successfully")
 		})
 	}
 }

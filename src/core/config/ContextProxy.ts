@@ -221,6 +221,24 @@ export class ContextProxy {
 	 */
 
 	public getSearchApiSettings(): SearchApiSettings | undefined {
+		try {
+			// First try to get from SearchApiSettingsManager (new approach)
+			const searchApiManager = this.getSearchApiManager()
+			if (searchApiManager) {
+				// Use sync version by accessing the current profile directly
+				const currentProfile = this.getCurrentSearchApiProfile()
+				if (currentProfile && currentProfile.isEnabled) {
+					logger.info(`[ContextProxy] Using SearchApiSettingsManager profile: ${currentProfile.name}`)
+					const { name, id, ...settings } = currentProfile
+					return settings
+				}
+			}
+		} catch (error) {
+			logger.warn(`[ContextProxy] Failed to get settings from SearchApiSettingsManager: ${error}`)
+		}
+
+		// Fallback to old approach for backward compatibility
+		logger.info(`[ContextProxy] Falling back to individual key approach`)
 		const rawData: Record<string, any> = {}
 
 		for (const key of SEARCH_API_GLOBAL_STATE_KEYS) {
@@ -250,10 +268,6 @@ export class ContextProxy {
 				}
 			}
 
-			// Se não houver chaves para este provedor nos dados brutos, pule.
-			// Exceto se o único campo for searchApiProviderName e isEnabled (que pode ser default)
-			// Um provedor pode ser válido apenas com `searchApiProviderName` e `isEnabled` (default true)
-			// Ex: duckduckgo_fallback
 			const isPotentiallyValid =
 				hasKeysForThisProvider ||
 				Object.keys(candidateSettings).length === 1 || // Apenas searchApiProviderName
@@ -262,13 +276,10 @@ export class ContextProxy {
 			if (isPotentiallyValid) {
 				const parsed = searchApiSettingsSchemaDiscriminated.safeParse(candidateSettings)
 				if (parsed.success) {
-					// O schema base tem isEnabled.optional().default(true)
-					// Então, se isEnabled não estiver em candidateSettings, parsed.data.isEnabled será true.
 					if (parsed.data.isEnabled !== false) {
 						return parsed.data
 					}
 				} else {
-					// Log an error only if we had specific keys for this provider, to avoid noise
 					if (hasKeysForThisProvider) {
 						logger.warn(`Failed to parse SearchApiSettings for ${providerName}: ${parsed.error.message}`)
 					}
@@ -276,6 +287,43 @@ export class ContextProxy {
 			}
 		}
 		return undefined
+	}
+
+	private searchApiManager: any = null
+
+	private getSearchApiManager() {
+		if (!this.searchApiManager) {
+			try {
+				// Dynamically import to avoid circular dependencies
+				const { SearchApiSettingsManager } = require("./SearchApiSettingsManager")
+				this.searchApiManager = new SearchApiSettingsManager(this.originalContext)
+			} catch (error) {
+				logger.warn(`[ContextProxy] Could not initialize SearchApiSettingsManager: ${error}`)
+			}
+		}
+		return this.searchApiManager
+	}
+
+	private getCurrentSearchApiProfile() {
+		try {
+			const manager = this.getSearchApiManager()
+			if (manager) {
+				// Use a sync approach by accessing VS Code config directly
+				const config = vscode.workspace.getConfiguration("roo-cline")
+				const profiles = config.get("searchApiProfiles")
+				if (profiles && typeof profiles === "object") {
+					const profilesData = profiles as any
+					const currentName = profilesData.currentSearchApiConfigName
+					const currentConfig = profilesData.searchApiConfigs?.[currentName]
+					if (currentConfig) {
+						return { name: currentName, ...currentConfig }
+					}
+				}
+			}
+		} catch (error) {
+			logger.warn(`[ContextProxy] Error getting current search API profile: ${error}`)
+		}
+		return null
 	}
 
 	public async setSearchApiSettings(values: SearchApiSettings | undefined): Promise<void> {

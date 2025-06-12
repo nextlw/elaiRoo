@@ -21,6 +21,27 @@ async function safeWriteJson(filePath: string, data: any): Promise<void> {
 	const absoluteFilePath = path.resolve(filePath)
 	let releaseLock = async () => {} // Initialized to a no-op
 
+	// Ensure the parent directory exists before attempting to acquire lock
+	const parentDir = path.dirname(absoluteFilePath)
+	try {
+		await fs.mkdir(parentDir, { recursive: true })
+
+		// Check if the file exists, if not create an empty one for proper-lockfile
+		// proper-lockfile needs the file to exist to do lstat operations
+		try {
+			await fs.access(absoluteFilePath)
+		} catch (accessError: any) {
+			if (accessError.code === "ENOENT") {
+				// File doesn't exist, create empty array as default content
+				await fs.writeFile(absoluteFilePath, "[]", "utf8")
+				console.log(`Created empty file for lock at: ${absoluteFilePath}`)
+			}
+		}
+	} catch (mkdirError) {
+		console.error(`Failed to create parent directory or file ${parentDir}:`, mkdirError)
+		throw mkdirError
+	}
+
 	// Acquire the lock before any file operations
 	try {
 		releaseLock = await lockfile.lock(absoluteFilePath, {
@@ -39,10 +60,26 @@ async function safeWriteJson(filePath: string, data: any): Promise<void> {
 			},
 		})
 	} catch (lockError) {
-		// If lock acquisition fails, we throw immediately.
-		// The releaseLock remains a no-op, so the finally block in the main file operations
-		// try-catch-finally won't try to release an unacquired lock if this path is taken.
+		// Enhanced error handling with more specific messaging
 		console.error(`Failed to acquire lock for ${absoluteFilePath}:`, lockError)
+
+		// Check if this is still an ENOENT error after our file creation attempts
+		if (lockError.code === "ENOENT") {
+			console.error(`ENOENT error persists after directory and file creation. Path: ${absoluteFilePath}`)
+			console.error(`Parent directory: ${path.dirname(absoluteFilePath)}`)
+
+			// Try to diagnose the issue further
+			try {
+				const parentStat = await fs.stat(path.dirname(absoluteFilePath))
+				const fileStat = await fs.stat(absoluteFilePath)
+				console.error(`Directory exists: true, File exists: true`)
+				console.error(`Directory permissions: ${parentStat.mode.toString(8)}`)
+				console.error(`File permissions: ${fileStat.mode.toString(8)}`)
+			} catch (diagError) {
+				console.error(`Diagnostic check failed:`, diagError)
+			}
+		}
+
 		// Propagate the lock acquisition error
 		throw lockError
 	}

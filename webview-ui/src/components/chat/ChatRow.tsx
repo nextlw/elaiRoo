@@ -27,6 +27,7 @@ import Thumbnails from "../common/Thumbnails"
 import McpResourceRow from "../mcp/McpResourceRow"
 import McpToolRow from "../mcp/McpToolRow"
 import { WebSearchResultsBlock } from "./WebSearchResultsBlock"
+import { DeepResearchResultsBlock } from "./DeepResearchResultsBlock"
 
 import { Mention } from "./Mention"
 import { CheckpointSaved } from "./checkpoints/CheckpointSaved"
@@ -102,7 +103,7 @@ export const ChatRowContent = ({
 }: ChatRowContentProps) => {
 	const { t } = useTranslation()
 	const { mcpServers, alwaysAllowMcp, currentCheckpoint } = useExtensionState()
-	const [reasoningCollapsed, setReasoningCollapsed] = useState(true)
+	const [reasoningCollapsed, setReasoningCollapsed] = useState(false)
 	const [isDiffErrorExpanded, setIsDiffErrorExpanded] = useState(false)
 	const [showCopySuccess, setShowCopySuccess] = useState(false)
 	const { copyWithFeedback } = useCopyToClipboard()
@@ -389,22 +390,49 @@ export const ChatRowContent = ({
 					</>
 				)
 			case "web_search": {
-				let results: Array<{ url: string; title: string; snippet: string }> = []
+				let searchData: any = {}
+				let results: Array<{
+					url: string
+					title: string
+					snippet: string
+					score?: number
+					provider?: string
+					deepResearchData?: any
+				}> = []
+
 				try {
 					if (tool.content) {
-						results = JSON.parse(tool.content)
+						searchData = JSON.parse(tool.content)
+						results = searchData.results || []
 					}
 				} catch (e) {
 					console.error("Failed to parse web search results", e)
 				}
 
+				const provider = searchData.provider || "unknown"
+				const query = searchData.query || ""
+				const isDeepResearch = provider === "deep_research_fallback"
+
 				return (
 					<>
 						<div style={headerStyle}>
 							{toolIcon("search")}
-							<span style={{ fontWeight: "bold" }}>{t("chat:web_search.resultsTitle")}</span>
+							<span style={{ fontWeight: "bold" }}>
+								{isDeepResearch
+									? `🧠 ${t("chat:web_search.deepResearchTitle")}`
+									: t("chat:web_search.resultsTitle")}
+							</span>
+							{isDeepResearch && (
+								<span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+									Deep Research
+								</span>
+							)}
 						</div>
-						<WebSearchResultsBlock results={results} />
+						{isDeepResearch ? (
+							<DeepResearchResultsBlock results={results} provider={provider} query={query} />
+						) : (
+							<WebSearchResultsBlock results={results} />
+						)}
 					</>
 				)
 			}

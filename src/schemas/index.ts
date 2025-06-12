@@ -442,6 +442,7 @@ export const SearchApiProviderNameSchema = z.enum([
 	"serper",
 	"brave_search",
 	"duckduckgo_fallback",
+	"deep_research_fallback",
 ])
 
 export type SearchApiProviderName = z.infer<typeof SearchApiProviderNameSchema>
@@ -487,12 +488,20 @@ export const duckduckgoFallbackSearchApiSchema = baseSearchApiSettingsSchema.ext
 	searchApiProviderName: z.literal("duckduckgo_fallback"),
 })
 
+export const deepResearchFallbackSearchApiSchema = baseSearchApiSettingsSchema.extend({
+	searchApiProviderName: z.literal("deep_research_fallback"),
+	endpoint: z.string().url().optional().default("http://localhost:3002"),
+	timeout: z.number().optional().default(30000),
+	enableSSE: z.boolean().optional().default(true),
+})
+
 export const searchApiSettingsSchemaDiscriminated = z.discriminatedUnion("searchApiProviderName", [
 	jinaSearchApiSchema,
 	googleCustomSearchApiSchema,
 	serperApiSchema,
 	braveSearchApiSchema,
 	duckduckgoFallbackSearchApiSchema,
+	deepResearchFallbackSearchApiSchema,
 ])
 
 export type SearchApiSettings = z.infer<typeof searchApiSettingsSchemaDiscriminated>

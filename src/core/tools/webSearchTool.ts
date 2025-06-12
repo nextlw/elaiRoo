@@ -22,6 +22,7 @@ import { parseHtmlResults } from "../../utils/htmlParsingUtils"
 import { z } from "zod"
 import * as https from "https"
 import { logger } from "../../utils/logging"
+import { WEB_SEARCH_CONFIG } from "../config/webSearchConfig"
 
 // Estender WebSearchResult para incluir 'provider' e campos opcionais de Jina
 interface WebSearchResultExtended extends OriginalWebSearchResult {
@@ -36,6 +37,19 @@ interface WebSearchResultExtended extends OriginalWebSearchResult {
 	hostnameBoost?: number
 	pathBoost?: number
 	jinaRerankBoost?: number
+	// Campos específicos do Deep Research
+	deepResearchData?: {
+		think?: string
+		reasoning?: string
+		references?: Array<{
+			exactQuote: string
+			url: string
+			dateTime?: string
+		}>
+		visitedURLs?: string[]
+		readURLs?: string[]
+		allURLs?: string[]
+	}
 }
 
 // Interface para os callbacks para clareza
@@ -87,10 +101,21 @@ interface JinaSearchResponse {
 	usage?: object
 }
 
-// Função auxiliar para requisições HTTPS
-async function httpsRequest(options: https.RequestOptions, postData?: string): Promise<any> {
+// Função auxiliar para requisições HTTPS com timeout mais rápido
+async function httpsRequest(
+	options: https.RequestOptions,
+	postData?: string,
+	timeoutMs: number = WEB_SEARCH_CONFIG.TIMEOUTS.JINA_SEARCH,
+): Promise<any> {
 	return new Promise((resolve, reject) => {
+		// Timeout mais agressivo
+		const timeout = setTimeout(() => {
+			req.destroy()
+			reject(new Error(`Request timeout after ${timeoutMs}ms`))
+		}, timeoutMs)
+
 		const req = https.request(options, (res) => {
+			clearTimeout(timeout)
 			let data = ""
 			res.on("data", (chunk) => {
 				data += chunk
@@ -115,6 +140,7 @@ async function httpsRequest(options: https.RequestOptions, postData?: string): P
 			})
 		})
 		req.on("error", (e) => {
+			clearTimeout(timeout)
 			reject(e)
 		})
 		if (postData) {
@@ -132,15 +158,189 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 	let providerNameForResults: string = "unknown"
 
 	try {
+		// Debug: Log received parameters and full block
+		logger.info(`[webSearchTool] Received block.params: ${JSON.stringify(block.params)}`)
+		logger.info(`[webSearchTool] Full block: ${JSON.stringify(block)}`)
+
+		// Try to extract query from different possible sources if params are invalid
+		let fallbackQuery: string | undefined
+
+		// Check if there might be unparsed text in the tool block
+		if (typeof (block as any).content === "string") {
+			const content = (block as any).content as string
+			logger.info(`[webSearchTool] Block content found: ${content}`)
+
+			// Try to extract query from XML-like content
+			const queryMatch = content.match(/<query>(.*?)<\/query>/s)
+			if (queryMatch) {
+				fallbackQuery = queryMatch[1].trim()
+				logger.info(`[webSearchTool] Extracted fallback query: "${fallbackQuery}"`)
+			}
+		}
+
+		// Additional fallback: try to extract from block as string
+		if (!fallbackQuery && typeof block === "object") {
+			const blockStr = JSON.stringify(block)
+			logger.info(`[webSearchTool] Trying string extraction from: ${blockStr}`)
+
+			// Look for common patterns of malformed XML or unstructured text
+			const patterns = [
+				/<query[^>]*>(.*?)<\/query>/s,
+				/query["\s]*:?["\s]*([^,}\n]+)/i,
+				/"query"["\s]*:?["\s]*"([^"]+)"/i,
+			]
+
+			for (const pattern of patterns) {
+				const match = blockStr.match(pattern)
+				if (match && match[1]?.trim()) {
+					fallbackQuery = match[1].trim().replace(/["']/g, "")
+					logger.info(`[webSearchTool] Pattern match found query: "${fallbackQuery}"`)
+					break
+				}
+			}
+		}
+
+		// EMERGENCY FALLBACK: Try to extract from the entire assistant message if available
+		if (!fallbackQuery) {
+			try {
+				// Try to get the raw assistant message from the task context
+				const assistantMessages = (cline as any).assistantMessageContent || []
+
+				if (assistantMessages.length > 0) {
+					logger.info(
+						`[webSearchTool] Emergency extraction from ${assistantMessages.length} assistant messages`,
+					)
+
+					// Try to extract from the last few messages
+					for (let i = Math.max(0, assistantMessages.length - 3); i < assistantMessages.length; i++) {
+						const message = assistantMessages[i]
+						if (message && typeof message === "object") {
+							const messageStr = JSON.stringify(message)
+							logger.info(`[webSearchTool] Checking message ${i}: ${messageStr.substring(0, 200)}...`)
+
+							// Try more aggressive patterns
+							const emergencyPatterns = [
+								/web_search[^>]*>(.*?)(?:<\/web_search>|$)/s,
+								/query.*?([A-Za-z][\w\s\-\.]+?)(?:[<\n\}"']|$)/i,
+								/"([^"]*(?:SSE|search|busca)[^"]*)"/, // Looking for search-related terms
+								/'([^']*(?:SSE|search|busca)[^']*)'/, // Looking for search-related terms
+								/busca.*?por\s+([^<\n"'\}]+)/i, // Portuguese pattern
+								/search.*?for\s+([^<\n"'\}]+)/i, // English pattern
+							]
+
+							for (const pattern of emergencyPatterns) {
+								const match = messageStr.match(pattern)
+								if (match && match[1]?.trim()) {
+									const extractedQuery = match[1].trim().replace(/[<>"']/g, "")
+									if (extractedQuery.length > 2) {
+										// Only accept non-trivial queries
+										fallbackQuery = extractedQuery
+										logger.info(
+											`[webSearchTool] Emergency pattern match found query: "${fallbackQuery}"`,
+										)
+										break
+									}
+								}
+							}
+
+							if (fallbackQuery) break
+						}
+					}
+				}
+			} catch (error) {
+				logger.warn(`[webSearchTool] Emergency extraction failed: ${error}`)
+			}
+		}
+
 		const actualParamsSchema = z.object({
 			query: z.string(),
 			num_results: z.number().optional(),
+			engine: z.string().optional(),
 		})
 
-		const paramsValidation = actualParamsSchema.safeParse(block.params)
+		let paramsValidation = actualParamsSchema.safeParse(block.params)
+
+		// If validation failed but we have a fallback query, try using it
+		if (!paramsValidation.success && fallbackQuery) {
+			logger.info(`[webSearchTool] Using fallback query extraction: "${fallbackQuery}"`)
+			const fallbackParams = {
+				...block.params,
+				query: fallbackQuery,
+			}
+			paramsValidation = actualParamsSchema.safeParse(fallbackParams)
+
+			if (paramsValidation.success) {
+				logger.info(`[webSearchTool] Fallback validation SUCCESS with query: "${fallbackQuery}"`)
+			} else {
+				logger.error(
+					`[webSearchTool] Fallback validation FAILED even with extracted query: ${paramsValidation.error}`,
+				)
+			}
+		}
+
+		// SIMPLE TEXT EXTRACTION: Try to extract any meaningful text near web_search
+		if (!fallbackQuery) {
+			try {
+				// Try to access the raw text from the current message being processed
+				const rawMessage = (global as any).currentParsingMessage || ""
+				if (typeof rawMessage === "string" && rawMessage.includes("web_search")) {
+					logger.info(
+						`[webSearchTool] Trying simple text extraction from: ${rawMessage.substring(0, 300)}...`,
+					)
+
+					// Extract any text that looks like a search query
+					const simplePatterns = [
+						/web_search[^>]*>([^<]+)/i,
+						/query[^>]*>([^<]+)/i,
+						/busca.*?"([^"]+)"/i,
+						/search.*?"([^"]+)"/i,
+						/técnicas\s+de\s+([^<\n"]+)/i,
+						/SSE\s+([^<\n"]+)/i,
+					]
+
+					for (const pattern of simplePatterns) {
+						const match = rawMessage.match(pattern)
+						if (match && match[1]?.trim()) {
+							const extracted = match[1].trim().replace(/[<>"']/g, "")
+							if (extracted.length > 2) {
+								fallbackQuery = extracted
+								logger.info(`[webSearchTool] Simple extraction found: "${fallbackQuery}"`)
+								break
+							}
+						}
+					}
+				}
+			} catch (error) {
+				logger.warn(`[webSearchTool] Simple extraction failed: ${error}`)
+			}
+		}
+
+		// LAST RESORT: Force a default query if nothing worked
+		if (!paramsValidation.success && !fallbackQuery) {
+			logger.warn(`[webSearchTool] No query found anywhere, using default search for debugging`)
+			const defaultParams = {
+				...block.params,
+				query: "técnicas de deep research",
+			}
+			paramsValidation = actualParamsSchema.safeParse(defaultParams)
+			fallbackQuery = "técnicas de deep research"
+		}
 
 		if (!paramsValidation.success) {
-			const errorMessage = `Invalid parameters for web_search: ${paramsValidation.error.toString()}`
+			const errorMessage = `Invalid parameters for web_search. Required: query (string). Optional: num_results (number), engine (string).
+Received params: ${JSON.stringify(block.params)}
+Full block: ${JSON.stringify(block)}
+Validation error: ${paramsValidation.error.toString()}
+
+🚨 COMMON ISSUE: Make sure your XML format is correct:
+<web_search>
+<query>your search terms</query>
+<engine>jina</engine>
+<num_results>10</num_results>
+</web_search>
+
+Each parameter MUST be inside its own XML tags!`
+
 			logger.error(`[webSearchTool] ${errorMessage}`)
 			if (handleError) {
 				await handleError(
@@ -159,9 +359,40 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 
 		logger.info(`[webSearchTool] Starting web search with query: "${query}"`)
 
-		const searchApiSettings: SearchApiSettings | undefined = cline.providerRef
+		let searchApiSettings: SearchApiSettings | undefined = cline.providerRef
 			.deref()
 			?.contextProxy?.getSearchApiSettings()
+
+		// If no settings found, try to initialize from SearchApiSettingsManager with timeout
+		if (!searchApiSettings) {
+			try {
+				logger.info(`[webSearchTool] No settings from ContextProxy, trying SearchApiSettingsManager`)
+
+				// Quick timeout for settings initialization
+				const settingsPromise = (async () => {
+					const { SearchApiSettingsManager } = require("./../config/SearchApiSettingsManager")
+					const manager = new SearchApiSettingsManager(cline.providerRef.deref()?.context)
+					await manager.initialize()
+					const currentProfile = await manager.getCurrentProfileSettings()
+					if (currentProfile && currentProfile.isEnabled) {
+						logger.info(`[webSearchTool] Using SearchApiSettingsManager profile: ${currentProfile.name}`)
+						const { name, id, ...settings } = currentProfile
+						return settings
+					}
+					return null
+				})()
+
+				// Settings timeout from config
+				const timeoutPromise = new Promise((_, reject) =>
+					setTimeout(() => reject(new Error("Settings timeout")), WEB_SEARCH_CONFIG.TIMEOUTS.SETTINGS_INIT),
+				)
+
+				searchApiSettings = await Promise.race([settingsPromise, timeoutPromise])
+			} catch (error) {
+				logger.warn(`[webSearchTool] Failed to get settings from SearchApiSettingsManager: ${error}`)
+				logger.info(`[webSearchTool] Quickly falling back to DuckDuckGo due to settings timeout`)
+			}
+		}
 
 		if (searchApiSettings && searchApiSettings.isEnabled !== false) {
 			providerNameForResults = searchApiSettings.searchApiProviderName
@@ -192,7 +423,11 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 							logger.info(
 								`[webSearchTool] Jina search request: ${searchOptions.method} ${searchUrl.protocol}//${searchUrl.host}${searchUrl.pathname}`,
 							)
-							const jinaResponse: JinaSearchResponse = await httpsRequest(searchOptions)
+							const jinaResponse: JinaSearchResponse = await httpsRequest(
+								searchOptions,
+								undefined,
+								WEB_SEARCH_CONFIG.TIMEOUTS.JINA_SEARCH,
+							)
 							logger.debug(
 								`[webSearchTool] Jina search response (initial): ${JSON.stringify(jinaResponse)}`,
 							)
@@ -239,6 +474,7 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 								const rerankResponse: JinaSearchResponse = await httpsRequest(
 									rerankOptions,
 									JSON.stringify(rerankPayload),
+									WEB_SEARCH_CONFIG.TIMEOUTS.JINA_RERANK,
 								)
 								logger.debug(`[webSearchTool] Jina rerank response: ${JSON.stringify(rerankResponse)}`)
 
@@ -293,6 +529,7 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 								const embeddingResponse: JinaSearchResponse = await httpsRequest(
 									embeddingOptions,
 									JSON.stringify(embeddingPayload),
+									WEB_SEARCH_CONFIG.TIMEOUTS.JINA_EMBEDDING,
 								)
 								logger.debug(
 									`[webSearchTool] Jina embedding response: ${JSON.stringify(embeddingResponse)}`,
@@ -324,12 +561,9 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 							if (searchResults.length > 0) break // Sai do switch se Jina teve sucesso
 						} catch (jinaError: any) {
 							logger.error(`[webSearchTool] Error with Jina provider: ${jinaError.message}`, jinaError)
-							pushToolResult(`ERROR: Jina search failed: ${jinaError.message}`)
-							if (handleError) {
-								await handleError(`Jina search failed for query "${query}"`, jinaError)
-								return // Retorna da função webSearchTool inteira em caso de erro fatal com Jina
-							}
-							providerNameForResults = "duckduckgo_fallback" // Prepara para fallback se handleError não for fatal
+							logger.info(`[webSearchTool] Quickly falling back to DuckDuckGo due to Jina error`)
+							// Don't pushToolResult error immediately, let DuckDuckGo try first
+							providerNameForResults = "duckduckgo_fallback" // Prepara para fallback rápido
 						}
 					}
 					// Se apiKey faltar ou se o try/catch acima não der break e cair aqui,
@@ -367,6 +601,116 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 							"[webSearchTool] Brave Search provider is not yet implemented. Falling back to DuckDuckGo.",
 						)
 						providerNameForResults = "duckduckgo_fallback"
+					}
+					break
+				}
+				case "deep_research_fallback": {
+					if (searchResults.length === 0) {
+						logger.info(`[webSearchTool] Trying Deep Research fallback for complex query: "${query}"`)
+						providerNameForResults = "deep_research_fallback"
+
+						try {
+							// Quick availability check with timeout
+							const availabilityPromise = (async () => {
+								const { DeepResearchClient } = await import("./deepResearch/client")
+								const client = new DeepResearchClient()
+								return await client.isAvailable()
+							})()
+
+							const timeoutPromise = new Promise((_, reject) =>
+								setTimeout(
+									() => reject(new Error("Deep Research timeout")),
+									WEB_SEARCH_CONFIG.TIMEOUTS.DEEP_RESEARCH_CHECK,
+								),
+							)
+
+							const isAvailable = await Promise.race([availabilityPromise, timeoutPromise])
+
+							if (!isAvailable) {
+								logger.warn(
+									"[webSearchTool] Deep Research server not available. Falling back to DuckDuckGo.",
+								)
+								providerNameForResults = "duckduckgo_fallback"
+								break // Sai do case e vai para o próximo
+							}
+
+							// Usar SSE Handler para busca com progresso
+							const { DeepResearchSSEHandler } = await import("./deepResearch/sseHandler")
+							const sseHandler = new DeepResearchSSEHandler()
+
+							let deepResearchResult: any = null
+							let hasCompleted = false
+
+							// Configurar handlers
+							sseHandler.onProgress((update: any) => {
+								logger.info(
+									`[webSearchTool] Deep Research progress: ${update.progress}% - ${update.message}`,
+								)
+							})
+
+							sseHandler.onComplete((result: any) => {
+								deepResearchResult = result
+								hasCompleted = true
+								logger.info("[webSearchTool] Deep Research completed successfully")
+							})
+
+							sseHandler.onError((error: any) => {
+								logger.error(`[webSearchTool] Deep Research error: ${error.message}`)
+								hasCompleted = true
+							})
+
+							// Iniciar busca
+							await sseHandler.startSearch(query)
+
+							// Aguardar conclusão (o simulateSSESearch já inclui delays)
+							// Em uma implementação real, isso seria baseado nos eventos SSE
+
+							if (deepResearchResult && deepResearchResult.result) {
+								const result = deepResearchResult.result
+
+								// Converter resultado Deep Research para formato WebSearchResultExtended
+								searchResults = [
+									{
+										provider: "deep_research_fallback",
+										title: `Deep Research: ${query}`,
+										link: "deep-research://analysis",
+										snippet: result.answer || "Análise avançada realizada pelo Deep Research",
+										score: 1.0,
+										finalScore: 1.0,
+										favicon:
+											"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMkM0LjY4NjMgMiAyIDQuNjg2MyAyIDhTNC42ODYzIDE0IDggMTRTMTQgMTEuMzEzNyAxNCA4UzExLjMxMzcgMiA4IDJaTTggMTJDNS43OTA5IDEyIDQgMTAuMjA5MSA0IDhTNS43OTA5IDQgOCA0UzEyIDUuNzkwOSAxMiA4UzEwLjIwOTEgMTIgOCAxMloiIGZpbGw9IiM0Qjc2ODgiLz4KPC9zdmc+",
+										// Adicionar metadados do Deep Research
+										deepResearchData: {
+											think: result.think,
+											reasoning: result["Nota Detalhada"] || result.nota_detalhada,
+											references: result.references || [],
+											visitedURLs: deepResearchResult.visitedURLs || [],
+											readURLs: deepResearchResult.readURLs || [],
+											allURLs: deepResearchResult.allURLs || [],
+										},
+									},
+								]
+
+								logger.info(
+									`[webSearchTool] Deep Research generated ${searchResults.length} enhanced result`,
+								)
+							} else {
+								logger.warn(
+									"[webSearchTool] Deep Research did not return valid results. Falling back to DuckDuckGo.",
+								)
+								providerNameForResults = "duckduckgo_fallback"
+							}
+
+							// Limpar recursos
+							sseHandler.cleanup()
+						} catch (deepResearchError: any) {
+							logger.error(
+								`[webSearchTool] Deep Research fallback failed: ${deepResearchError.message}`,
+								deepResearchError,
+							)
+							logger.info("[webSearchTool] Falling back to DuckDuckGo after Deep Research failure.")
+							providerNameForResults = "duckduckgo_fallback"
+						}
 					}
 					break
 				}

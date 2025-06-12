@@ -5,6 +5,26 @@ import { TextContent, ToolUse, ToolParamName, toolParamNames } from "../../share
 export type AssistantMessageContent = TextContent | ToolUse
 
 export function parseAssistantMessage(assistantMessage: string): AssistantMessageContent[] {
+	// Debug logging for web_search content
+	if (assistantMessage.includes("web_search")) {
+		console.log(`[DEBUG] =================== WEB_SEARCH PARSING DEBUG ===================`)
+		console.log(`[DEBUG] Raw assistant message containing web_search:`)
+		console.log(`"${assistantMessage}"`)
+		console.log(`[DEBUG] Length: ${assistantMessage.length}`)
+		console.log(`[DEBUG] Has '<query>': ${assistantMessage.includes("<query>")}`)
+		console.log(`[DEBUG] Has '</query>': ${assistantMessage.includes("</query>")}`)
+		console.log(`[DEBUG] Has '<web_search>': ${assistantMessage.includes("<web_search>")}`)
+		console.log(`[DEBUG] Has '</web_search>': ${assistantMessage.includes("</web_search>")}`)
+
+		// Show all XML-like structures
+		const xmlTags = assistantMessage.match(/<[^>]+>/g) || []
+		console.log(`[DEBUG] All XML tags found: [${xmlTags.join(", ")}]`)
+		console.log(`[DEBUG] ================================================================`)
+
+		// Store the message globally for fallback extraction
+		;(global as any).currentParsingMessage = assistantMessage
+	}
+
 	let contentBlocks: AssistantMessageContent[] = []
 	let currentTextContent: TextContent | undefined = undefined
 	let currentTextContentStartIndex = 0
@@ -24,7 +44,15 @@ export function parseAssistantMessage(assistantMessage: string): AssistantMessag
 			const paramClosingTag = `</${currentParamName}>`
 			if (currentParamValue.endsWith(paramClosingTag)) {
 				// End of param value.
-				currentToolUse.params[currentParamName] = currentParamValue.slice(0, -paramClosingTag.length).trim()
+				const paramValue = currentParamValue.slice(0, -paramClosingTag.length).trim()
+				currentToolUse.params[currentParamName] = paramValue
+
+				// Debug logging for web_search parameters
+				if (currentToolUse.name === "web_search") {
+					console.log(`[DEBUG] web_search param captured: ${currentParamName} = "${paramValue}"`)
+					console.log(`[DEBUG] Current tool params so far:`, JSON.stringify(currentToolUse.params, null, 2))
+				}
+
 				currentParamName = undefined
 				continue
 			} else {
@@ -41,6 +69,15 @@ export function parseAssistantMessage(assistantMessage: string): AssistantMessag
 			if (currentToolValue.endsWith(toolUseClosingTag)) {
 				// End of a tool use.
 				currentToolUse.partial = false
+
+				// Debug logging for web_search completion
+				if (currentToolUse.name === "web_search") {
+					console.log(
+						`[DEBUG] web_search completed with params:`,
+						JSON.stringify(currentToolUse.params, null, 2),
+					)
+				}
+
 				contentBlocks.push(currentToolUse)
 				currentToolUse = undefined
 				continue
@@ -91,11 +128,19 @@ export function parseAssistantMessage(assistantMessage: string): AssistantMessag
 		for (const toolUseOpeningTag of possibleToolUseOpeningTags) {
 			if (accumulator.endsWith(toolUseOpeningTag)) {
 				// Start of a new tool use.
+				const toolName = toolUseOpeningTag.slice(1, -1) as ToolName
 				currentToolUse = {
 					type: "tool_use",
-					name: toolUseOpeningTag.slice(1, -1) as ToolName,
+					name: toolName,
 					params: {},
 					partial: true,
+				}
+
+				// Debug logging for web_search specifically
+				if (toolName === "web_search") {
+					console.log(`[DEBUG] Starting web_search tool parsing`)
+					console.log(`[DEBUG] Current accumulator content: "${accumulator}"`)
+					console.log(`[DEBUG] Tool opening tag: "${toolUseOpeningTag}"`)
 				}
 
 				currentToolUseStartIndex = accumulator.length

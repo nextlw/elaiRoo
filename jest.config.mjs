@@ -5,7 +5,12 @@ export default {
 	roots: ["<rootDir>/src", "<rootDir>/e2e"],
 	testMatch: ["**/__tests__/**/*.ts", "**/?(*.)+(spec|test).ts"],
 	transform: {
-		"^.+\\.tsx?$": "ts-jest",
+		"^.+\\.tsx?$": [
+			"ts-jest",
+			{
+				tsconfig: "src/tsconfig.json",
+			},
+		],
 	},
 	moduleNameMapper: {
 		"^@/(.*)$": "<rootDir>/src/$1",
