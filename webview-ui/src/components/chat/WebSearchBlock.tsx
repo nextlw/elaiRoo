@@ -1,15 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from "react"
-import { MagnifyingGlassIcon, ReloadIcon, CheckIcon, Cross2Icon } from "@radix-ui/react-icons"
+import { useEffect, useRef, useState } from "react"
+import { CaretDownIcon, CaretUpIcon, MagnifyingGlassIcon } from "@radix-ui/react-icons"
 import { useTranslation } from "react-i18next"
-import MarkdownBlock from "../common/MarkdownBlock"
-import { vscode } from "../../utils/vscode"
 
 interface SearchResult {
 	title: string
 	url: string
 	snippet?: string
 	favicon?: string
-	isReading?: boolean
 	isRead?: boolean
 }
 
@@ -31,21 +28,7 @@ export const WebSearchBlock = ({
 	const { t } = useTranslation("chat")
 	const [isExpanded, setIsExpanded] = useState(true)
 
-	const getStatusIcon = () => {
-		switch (status) {
-			case "searching":
-			case "reading":
-				return <ReloadIcon className="animate-spin" />
-			case "completed":
-				return <CheckIcon />
-			case "error":
-				return <Cross2Icon />
-			default:
-				return <MagnifyingGlassIcon />
-		}
-	}
-
-	const getStatusText = () => {
+	const getStatusMessage = () => {
 		switch (status) {
 			case "searching":
 				return t("webSearch.searching", { query })
@@ -71,122 +54,103 @@ export const WebSearchBlock = ({
 
 	return (
 		<div className="bg-vscode-editor-background border border-vscode-border rounded-lg overflow-hidden mb-2">
-			{/* Header */}
 			<div
 				className="flex items-center justify-between gap-2 px-3 py-2 cursor-pointer hover:bg-vscode-list-hoverBackground transition-colors"
 				onClick={() => setIsExpanded(!isExpanded)}>
 				<div className="flex items-center gap-2 flex-1">
-					<div className="flex items-center gap-1 text-vscode-foreground">{getStatusIcon()}</div>
-					<span className="text-sm font-medium truncate">{getStatusText()}</span>
+					<MagnifyingGlassIcon
+						className={`text-muted-foreground ${status === "searching" ? "animate-pulse" : ""}`}
+					/>
+					<span className="text-sm truncate">{getStatusMessage()}</span>
 				</div>
-				<span className={`codicon codicon-chevron-${isExpanded ? "up" : "down"}`} />
-			</div>
-
-			{/* Content */}
-			{isExpanded && (
-				<div className="border-t border-vscode-border">
-					{/* Query Display */}
-					<div className="px-3 py-2 bg-vscode-editor-inactiveSelectionBackground">
-						<div className="flex items-center gap-2">
-							<MagnifyingGlassIcon className="text-vscode-descriptionForeground" />
-							<span className="text-sm text-vscode-descriptionForeground">Query:</span>
-							<span className="text-sm font-medium">{query}</span>
-						</div>
-					</div>
-
-					{/* Error Display */}
-					{error && (
-						<div className="px-3 py-2 bg-vscode-inputValidation-errorBackground text-vscode-errorForeground">
-							<p className="text-sm">{error}</p>
+				<div className="flex items-center gap-2">
+					{status === "searching" && (
+						<div className="flex space-x-1">
+							<div className="w-1 h-1 bg-vscode-foreground rounded-full animate-pulse" />
+							<div className="w-1 h-1 bg-vscode-foreground rounded-full animate-pulse [animation-delay:200ms]" />
+							<div className="w-1 h-1 bg-vscode-foreground rounded-full animate-pulse [animation-delay:400ms]" />
 						</div>
 					)}
+					{isExpanded ? <CaretUpIcon /> : <CaretDownIcon />}
+				</div>
+			</div>
 
-					{/* Results List */}
-					{results.length > 0 && (
-						<div className="max-h-96 overflow-y-auto">
+			{isExpanded && (
+				<div
+					className={`border-t border-vscode-border transition-all duration-200 ${
+						!isExpanded ? "max-h-0 opacity-0" : "max-h-[300px] opacity-100"
+					}`}>
+					{error ? (
+						<div className="px-3 py-2 text-sm text-red-500">{error}</div>
+					) : (
+						<div className="max-h-[240px] overflow-y-auto">
+							{results.length === 0 && status === "searching" && (
+								<div className="px-3 py-4 text-center text-sm text-muted-foreground">
+									{t("webSearch.searchingWeb")}
+								</div>
+							)}
 							{results.map((result, index) => {
 								const isCurrentlyReading = currentReadingUrl === result.url
 								const favicon = result.favicon || getFaviconUrl(result.url)
 
 								return (
 									<div
-										key={index}
+										key={result.url}
 										className={`px-3 py-2 border-b border-vscode-border last:border-b-0 transition-all duration-300 ${
 											isCurrentlyReading
 												? "bg-vscode-list-activeSelectionBackground"
 												: result.isRead
 													? "opacity-60"
 													: "hover:bg-vscode-list-hoverBackground"
-										}`}>
+										} animate-in slide-in-from-left-5 fade-in duration-300`}
+										style={{ animationDelay: `${index * 100}ms` }}>
 										<div className="flex items-start gap-2">
-											{/* Favicon and Status */}
-											<div className="flex items-center mt-0.5 relative">
-												{favicon && (
-													<img
-														src={favicon}
-														alt=""
-														className="w-4 h-4"
-														onError={(e) => {
-															e.currentTarget.style.display = "none"
-														}}
-													/>
-												)}
-												{!favicon && <span className="codicon codicon-globe w-4 h-4" />}
-
-												{/* Reading indicator overlay */}
-												{isCurrentlyReading && (
-													<div className="absolute inset-0 flex items-center justify-center">
-														<div className="w-4 h-4 bg-vscode-progressBar-background rounded-full animate-ping" />
-													</div>
-												)}
-
-												{/* Read checkmark */}
-												{result.isRead && !isCurrentlyReading && (
-													<CheckIcon className="absolute -right-1 -bottom-1 w-3 h-3 text-vscode-testing-iconPassed bg-vscode-editor-background rounded-full" />
-												)}
-											</div>
-
-											{/* Content */}
+											{favicon ? (
+												<img
+													src={favicon}
+													alt=""
+													className="w-4 h-4 mt-0.5"
+													onError={(e) => {
+														// Fallback to Google favicon service
+														const target = e.currentTarget as HTMLImageElement
+														if (!target.dataset.fallback) {
+															target.dataset.fallback = "true"
+															target.src = getFaviconUrl(result.url) || ""
+														} else {
+															target.style.display = "none"
+														}
+													}}
+												/>
+											) : (
+												<div className="w-4 h-4 mt-0.5 bg-vscode-foreground opacity-20 rounded-sm" />
+											)}
 											<div className="flex-1 min-w-0">
 												<a
 													href={result.url}
-													className="text-sm font-medium text-vscode-textLink-foreground hover:text-vscode-textLink-activeForeground hover:underline block truncate"
-													onClick={(e) => {
-														e.preventDefault()
-														// Open URL in browser
-														window.open(result.url, "_blank")
-													}}>
-													{result.title}
+													target="_blank"
+													rel="noopener noreferrer"
+													className="text-sm font-medium text-vscode-textLink-foreground hover:underline block truncate">
+													{result.title || "Untitled"}
 												</a>
 												{result.snippet && (
-													<p className="text-xs text-vscode-descriptionForeground mt-1 line-clamp-2">
+													<p className="text-xs text-muted-foreground mt-1 line-clamp-2">
 														{result.snippet}
 													</p>
 												)}
-												<p className="text-xs text-vscode-descriptionForeground opacity-60 mt-1 truncate">
-													{result.url}
-												</p>
 											</div>
-
-											{/* Reading animation */}
 											{isCurrentlyReading && (
-												<div className="flex items-center gap-1 text-xs text-vscode-descriptionForeground">
-													<ReloadIcon className="animate-spin" />
+												<div className="ml-2 flex items-center gap-1 text-xs text-vscode-descriptionForeground">
+													<MagnifyingGlassIcon className="w-4 h-4 animate-spin" />
 													<span>{t("webSearch.reading")}</span>
 												</div>
+											)}
+											{status === "completed" && result.isRead && !isCurrentlyReading && (
+												<div className="w-2 h-2 bg-green-500 rounded-full ml-2 mt-1.5" />
 											)}
 										</div>
 									</div>
 								)
 							})}
-						</div>
-					)}
-
-					{/* Loading State */}
-					{status === "searching" && results.length === 0 && (
-						<div className="px-3 py-8 text-center">
-							<ReloadIcon className="animate-spin mx-auto mb-2" />
-							<p className="text-sm text-vscode-descriptionForeground">{t("webSearch.searchingWeb")}</p>
 						</div>
 					)}
 				</div>

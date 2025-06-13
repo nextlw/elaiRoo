@@ -45,7 +45,13 @@ export async function saveApiMessages({
 	taskId: string
 	globalStoragePath: string
 }) {
-	const taskDir = await getTaskDirectoryPath(globalStoragePath, taskId)
-	const filePath = path.join(taskDir, GlobalFileNames.apiConversationHistory)
-	await safeWriteJson(filePath, messages)
+	try {
+		const taskDir = await getTaskDirectoryPath(globalStoragePath, taskId)
+		const filePath = path.join(taskDir, GlobalFileNames.apiConversationHistory)
+		await safeWriteJson(filePath, messages)
+	} catch (error) {
+		console.error(`[saveApiMessages] Failed to save API messages for task ${taskId}:`, error)
+		console.error(`[saveApiMessages] Task directory path: ${globalStoragePath}/tasks/${taskId}`)
+		throw error
+	}
 }

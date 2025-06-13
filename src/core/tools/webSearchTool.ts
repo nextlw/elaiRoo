@@ -159,17 +159,6 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 
 		logger.info(`[webSearchTool] Starting web search with query: "${query}"`)
 
-		// Enviar mensagem inicial de busca
-		await cline.ask(
-			"tool",
-			JSON.stringify({
-				tool: "web_search",
-				query: query,
-				searchStatus: "searching",
-				content: `Searching for "${query}"...`,
-			}),
-		)
-
 		const searchApiSettings: SearchApiSettings | undefined = cline.providerRef
 			.deref()
 			?.contextProxy?.getSearchApiSettings()
@@ -454,26 +443,6 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 			(r) => ({ ...r, provider: r.provider || providerNameForResults }) as WebSearchResultExtended,
 		)
 
-		// Enviar mensagem com os resultados encontrados
-		if (searchResults.length > 0) {
-			await cline.ask(
-				"tool",
-				JSON.stringify({
-					tool: "web_search",
-					query: query,
-					searchStatus: "reading",
-					searchResults: searchResults.map((r) => ({
-						title: r.title || "",
-						link: r.link,
-						snippet: r.snippet || "",
-						provider: r.provider,
-						favicon: r.favicon,
-					})),
-					content: `Found ${searchResults.length} results. Reading content...`,
-				}),
-			)
-		}
-
 		// Adicionar data de última modificação
 		const resultsWithLastModifiedPromises = searchResults.map(async (result) => {
 			let lastModifiedDate: string | undefined
@@ -570,15 +539,24 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 
 		let approvalMessageContent = `Web search for "${query}" (using ${providerNameForResults}) found ${searchResults.length} results.`
 		if (searchResults.length > 0) {
-			approvalMessageContent += `\nExample: "${searchResults[0]?.title || "N/A"}" - ${
-				searchResults[0]?.link || "N/A"
-			}`
-			const codeBlockStr = JSON.stringify(searchResults.slice(0, Math.min(searchResults.length, 3)), null, 2)
-			approvalMessageContent += `\n\n\`\`\`json\n${codeBlockStr}\n\`\`\``
+			approvalMessageContent += `\n\nTop results:`
+			searchResults.slice(0, Math.min(3, searchResults.length)).forEach((result, index) => {
+				approvalMessageContent += `\n${index + 1}. ${result.title || "N/A"} - ${result.link || "N/A"}`
+			})
 		}
-		approvalMessageContent += "\nProceed to push these results?"
+		approvalMessageContent += "\n\nProceed to retrieve these search results?"
 
-		const approved = await askApproval("tool" as ClineAsk, approvalMessageContent)
+		let approved = false
+		try {
+			logger.info(`[webSearchTool] Requesting approval for search results`)
+			approved = await askApproval("tool" as ClineAsk, approvalMessageContent)
+			logger.info(`[webSearchTool] Approval result: ${approved}`)
+		} catch (approvalError: any) {
+			logger.error(`[webSearchTool] Error during approval request: ${approvalError.message}`, approvalError)
+			// Se houver erro na aprovação, trate como rejeitado
+			pushToolResult(`ERROR: Failed to get approval: ${approvalError.message}`)
+			return
+		}
 
 		if (!approved) {
 			logger.info("[webSearchTool] User rejected the search results.")
@@ -615,25 +593,6 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 			}
 		})
 
-		// Enviar mensagem final com status completed
-		await cline.ask(
-			"tool",
-			JSON.stringify({
-				tool: "web_search",
-				query: query,
-				searchStatus: "completed",
-				searchResults: resultsForUser.map((r) => ({
-					title: r.title || "",
-					link: r.link,
-					snippet: r.snippet || "",
-					provider: r.provider,
-					favicon: r.favicon,
-					isRead: true,
-				})),
-				content: `Search completed - ${resultsForUser.length} results found`,
-			}),
-		)
-
 		pushToolResult(JSON.stringify({ ...finalResultObject, results: resultsForUser }, null, 2))
 	} catch (error: any) {
 		const errorMessage = `Error in web_search for query "${query || "unknown"}": ${
@@ -641,16 +600,12 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 		}\nRaw output (if any):\n${typeof rawResultsOutput === "string" ? rawResultsOutput.substring(0, 500) : "N/A"}`
 		logger.error(`[webSearchTool] ${errorMessage}`, error)
 
-		// Enviar mensagem de erro
-		await cline.ask(
-			"tool",
-			JSON.stringify({
-				tool: "web_search",
-				query: query || "unknown",
-				searchStatus: "error",
-				content: errorMessage,
-			}),
-		)
+		// Garantir que o browser seja fechado em caso de erro
+		try {
+			await cline.browserSession.closeBrowser()
+		} catch (closeError) {
+			logger.error(`[webSearchTool] Error closing browser after error: ${closeError}`)
+		}
 
 		if (handleError) {
 			await handleError(`web_search failed for query "${query || "unknown"}" (Tool ID: ${block.name})`, error)

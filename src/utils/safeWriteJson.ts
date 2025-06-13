@@ -21,6 +21,29 @@ async function safeWriteJson(filePath: string, data: any): Promise<void> {
 	const absoluteFilePath = path.resolve(filePath)
 	let releaseLock = async () => {} // Initialized to a no-op
 
+	// Ensure directory exists before any operations
+	const dir = path.dirname(absoluteFilePath)
+	try {
+		await fs.mkdir(dir, { recursive: true })
+	} catch (mkdirError: any) {
+		if (mkdirError.code !== "EEXIST") {
+			console.error(`Failed to create directory ${dir}:`, mkdirError)
+			throw mkdirError
+		}
+	}
+
+	// If file doesn't exist, create an empty file to allow lock acquisition
+	try {
+		await fs.access(absoluteFilePath)
+	} catch (accessError: any) {
+		if (accessError.code === "ENOENT") {
+			// Create empty file
+			await fs.writeFile(absoluteFilePath, "{}")
+		} else {
+			throw accessError
+		}
+	}
+
 	// Acquire the lock before any file operations
 	try {
 		releaseLock = await lockfile.lock(absoluteFilePath, {
