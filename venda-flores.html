@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Floricultura online com entrega rápida em todo Brasil. Rosas, orquídeas e buquês frescos.">
+    <meta name="keywords" content="flores, floricultura online, entrega de flores, rosas, orquídeas">
+    <meta property="og:image" content="https://example.com/logo-flores-encanto.jpg">
+    <title>Flores Encanto - Sua Floricultura Online</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .navbar {
+            background-color: #28a745 !important;
+            padding: 1rem 2rem;
+        }
+
+        .hero-section {
+            background: linear-gradient(rgba(40, 167, 69, 0.8), rgba(40, 167, 69, 0.8)),
+                        url('https://images.unsplash.com/photo-1487017159836-4e23ece2e4cf.jpg') center/cover;
+            height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+        }
+
+        .produtos {
+            padding: 4rem 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .card-produto {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card-produto:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-imagem {
+            height: 250px;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .card-corpo {
+            padding: 1.5rem;
+        }
+
+        .preco {
+            color: #28a745;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 1rem 0;
+        }
+
+        .btn-comprar {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        footer {
+            background-color: #28a745;
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            margin-top: 4rem;
+        }
+
+        @media (max-width: 768px) {
+            .hero-section {
+                height: 40vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1>🌺 Flores Encanto</h1>
+    </nav>
+
+    <div class="hero-section">
+        <div>
+            <h2>Flores Frescas & Arranjos Exclusivos</h2>
+            <p>Entrega Rápida em Todo o Brasil</p>
+        </div>
+    </div>
+
+    <main class="produtos">
+        <div class="card-produto">
+            <div class="card-imagem" style="background-image: url('https://images.unsplash.com/photo-1560801631-f9e8e4320c1b')" role="img" aria-label="Rosas Vermelhas em vaso decorativo"></div>
+            <div class="card-corpo">
+                <h3>Rosas Vermelhas</h3>
+                <p>12 rosas vermelhas premium com embalagem especial</p>
+                <p class="preco">R$ 199,90</p>
+                <button class="btn-comprar">Comprar Agora</button>
+            </div>
+        </div>
+
+        <div class="card-produto">
+            <div class="card-imagem"
+                 style="background-image: url('https://images.unsplash.com/photo-1459411552884-841db9b3cc2a')"
+                 role="img"
+                 aria-label="Buquê de margaridas brancas e verdes">
+            </div>
+            <div class="card-corpo">
+                <h3>Buquê de Margaridas</h3>
+                <p>Buquê com 25 margaridas brancas e verdes</p>
+                <p class="preco">R$ 149,90</p>
+                <button class="btn-comprar">Comprar Agora</button>
+            </div>
+        </div>
+
+        <div class="card-produto">
+            <div class="card-imagem" style="background-image: url('https://images.unsplash.com/photo-1582794543139-8ac9cad0fb09')"></div>
+            <div class="card-corpo">
+                <h3>Orquídea Phalaenopsis</h3>
+                <p>Orquídea branca em vaso decorativo</p>
+                <p class="preco">R$ 289,90</p>
+                <button class="btn-comprar">Comprar Agora</button>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>📞 (11) 9999-9999</p>
+        <p>📍 Rua das Flores, 123 - São Paulo/SP</p>
+        <p>⏰ Aberto todos os dias das 8h às 20h</p>
+    </footer>
+</body>
+</html>
