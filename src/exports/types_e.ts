@@ -32,6 +32,12 @@ type GlobalSettings = {
 							| "litellm"
 							| "extract_page_content"
 							| "get_repository_file_content"
+							| "web_search"
+							| "jina"
+							| "google_custom_search"
+							| "serper"
+							| "brave_search"
+							| "duckduckgo_fallback"
 					  )
 					| undefined
 		  }[]
@@ -205,6 +211,12 @@ type GlobalSettings = {
 							| "deepSearchTools"
 							| "ask"
 							| "completion"
+							| "web_search"
+							| "jina"
+							| "google_custom_search"
+							| "serper"
+							| "brave_search"
+							| "duckduckgo_fallback"
 					  )
 					| [
 							(
@@ -217,6 +229,12 @@ type GlobalSettings = {
 								| "deepSearchTools"
 								| "ask"
 								| "completion"
+								| "web_search"
+								| "jina"
+								| "google_custom_search"
+								| "serper"
+								| "brave_search"
+								| "duckduckgo_fallback"
 							),
 							{
 								fileRegex?: string | undefined
@@ -273,6 +291,13 @@ type ProviderName =
 	| "litellm"
 	| "extract_page_content"
 	| "get_repository_file_content"
+	| "web_search"
+	| "jina"
+	| "google_custom_search"
+	| "serper"
+	| "brave_search"
+	| "duckduckgo_fallback"
+	| ""
 
 export type { ProviderName }
 
@@ -302,6 +327,12 @@ type ProviderSettings = {
 				| "litellm"
 				| "extract_page_content"
 				| "get_repository_file_content"
+				| "web_search"
+				| "jina"
+				| "google_custom_search"
+				| "serper"
+				| "brave_search"
+				| "duckduckgo_fallback"
 		  )
 		| undefined
 	includeMaxTokens?: boolean | undefined
@@ -448,6 +479,12 @@ type ProviderSettingsEntry = {
 				| "litellm"
 				| "extract_page_content"
 				| "get_repository_file_content"
+				| "web_search"
+				| "jina"
+				| "google_custom_search"
+				| "serper"
+				| "brave_search"
+				| "duckduckgo_fallback"
 		  )
 		| undefined
 }
@@ -471,6 +508,12 @@ type ClineMessage = {
 				| "browser_action_launch"
 				| "use_mcp_server"
 				| "auto_approval_max_req_reached"
+				| "web_search"
+				| "jina"
+				| "google_custom_search"
+				| "serper"
+				| "brave_search"
+				| "duckduckgo_fallback"
 		  )
 		| undefined
 	say?:
@@ -497,6 +540,12 @@ type ClineMessage = {
 				| "rooignore_error"
 				| "diff_error"
 				| "condense_context"
+				| "web_search"
+				| "jina"
+				| "google_custom_search"
+				| "serper"
+				| "brave_search"
+				| "duckduckgo_fallback"
 		  )
 		| undefined
 	text?: string | undefined
@@ -560,6 +609,12 @@ type RooCodeEvents = {
 							| "browser_action_launch"
 							| "use_mcp_server"
 							| "auto_approval_max_req_reached"
+							| "web_search"
+							| "jina"
+							| "google_custom_search"
+							| "serper"
+							| "brave_search"
+							| "duckduckgo_fallback"
 					  )
 					| undefined
 				say?:
@@ -586,6 +641,12 @@ type RooCodeEvents = {
 							| "rooignore_error"
 							| "diff_error"
 							| "condense_context"
+							| "web_search"
+							| "jina"
+							| "google_custom_search"
+							| "serper"
+							| "brave_search"
+							| "duckduckgo_fallback"
 					  )
 					| undefined
 				text?: string | undefined
@@ -678,6 +739,12 @@ type RooCodeEvents = {
 			| "search_code_repositories"
 			| "get_repository_file_content"
 			| "process_text_content"
+			| "web_search"
+			| "jina"
+			| "google_custom_search"
+			| "serper"
+			| "brave_search"
+			| "duckduckgo_fallback"
 		),
 		string,
 	]
@@ -729,6 +796,12 @@ type IpcMessage =
 											| "litellm"
 											| "extract_page_content"
 											| "get_repository_file_content"
+											| "web_search"
+											| "jina"
+											| "google_custom_search"
+											| "serper"
+											| "brave_search"
+											| "duckduckgo_fallback"
 									  )
 									| undefined
 								includeMaxTokens?: boolean | undefined
@@ -1159,6 +1232,12 @@ type IpcMessage =
 												| "rooignore_error"
 												| "diff_error"
 												| "condense_context"
+												| "web_search"
+												| "jina"
+												| "google_custom_search"
+												| "serper"
+												| "brave_search"
+												| "duckduckgo_fallback"
 										  )
 										| undefined
 									text?: string | undefined
@@ -1289,6 +1368,12 @@ type TaskCommand =
 								| "litellm"
 								| "extract_page_content"
 								| "get_repository_file_content"
+								| "web_search"
+								| "jina"
+								| "google_custom_search"
+								| "serper"
+								| "brave_search"
+								| "duckduckgo_fallback"
 						  )
 						| undefined
 					includeMaxTokens?: boolean | undefined
@@ -1435,6 +1520,12 @@ type TaskCommand =
 											| "litellm"
 											| "extract_page_content"
 											| "get_repository_file_content"
+											| "web_search"
+											| "jina"
+											| "google_custom_search"
+											| "serper"
+											| "brave_search"
+											| "duckduckgo_fallback"
 									  )
 									| undefined
 						  }[]
@@ -1610,6 +1701,7 @@ type TaskCommand =
 											| "deepSearchTools"
 											| "ask"
 											| "completion"
+											| "web_search"
 									  )
 									| [
 											(
@@ -1622,6 +1714,7 @@ type TaskCommand =
 												| "deepSearchTools"
 												| "ask"
 												| "completion"
+												| "web_search"
 											),
 											{
 												fileRegex?: string | undefined
@@ -1691,6 +1784,12 @@ type TaskEvent =
 									| "browser_action_launch"
 									| "use_mcp_server"
 									| "auto_approval_max_req_reached"
+									| "web_search"
+									| "jina"
+									| "google_custom_search"
+									| "serper"
+									| "brave_search"
+									| "duckduckgo_fallback"
 							  )
 							| undefined
 						say?:
@@ -1717,6 +1816,12 @@ type TaskEvent =
 									| "rooignore_error"
 									| "diff_error"
 									| "condense_context"
+									| "web_search"
+									| "jina"
+									| "google_custom_search"
+									| "serper"
+									| "brave_search"
+									| "duckduckgo_fallback"
 							  )
 							| undefined
 						text?: string | undefined

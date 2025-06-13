@@ -55,10 +55,10 @@ export interface ChatViewRef {
 
 export const MAX_IMAGES_PER_MESSAGE = 20 // Anthropic limits to 20 images
 
-const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0
+const isMac = navigator.userAgent.toUpperCase().indexOf("MAC") >= 0
 
 const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewProps> = (
-	{ isHidden, showAnnouncement, hideAnnouncement, showHistoryView },
+	{ isHidden, showAnnouncement, hideAnnouncement },
 	ref,
 ) => {
 	const isMountedRef = useRef(true)
