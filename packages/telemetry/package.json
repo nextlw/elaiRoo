@@ -3,8 +3,16 @@
 	"description": "Roo Code telemetry service and clients.",
 	"version": "0.0.0",
 	"type": "module",
-	"exports": "./src/index.ts",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
 	"scripts": {
+		"build": "tsc -b --force",
 		"lint": "eslint src --ext=ts --max-warnings=0",
 		"check-types": "tsc --noEmit",
 		"test": "vitest run",

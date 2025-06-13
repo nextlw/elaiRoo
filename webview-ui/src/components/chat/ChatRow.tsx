@@ -23,6 +23,7 @@ import CodeAccordian from "../common/CodeAccordian"
 import CodeBlock from "../common/CodeBlock"
 import MarkdownBlock from "../common/MarkdownBlock"
 import { ReasoningBlock } from "./ReasoningBlock"
+import { WebSearchBlock } from "./WebSearchBlock"
 import Thumbnails from "../common/Thumbnails"
 import McpResourceRow from "../mcp/McpResourceRow"
 import McpToolRow from "../mcp/McpToolRow"
@@ -405,6 +406,38 @@ export const ChatRowContent = ({
 									values={{ query: tool.query }}
 								/>
 							)}
+						</span>
+					</div>
+				)
+			}
+			case "web_search": {
+				return (
+					<WebSearchBlock
+						query={tool.query || ""}
+						results={tool.searchResults?.map((r) => ({
+							...r,
+							url: r.link, // Mapear 'link' para 'url'
+						}))}
+						status={tool.searchStatus}
+						error={tool.content?.startsWith("ERROR:") ? tool.content : undefined}
+						currentReadingUrl={tool.currentReadingUrl}
+					/>
+				)
+			}
+			case "extract_page_content":
+			case "extract_document_content":
+			case "search_structured_data":
+			case "search_code_repositories":
+			case "get_repository_file_content":
+			case "process_text_content": {
+				// Por enquanto, mostrar apenas o header padrão para essas ferramentas
+				return (
+					<div style={headerStyle}>
+						{toolIcon("globe")}
+						<span style={{ fontWeight: "bold" }}>
+							{message.type === "ask"
+								? `Roo wants to use ${tool.tool.replace(/_/g, " ")}`
+								: `Roo used ${tool.tool.replace(/_/g, " ")}`}
 						</span>
 					</div>
 				)

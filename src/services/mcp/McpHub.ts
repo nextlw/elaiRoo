@@ -597,9 +597,58 @@ export class McpHub extends EventEmitter {
 		}
 	}
 
+	/**
+	 * Garante que o Jina Advanced Search MCP está sempre configurado como servidor nativo
+	 */
+	private async ensureJinaAdvancedSearchMcpExists(): Promise<void> {
+		try {
+			const settingsPath = await this.getMcpSettingsFilePath()
+			const content = await fs.readFile(settingsPath, "utf-8")
+			const config = JSON.parse(content)
+
+			// Verificar se o Jina Advanced Search MCP já existe
+			if (!config.mcpServers || !config.mcpServers["jina-advanced-search"]) {
+				// Criar configuração do Jina Advanced Search MCP
+				if (!config.mcpServers) {
+					config.mcpServers = {}
+				}
+
+				config.mcpServers["jina-advanced-search"] = {
+					type: "stdio",
+					command: "python",
+					args: [path.join(__dirname, "..", "..", "services", "mcp", "jina-advanced-search", "main.py")],
+					disabled: false,
+					isSystemCritical: false,
+					alwaysAllow: [
+						"advanced_web_search",
+						"multimodal_search",
+						"semantic_search",
+						"extract_content",
+						"get_server_info",
+					],
+					timeout: 60,
+					env: {
+						JINA_API_KEY: "${JINA_API_KEY}",
+						OPENAI_API_KEY: "${OPENAI_API_KEY}",
+						PYTHONPATH: path.join(__dirname, "..", "..", "services", "mcp", "jina-advanced-search"),
+					},
+				}
+
+				// Salvar configuração atualizada
+				await fs.writeFile(settingsPath, JSON.stringify(config, null, 2))
+				console.log("[McpHub] Jina Advanced Search MCP configurado automaticamente como servidor nativo")
+			}
+		} catch (error) {
+			console.error("[McpHub] Erro ao configurar Jina Advanced Search MCP nativo:", error)
+		}
+	}
+
 	private async initializeGlobalMcpServers(): Promise<void> {
 		// Primeiro, garantir que o WhatsApp MCP está configurado (RF001: nativo e automático)
 		await this.ensureWhatsAppMcpExists()
+
+		// Garantir que o Jina Advanced Search MCP está configurado
+		await this.ensureJinaAdvancedSearchMcpExists()
 
 		await this.initializeMcpServers("global")
 	}

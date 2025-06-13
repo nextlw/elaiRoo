@@ -49,10 +49,10 @@
 	},
 	"read-batch": {
 		"approve": {
-			"title": "Approve All"
+			"title": "Approve all"
 		},
 		"deny": {
-			"title": "Deny All"
+			"title": "Deny all"
 		}
 	},
 	"runCommand": {
@@ -279,5 +279,14 @@
 			"description": "Roo has reached the auto-approved limit of {{count}} API request(s). Would you like to reset the count and proceed with the task?",
 			"button": "Reset and Continue"
 		}
+	},
+	"webSearch": {
+		"searching": "Searching for \"{{query}}\"...",
+		"readingContent": "Reading page content...",
+		"completed": "Search completed - {{count}} results found",
+		"error": "Error searching",
+		"preparing": "Preparing search...",
+		"reading": "Reading...",
+		"searchingWeb": "Searching the web..."
 	}
 }

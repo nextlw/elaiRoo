@@ -24,6 +24,13 @@ import { askFollowupQuestionTool } from "../tools/askFollowupQuestionTool"
 import { switchModeTool } from "../tools/switchModeTool"
 import { attemptCompletionTool } from "../tools/attemptCompletionTool"
 import { newTaskTool } from "../tools/newTaskTool"
+import { webSearchTool } from "../tools/webSearchTool"
+import { extractPageContentTool } from "../tools/extractPageContentTool"
+import { extractDocumentContentTool } from "../tools/extractDocumentContentTool"
+import { searchStructuredDataTool } from "../tools/searchStructuredDataTool"
+import { searchCodeRepositoriesTool } from "../tools/searchCodeRepositoriesTool"
+import { getRepositoryFileContentTool } from "../tools/getRepositoryFileContentTool"
+import { processTextContentTool } from "../tools/processTextContentTool"
 
 import { checkpointSave } from "../checkpoints"
 
@@ -31,6 +38,7 @@ import { formatResponse } from "../prompts/responses"
 import { validateToolUse } from "../tools/validateToolUse"
 import { Task } from "../task/Task"
 import { codebaseSearchTool } from "../tools/codebaseSearchTool"
+import { logger } from "../../utils/logging"
 
 /**
  * Processes and presents assistant message content to the user interface.
@@ -482,6 +490,62 @@ export async function presentAssistantMessage(cline: Task) {
 						toolDescription,
 						askFinishSubTaskApproval,
 					)
+					break
+				case "web_search":
+					await webSearchTool(cline, block, { askApproval, pushToolResult, handleError })
+					break
+				case "extract_page_content": {
+					// extractPageContentTool é um objeto com métodos, não uma função
+					const toolWithExecute = extractPageContentTool.create(
+						cline,
+						block,
+						(result) => {
+							if (result.error) {
+								pushToolResult(formatResponse.toolError(result.result as string))
+							} else {
+								pushToolResult(result.result)
+							}
+						},
+						askApproval,
+						cline.emit.bind(cline),
+					)
+					await toolWithExecute.execute()
+					break
+				}
+				case "extract_document_content": {
+					const signal = new AbortController().signal
+					await extractDocumentContentTool(
+						cline,
+						block,
+						async (message: string) => {
+							await askApproval("tool", message)
+						},
+						(data: unknown) => {
+							pushToolResult(JSON.stringify(data))
+						},
+						signal,
+					)
+					break
+				}
+				case "search_structured_data":
+					await searchStructuredDataTool(
+						cline,
+						{ id: crypto.randomUUID(), params: block.params as any },
+						async (message: string) => {
+							const response = await askApproval("tool", message)
+							return response ? "Yes" : "No"
+						},
+						pushToolResult,
+					)
+					break
+				case "search_code_repositories":
+					await searchCodeRepositoriesTool(cline, block, askApproval, pushToolResult, handleError)
+					break
+				case "get_repository_file_content":
+					await getRepositoryFileContentTool(cline, block, logger, askApproval, pushToolResult, handleError)
+					break
+				case "process_text_content":
+					await processTextContentTool(cline, block, logger, askApproval, pushToolResult, handleError)
 					break
 			}
 

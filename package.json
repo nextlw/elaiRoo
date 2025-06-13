@@ -325,6 +325,7 @@
 		"install": "node scripts/bootstrap.mjs",
 		"install:all": "node scripts/bootstrap.mjs",
 		"lint": "turbo lint --log-order grouped --output-logs new-only",
+		"precheck-types": "turbo run build --filter=@roo-code/telemetry",
 		"check-types": "turbo check-types --log-order grouped --output-logs new-only",
 		"test": "jest",
 		"test:e2e": "jest e2e/src/suite/**/*.test.ts",

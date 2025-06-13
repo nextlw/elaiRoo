@@ -279,5 +279,14 @@
 		"deny": {
 			"title": "Negar tudo"
 		}
+	},
+	"webSearch": {
+		"searching": "Pesquisando por \"{{query}}\"...",
+		"readingContent": "Lendo conteúdo das páginas...",
+		"completed": "Pesquisa concluída - {{count}} resultados encontrados",
+		"error": "Erro ao pesquisar",
+		"preparing": "Preparando pesquisa...",
+		"reading": "Lendo...",
+		"searchingWeb": "Pesquisando na web..."
 	}
 }

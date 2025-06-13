@@ -267,6 +267,13 @@ export interface ClineSayTool {
 		| "finishTask"
 		| "searchAndReplace"
 		| "insertContent"
+		| "web_search"
+		| "extract_page_content"
+		| "extract_document_content"
+		| "search_structured_data"
+		| "search_code_repositories"
+		| "get_repository_file_content"
+		| "process_text_content"
 	path?: string
 	diff?: string
 	content?: string
@@ -291,6 +298,16 @@ export interface ClineSayTool {
 		key: string
 	}>
 	question?: string
+	// Web search specific properties
+	searchResults?: Array<{
+		title: string
+		link: string
+		snippet?: string
+		provider?: string
+		favicon?: string
+	}>
+	searchStatus?: "searching" | "reading" | "completed" | "error"
+	currentReadingUrl?: string
 }
 
 // Must keep in sync with system prompt.

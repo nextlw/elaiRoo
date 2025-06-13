@@ -47,6 +47,7 @@ docs/
 
 - [`word-document-server`](src/services/mcp/Office-Word-MCP-Server/word_mcp_server.py:8)
 - [`powerpoint-mcp-server`](src/services/mcp/Office-PowerPoint-MCP-Server/ppt_mcp_server.py:12)
+- [`jina-advanced-search`](src/services/mcp/jina-advanced-search/src/jina_advanced_search/main.py:8)
 
 ## Usage
 
@@ -185,6 +186,183 @@ result = use_mcp_tool(
     }
 )
 ```
+
+## Jina Advanced Search MCP
+
+### Servidor: `jina-advanced-search`
+
+**Localização**: [`src/services/mcp/jina-advanced-search/`](src/services/mcp/jina-advanced-search/)
+
+O Jina Advanced Search MCP oferece capacidades avançadas de busca web usando a API Jina AI, com processamento semântico e extração de conteúdo.
+
+### Ferramentas Disponíveis
+
+#### advanced_web_search
+
+Busca web avançada com capacidades de reranking e análise semântica usando a API Jina.
+
+**Parâmetros**:
+
+- `query` (string, obrigatório): Consulta de busca
+- `max_results` (number, opcional): Número máximo de resultados (padrão: 10)
+- `search_type` (string, opcional): Tipo de busca (padrão: "advanced")
+- `api_key` (string, opcional): Chave da API Jina (se não definida em variáveis de ambiente)
+- `use_reranking` (boolean, opcional): Aplicar reranking aos resultados (padrão: true)
+
+#### multimodal_search
+
+Busca multimodal combinando texto e imagens.
+
+**Parâmetros**:
+
+- `text_query` (string, opcional): Consulta de busca em texto
+- `image_url` (string, opcional): URL da imagem para busca visual
+- `max_results` (number, opcional): Número máximo de resultados (padrão: 10)
+- `api_key` (string, opcional): Chave da API Jina
+
+**Nota**: Pelo menos um entre `text_query` ou `image_url` deve ser fornecido.
+
+#### semantic_search
+
+Busca semântica em documentos fornecidos.
+
+**Parâmetros**:
+
+- `query` (string, obrigatório): Consulta de busca
+- `documents` (array, obrigatório): Lista de documentos para pesquisar
+- `max_results` (number, opcional): Número máximo de resultados (padrão: 10)
+- `api_key` (string, opcional): Chave da API Jina
+
+#### extract_content
+
+Extração de conteúdo de URLs usando o Jina Reader.
+
+**Parâmetros**:
+
+- `url` (string, obrigatório): URL para extrair conteúdo
+- `api_key` (string, opcional): Chave da API Jina
+
+#### get_server_info
+
+Obtém informações sobre o servidor Jina Advanced Search MCP.
+
+**Parâmetros**: Nenhum
+
+### Exemplos de Uso
+
+#### Busca Web Avançada
+
+```python
+# Busca avançada com reranking semântico
+result = use_mcp_tool(
+    server_name="jina-advanced-search",
+    tool_name="advanced_web_search",
+    arguments={
+        "query": "inteligência artificial machine learning 2024",
+        "max_results": 15,
+        "use_reranking": True
+    }
+)
+
+# Resultado inclui:
+# - query: consulta original
+# - search_type: "advanced_web_search"
+# - total_results: número de resultados encontrados
+# - documents: array com título, conteúdo, URL e score
+```
+
+#### Busca Multimodal
+
+```python
+# Busca combinando texto e imagem
+result = use_mcp_tool(
+    server_name="jina-advanced-search",
+    tool_name="multimodal_search",
+    arguments={
+        "text_query": "arquitetura moderna sustentável",
+        "image_url": "https://example.com/building.jpg",
+        "max_results": 10
+    }
+)
+
+# Resultado inclui:
+# - search_type: "multimodal"
+# - total_results: total de resultados
+# - results_by_modality: resultados agrupados por modalidade
+# - unified_ranking: ranking unificado de todos os resultados
+```
+
+#### Busca Semântica
+
+```python
+# Busca semântica em documentos locais
+documents = [
+    "Python é uma linguagem de programação de alto nível.",
+    "JavaScript é usado para desenvolvimento web.",
+    "Go é uma linguagem compilada criada pelo Google.",
+    "Rust foca em segurança de memória."
+]
+
+result = use_mcp_tool(
+    server_name="jina-advanced-search",
+    tool_name="semantic_search",
+    arguments={
+        "query": "linguagem para sistemas embarcados",
+        "documents": documents,
+        "max_results": 2
+    }
+)
+```
+
+#### Extração de Conteúdo
+
+```python
+# Extrair conteúdo de uma página web
+result = use_mcp_tool(
+    server_name="jina-advanced-search",
+    tool_name="extract_content",
+    arguments={
+        "url": "https://example.com/article"
+    }
+)
+
+# Resultado inclui:
+# - url: URL processada
+# - content: conteúdo extraído em texto
+# - operation: "content_extraction"
+# - success: status da operação
+```
+
+### Configuração
+
+#### Variáveis de Ambiente Necessárias
+
+```bash
+# Chave da API Jina (obrigatória)
+# Obtenha em: https://jina.ai/
+JINA_API_KEY=sua_chave_jina_aqui
+
+# Chave da API OpenAI (opcional - para funcionalidades futuras)
+OPENAI_API_KEY=sua_chave_openai_aqui
+```
+
+#### Configuração Automática
+
+O servidor é configurado automaticamente pelo [`McpHub`](src/services/mcp/McpHub.ts) na inicialização da extensão. A configuração padrão inclui:
+
+- **Comando**: `python main.py`
+- **Timeout**: 60 segundos
+- **Ferramentas permitidas**: Todas as ferramentas (advanced_web_search, multimodal_search, semantic_search, extract_content, get_server_info)
+- **Observação de arquivos**: Código Python e configurações
+
+### Uso no Cursor/Roo
+
+Após configurar a API key e reiniciar o Cursor/Roo, você pode usar comandos naturais como:
+
+- "Pesquise na web sobre [tópico]"
+- "Faça uma busca avançada sobre [assunto]"
+- "Extraia o conteúdo de [URL]"
+- "Busque informações sobre [tema] usando Jina"
 
 ### Go (MCP)
 

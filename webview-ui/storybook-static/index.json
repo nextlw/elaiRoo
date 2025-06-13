@@ -1,0 +1,274 @@
+{
+	"v": 5,
+	"entries": {
+		"welcome--docs": {
+			"id": "welcome--docs",
+			"title": "Welcome",
+			"name": "Docs",
+			"importPath": "./src/stories/Welcome.mdx",
+			"storiesImports": [],
+			"type": "docs",
+			"tags": ["dev", "test", "unattached-mdx"]
+		},
+		"primitives-autosizetextarea--docs": {
+			"id": "primitives-autosizetextarea--docs",
+			"title": "Primitives/AutosizeTextarea",
+			"name": "Docs",
+			"importPath": "./src/stories/AutosizeTextarea.stories.tsx",
+			"type": "docs",
+			"tags": ["dev", "test", "autodocs"],
+			"storiesImports": []
+		},
+		"primitives-autosizetextarea--default": {
+			"type": "story",
+			"id": "primitives-autosizetextarea--default",
+			"name": "Default",
+			"title": "Primitives/AutosizeTextarea",
+			"importPath": "./src/stories/AutosizeTextarea.stories.tsx",
+			"componentPath": "./src/components/ui/autosize-textarea.tsx",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"primitives-badge--docs": {
+			"id": "primitives-badge--docs",
+			"title": "Primitives/Badge",
+			"name": "Docs",
+			"importPath": "./src/stories/Badge.stories.tsx",
+			"type": "docs",
+			"tags": ["dev", "test", "autodocs"],
+			"storiesImports": []
+		},
+		"primitives-badge--default": {
+			"type": "story",
+			"id": "primitives-badge--default",
+			"name": "Default",
+			"title": "Primitives/Badge",
+			"importPath": "./src/stories/Badge.stories.tsx",
+			"componentPath": "./src/components/ui",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"primitives-badge--secondary": {
+			"type": "story",
+			"id": "primitives-badge--secondary",
+			"name": "Secondary",
+			"title": "Primitives/Badge",
+			"importPath": "./src/stories/Badge.stories.tsx",
+			"componentPath": "./src/components/ui",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"primitives-badge--destructive": {
+			"type": "story",
+			"id": "primitives-badge--destructive",
+			"name": "Destructive",
+			"title": "Primitives/Badge",
+			"importPath": "./src/stories/Badge.stories.tsx",
+			"componentPath": "./src/components/ui",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"primitives-badge--outline": {
+			"type": "story",
+			"id": "primitives-badge--outline",
+			"name": "Outline",
+			"title": "Primitives/Badge",
+			"importPath": "./src/stories/Badge.stories.tsx",
+			"componentPath": "./src/components/ui",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"primitives-button--docs": {
+			"id": "primitives-button--docs",
+			"title": "primitives/Button",
+			"name": "Docs",
+			"importPath": "./src/stories/Button.stories.ts",
+			"type": "docs",
+			"tags": ["dev", "test", "autodocs"],
+			"storiesImports": []
+		},
+		"primitives-button--default": {
+			"type": "story",
+			"id": "primitives-button--default",
+			"name": "Default",
+			"title": "primitives/Button",
+			"importPath": "./src/stories/Button.stories.ts",
+			"componentPath": "./src/components/ui",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"primitives-button--secondary": {
+			"type": "story",
+			"id": "primitives-button--secondary",
+			"name": "Secondary",
+			"title": "primitives/Button",
+			"importPath": "./src/stories/Button.stories.ts",
+			"componentPath": "./src/components/ui",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"primitives-button--destructive": {
+			"type": "story",
+			"id": "primitives-button--destructive",
+			"name": "Destructive",
+			"title": "primitives/Button",
+			"importPath": "./src/stories/Button.stories.ts",
+			"componentPath": "./src/components/ui",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"primitives-button--outline": {
+			"type": "story",
+			"id": "primitives-button--outline",
+			"name": "Outline",
+			"title": "primitives/Button",
+			"importPath": "./src/stories/Button.stories.ts",
+			"componentPath": "./src/components/ui",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"primitives-button--ghost": {
+			"type": "story",
+			"id": "primitives-button--ghost",
+			"name": "Ghost",
+			"title": "primitives/Button",
+			"importPath": "./src/stories/Button.stories.ts",
+			"componentPath": "./src/components/ui",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"primitives-button--link": {
+			"type": "story",
+			"id": "primitives-button--link",
+			"name": "Link",
+			"title": "primitives/Button",
+			"importPath": "./src/stories/Button.stories.ts",
+			"componentPath": "./src/components/ui",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"primitives-button--combobox": {
+			"type": "story",
+			"id": "primitives-button--combobox",
+			"name": "Combobox",
+			"title": "primitives/Button",
+			"importPath": "./src/stories/Button.stories.ts",
+			"componentPath": "./src/components/ui",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"ui-chat--docs": {
+			"id": "ui-chat--docs",
+			"title": "ui/Chat",
+			"name": "Docs",
+			"importPath": "./src/stories/Chat.stories.tsx",
+			"type": "docs",
+			"tags": ["dev", "test", "autodocs"],
+			"storiesImports": []
+		},
+		"ui-chat--default": {
+			"type": "story",
+			"id": "ui-chat--default",
+			"name": "Chat",
+			"title": "ui/Chat",
+			"importPath": "./src/stories/Chat.stories.tsx",
+			"componentPath": "./src/components/ui/chat",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"primitives-collapsible--docs": {
+			"id": "primitives-collapsible--docs",
+			"title": "Primitives/Collapsible",
+			"name": "Docs",
+			"importPath": "./src/stories/Collapsible.stories.tsx",
+			"type": "docs",
+			"tags": ["dev", "test", "autodocs"],
+			"storiesImports": []
+		},
+		"primitives-collapsible--default": {
+			"type": "story",
+			"id": "primitives-collapsible--default",
+			"name": "Default",
+			"title": "Primitives/Collapsible",
+			"importPath": "./src/stories/Collapsible.stories.tsx",
+			"componentPath": "./src/components/ui/collapsible.tsx",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"primitives-combobox--docs": {
+			"id": "primitives-combobox--docs",
+			"title": "primitives/Combobox",
+			"name": "Docs",
+			"importPath": "./src/stories/Combobox.stories.tsx",
+			"type": "docs",
+			"tags": ["dev", "test", "autodocs"],
+			"storiesImports": []
+		},
+		"primitives-combobox--default": {
+			"type": "story",
+			"id": "primitives-combobox--default",
+			"name": "Combobox",
+			"title": "primitives/Combobox",
+			"importPath": "./src/stories/Combobox.stories.tsx",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"primitives-dropdownmenu--docs": {
+			"id": "primitives-dropdownmenu--docs",
+			"title": "primitives/DropdownMenu",
+			"name": "Docs",
+			"importPath": "./src/stories/DropdownMenu.stories.tsx",
+			"type": "docs",
+			"tags": ["dev", "test", "autodocs"],
+			"storiesImports": []
+		},
+		"primitives-dropdownmenu--default": {
+			"type": "story",
+			"id": "primitives-dropdownmenu--default",
+			"name": "DropdownMenu",
+			"title": "primitives/DropdownMenu",
+			"importPath": "./src/stories/DropdownMenu.stories.tsx",
+			"componentPath": "./src/components/ui",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"primitives-dropdownmenu--placements": {
+			"type": "story",
+			"id": "primitives-dropdownmenu--placements",
+			"name": "Placements",
+			"title": "primitives/DropdownMenu",
+			"importPath": "./src/stories/DropdownMenu.stories.tsx",
+			"componentPath": "./src/components/ui",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"primitives-dropdownmenu--alignments": {
+			"type": "story",
+			"id": "primitives-dropdownmenu--alignments",
+			"name": "Alignments",
+			"title": "primitives/DropdownMenu",
+			"importPath": "./src/stories/DropdownMenu.stories.tsx",
+			"componentPath": "./src/components/ui",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"primitives-progress--docs": {
+			"id": "primitives-progress--docs",
+			"title": "Primitives/Progress",
+			"name": "Docs",
+			"importPath": "./src/stories/Progress.stories.tsx",
+			"type": "docs",
+			"tags": ["dev", "test", "autodocs"],
+			"storiesImports": []
+		},
+		"primitives-progress--default": {
+			"type": "story",
+			"id": "primitives-progress--default",
+			"name": "Default",
+			"title": "Primitives/Progress",
+			"importPath": "./src/stories/Progress.stories.tsx",
+			"componentPath": "./src/components/ui",
+			"tags": ["dev", "test", "autodocs"]
+		},
+		"primitives-slider--docs": {
+			"id": "primitives-slider--docs",
+			"title": "Primitives/Slider",
+			"name": "Docs",
+			"importPath": "./src/stories/Slider.stories.tsx",
+			"type": "docs",
+			"tags": ["dev", "test", "autodocs"],
+			"storiesImports": []
+		},
+		"primitives-slider--default": {
+			"type": "story",
+			"id": "primitives-slider--default",
+			"name": "Default",
+			"title": "Primitives/Slider",
+			"importPath": "./src/stories/Slider.stories.tsx",
+			"componentPath": "./src/components/ui",
+			"tags": ["dev", "test", "autodocs"]
+		}
+	}
+}

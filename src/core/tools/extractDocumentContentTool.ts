@@ -4,7 +4,6 @@ import { extractDocumentContentParamsSchema, ExtractDocumentContentParams } from
 import { logger } from "../../utils/logging"
 import * as fs from "fs/promises"
 import axios from "axios"
-import pdfParse from "pdf-parse"
 import mammoth from "mammoth"
 import * as tmp from "tmp"
 import * as path from "path"
@@ -107,6 +106,8 @@ export async function extractDocumentContentTool(
 
 		switch (docType) {
 			case "pdf":
+				// Lazy load pdf-parse to avoid initialization issues
+				const pdfParse = require("pdf-parse/lib/pdf-parse")
 				const pdfData = await fs.readFile(filePath)
 				const pdfParsed = await pdfParse(pdfData)
 				content = pdfParsed.text

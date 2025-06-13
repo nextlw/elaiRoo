@@ -950,6 +950,10 @@ export class ClineProvider
 	}
 
 	async upsertSearchApiProfile(name: string, settings: SearchApiSettings, activate?: boolean): Promise<void> {
+		this.log(
+			`[upsertSearchApiProfile] Called with name: ${name}, activate: ${activate}, settings: ${JSON.stringify(settings)}`,
+		)
+
 		// createOrUpdateProfile retorna o ID do perfil (string)
 		const profileId = await this.searchApiSettingsManager.createOrUpdateProfile(name, settings)
 

@@ -159,9 +159,22 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 
 		logger.info(`[webSearchTool] Starting web search with query: "${query}"`)
 
+		// Enviar mensagem inicial de busca
+		await cline.ask(
+			"tool",
+			JSON.stringify({
+				tool: "web_search",
+				query: query,
+				searchStatus: "searching",
+				content: `Searching for "${query}"...`,
+			}),
+		)
+
 		const searchApiSettings: SearchApiSettings | undefined = cline.providerRef
 			.deref()
 			?.contextProxy?.getSearchApiSettings()
+
+		logger.info(`[webSearchTool] SearchApiSettings obtained: ${JSON.stringify(searchApiSettings)}`)
 
 		if (searchApiSettings && searchApiSettings.isEnabled !== false) {
 			providerNameForResults = searchApiSettings.searchApiProviderName
@@ -441,6 +454,26 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 			(r) => ({ ...r, provider: r.provider || providerNameForResults }) as WebSearchResultExtended,
 		)
 
+		// Enviar mensagem com os resultados encontrados
+		if (searchResults.length > 0) {
+			await cline.ask(
+				"tool",
+				JSON.stringify({
+					tool: "web_search",
+					query: query,
+					searchStatus: "reading",
+					searchResults: searchResults.map((r) => ({
+						title: r.title || "",
+						link: r.link,
+						snippet: r.snippet || "",
+						provider: r.provider,
+						favicon: r.favicon,
+					})),
+					content: `Found ${searchResults.length} results. Reading content...`,
+				}),
+			)
+		}
+
 		// Adicionar data de última modificação
 		const resultsWithLastModifiedPromises = searchResults.map(async (result) => {
 			let lastModifiedDate: string | undefined
@@ -582,12 +615,43 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 			}
 		})
 
+		// Enviar mensagem final com status completed
+		await cline.ask(
+			"tool",
+			JSON.stringify({
+				tool: "web_search",
+				query: query,
+				searchStatus: "completed",
+				searchResults: resultsForUser.map((r) => ({
+					title: r.title || "",
+					link: r.link,
+					snippet: r.snippet || "",
+					provider: r.provider,
+					favicon: r.favicon,
+					isRead: true,
+				})),
+				content: `Search completed - ${resultsForUser.length} results found`,
+			}),
+		)
+
 		pushToolResult(JSON.stringify({ ...finalResultObject, results: resultsForUser }, null, 2))
 	} catch (error: any) {
 		const errorMessage = `Error in web_search for query "${query || "unknown"}": ${
 			error.message
 		}\nRaw output (if any):\n${typeof rawResultsOutput === "string" ? rawResultsOutput.substring(0, 500) : "N/A"}`
 		logger.error(`[webSearchTool] ${errorMessage}`, error)
+
+		// Enviar mensagem de erro
+		await cline.ask(
+			"tool",
+			JSON.stringify({
+				tool: "web_search",
+				query: query || "unknown",
+				searchStatus: "error",
+				content: errorMessage,
+			}),
+		)
+
 		if (handleError) {
 			await handleError(`web_search failed for query "${query || "unknown"}" (Tool ID: ${block.name})`, error)
 		} else {

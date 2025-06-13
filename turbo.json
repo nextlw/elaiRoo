@@ -2,7 +2,9 @@
 	"$schema": "https://turbo.build/schema.json",
 	"tasks": {
 		"lint": {},
-		"check-types": {},
+		"check-types": {
+			"dependsOn": ["@roo-code/telemetry#build", "@roo-code/types#build"]
+		},
 		"test": {
 			"dependsOn": ["@roo-code/types#build"]
 		},
