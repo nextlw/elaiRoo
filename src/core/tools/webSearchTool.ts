@@ -537,19 +537,24 @@ export async function webSearchTool(cline: Task, block: ToolUse, callbacks: WebS
 			})
 			.sort((a, b) => (b.finalScore ?? b.score ?? 0) - (a.finalScore ?? a.score ?? 0)) // Ordenar pelo novo finalScore
 
-		let approvalMessageContent = `Web search for "${query}" (using ${providerNameForResults}) found ${searchResults.length} results.`
+		let textApprovalMessage = `Web search for "${query}" (using ${providerNameForResults}) found ${searchResults.length} results.`
 		if (searchResults.length > 0) {
-			approvalMessageContent += `\n\nTop results:`
+			textApprovalMessage += `\n\nTop results:`
 			searchResults.slice(0, Math.min(3, searchResults.length)).forEach((result, index) => {
-				approvalMessageContent += `\n${index + 1}. ${result.title || "N/A"} - ${result.link || "N/A"}`
+				textApprovalMessage += `\n${index + 1}. ${result.title || "N/A"} - ${result.link || "N/A"}`
 			})
 		}
-		approvalMessageContent += "\n\nProceed to retrieve these search results?"
+		textApprovalMessage += "\n\nProceed to retrieve these search results?"
+
+		const approvalMessageContent = {
+			tool: "webSearch",
+			text: textApprovalMessage,
+		}
 
 		let approved = false
 		try {
 			logger.info(`[webSearchTool] Requesting approval for search results`)
-			approved = await askApproval("tool" as ClineAsk, approvalMessageContent)
+			approved = await askApproval("tool" as ClineAsk, JSON.stringify(approvalMessageContent))
 			logger.info(`[webSearchTool] Approval result: ${approved}`)
 		} catch (approvalError: any) {
 			logger.error(`[webSearchTool] Error during approval request: ${approvalError.message}`, approvalError)
