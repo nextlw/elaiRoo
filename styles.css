@@ -1,0 +1,18 @@
+.navbar {
+	background-color: #28a745 !important;
+	padding: 1rem 2rem;
+}
+
+.hero-section {
+	background:
+		linear-gradient(rgba(40, 167, 69, 0.8), rgba(40, 167, 69, 0.8)),
+		url("https://images.unsplash.com/photo-1487017159836-4e23ece2e4cf.jpg") center/cover;
+	height: 60vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: white;
+	text-align: center;
+}
+
+/* Adicionar demais estilos */
