@@ -1,4 +1,4 @@
-import React, { memo, useCallback } from "react"
+import React, { memo, useCallback, useEffect } from "react"
 // import { VSCodeDropdown, VSCodeOption } from "@vscode/webview-ui-toolkit/react" // Usaremos VSCodeDropdown diretamente por enquanto
 
 import type {
