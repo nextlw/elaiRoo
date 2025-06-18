@@ -37,7 +37,7 @@ export const extractPageContentTool: IExtractPageContentTool = {
 			let params: ExtractPageContentParams
 			try {
 				// Validar e obter os parâmetros específicos da ferramenta
-				params = extractPageContentParamsSchema.parse(toolUseWithParams.parameters)
+				params = extractPageContentParamsSchema.parse(toolUseWithParams.params)
 			} catch (error) {
 				console.error("Error parsing parameters for extract_page_content:", error)
 				onResult({

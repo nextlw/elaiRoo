@@ -73,9 +73,7 @@ const JinaSearchProviderSettings: React.FC<JinaSearchProviderSettingsProps> = ({
 			</VSCodeTextField>
 
 			<VSCodeTextField
-				value={
-					jinaConfig?.searchEndpoint === undefined ? "https://s.jina.ai/search" : jinaConfig.searchEndpoint
-				}
+				value={jinaConfig?.searchEndpoint === undefined ? "https://s.jina.ai" : jinaConfig.searchEndpoint}
 				onInput={(e: any) => handleFieldChange("searchEndpoint", e.target.value)}
 				disabled={disabled}
 				style={{ width: "100%", marginBottom: "20px" }}>

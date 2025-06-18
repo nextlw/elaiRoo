@@ -20,7 +20,7 @@ export const baseSearchApiSettingsSchema = z.object({
 export const jinaSearchApiSchema = baseSearchApiSettingsSchema.extend({
 	searchApiProviderName: z.literal("jina"),
 	apiKey: z.string().optional(), // Secret
-	searchEndpoint: z.string().url().optional().default("https://s.jina.ai/search"),
+	searchEndpoint: z.string().url().optional().default("https://s.jina.ai"),
 	enableReranking: z.boolean().optional().default(false),
 	rerankModel: z.string().optional().default("jina-reranker-v2-base-multilingual"),
 	rerankEndpoint: z.string().url().optional().default("https://s.jina.ai/rerank"),

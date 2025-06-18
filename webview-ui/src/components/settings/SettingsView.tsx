@@ -136,9 +136,9 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 	// A interface local SearchApiConfigMeta foi removida nas etapas anteriores ou será implicitamente sobrescrita.
 
 	const [cachedState, setCachedState] = useState(() => {
-		const initialSearchConfig = initialSearchApiConfiguration // Pode ser SearchApiSettings | undefined
-		const initialSearchList = initialListSearchApiConfigMeta ?? [] // Garante que seja um array
-		const initialSearchName = initialCurrentSearchApiConfigName ?? "default"
+		const initialSearchConfig = extensionState.searchApiConfiguration ?? extensionState.activeSearchApiSettings // Pode ser SearchApiSettings | undefined
+		const initialSearchList = extensionState.listSearchApiConfigMeta ?? [] // Garante que seja um array
+		const initialSearchName = extensionState.currentSearchApiConfigName ?? "default"
 
 		return {
 			...extensionState,
